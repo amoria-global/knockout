@@ -61,6 +61,20 @@ export default function LangFlag({
           <circle cx="48" cy="8" r="3.5" fill="#E5BE01" />
         </svg>
       );
+    case 'sw':
+      return (
+        <svg {...common} data-flag="tz">
+          <defs>
+            <clipPath id="tz-flag-clip"><rect width="60" height="40" /></clipPath>
+          </defs>
+          <g clipPath="url(#tz-flag-clip)">
+            <polygon points="0,0 60,0 0,40" fill="#1EB53A" />
+            <polygon points="60,0 60,40 0,40" fill="#00A3DD" />
+            <line x1="0" y1="40" x2="60" y2="0" stroke="#FCD116" strokeWidth="14" />
+            <line x1="0" y1="40" x2="60" y2="0" stroke="#000000" strokeWidth="8" />
+          </g>
+        </svg>
+      );
     default:
       return null;
   }

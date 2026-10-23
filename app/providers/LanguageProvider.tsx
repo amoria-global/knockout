@@ -10,25 +10,28 @@ import enMessages from '../../messages/en.json';
 import frMessages from '../../messages/fr.json';
 import esMessages from '../../messages/es.json';
 import rwMessages from '../../messages/rw.json';
+import swMessages from '../../messages/sw.json';
 
 const messages: Record<string, typeof enMessages> = {
   en: enMessages,
   fr: frMessages,
   es: esMessages,
   rw: rwMessages,
+  sw: swMessages,
 };
 
-const domTranslations: Record<string, [string, string, string]> = domTranslationsData as unknown as Record<string, [string, string, string]>;
+const domTranslations: Record<string, [string, string, string, string]> = domTranslationsData as unknown as Record<string, [string, string, string, string]>;
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'NOSCRIPT', 'SVG']);
-const LANG_IDX: Record<Exclude<Locale, 'en'>, 0 | 1 | 2> = {
+const LANG_IDX: Record<Exclude<Locale, 'en'>, 0 | 1 | 2 | 3> = {
   fr: 0,
   es: 1,
   rw: 2,
+  sw: 3,
 };
 
 // Build normalized and reverse dictionaries for resilient multi-way translation
-const normalizedDict = new Map<string, [string, string, string]>();
-const reverseDict = new Map<string, string>(); // any FR, ES, RW string (lowercase trimmed) -> canonical EN
+const normalizedDict = new Map<string, [string, string, string, string]>();
+const reverseDict = new Map<string, string>(); // any FR, ES, RW, SW string (lowercase trimmed) -> canonical EN
 
 for (const [enKey, trans] of Object.entries(domTranslations)) {
   const normEn = enKey.trim().toLowerCase();

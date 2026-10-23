@@ -1,0 +1,516 @@
+{
+  "nav": {
+    "photographers": "Wapiga Picha",
+    "events": "Matukio",
+    "about": "Kuhusu",
+    "login": "Ingia",
+    "signup": "Jisajili",
+    "getApp": "Pata App",
+    "getAppTitle": "Get Connekyt App",
+    "getAppDescription": "Instant photo finding, live streams & lock screen updates on your phone.",
+    "downloadOnAppStore": "Download on the App Store",
+    "getItOnGooglePlay": "Get it on Google Play",
+    "language": "Lugha",
+    "location": "Mahali",
+    "detectingLocation": "Detecting location...",
+    "selectCountry": "Chagua Country",
+    "selectDistrict": "Chagua District",
+    "allDistricts": "Yote (Districts)",
+    "changeLocation": "Change Location",
+    "searchLocation": "Search location...",
+    "noResults": "Hakuna matokeo yaliyopatikana",
+    "photographerCategories": {
+      "wedding": "For Wedding",
+      "portrait": "For Portrait",
+      "event": "For Event",
+      "commercial": "For Commercial",
+      "fashion": "For Fashion",
+      "product": "For Product",
+      "browseTitle": "Browse Photographers",
+      "browseSubtitle": "Find the perfect photographer for your special moments"
+    },
+    "eventCategories": {
+      "sports": "Sports",
+      "wedding": "Wedding",
+      "academic": "Academic",
+      "gathering": "Gathering",
+      "concert": "Concert",
+      "fashion": "Fashion",
+      "religious": "Religious",
+      "cultural": "Cultural",
+      "corporate": "Corporate",
+      "conference": "Conference",
+      "entertainment": "Entertainment",
+      "birthday": "Birthday",
+      "babyShower": "Baby Shower",
+      "graduation": "Graduation",
+      "anniversary": "Anniversary",
+      "other": "Other",
+      "browseTitle": "Browse Events",
+      "browseSubtitle": "Discover amazing events happening near you"
+    }
+  },
+  "hero": {
+    "twitter": "@AmoriaConnekyt",
+    "title1": "Connekyt",
+    "title2": "With Professional",
+    "title3": "Wapiga Picha",
+    "description": "An all in one photography platform that allows photographers and their clients to connect for live sessions and safely archives their visual narratives in protected digital vaults.",
+    "findPhotographer": "Tafuta Mpiga Picha",
+    "joinPhotographer": "Join As A Photographer",
+    "ohWow": "Oooh! Wow! 😍",
+    "smilePlease": "Smile Please 🤩"
+  },
+  "howItWorks": {
+    "title": "Jinsi inavyofanya kazi",
+    "getStarted": {
+      "title": "Get Started",
+      "description": "Describe your event and details. Get reviewed and recognized globally. Capture moments. Let every one come to you"
+    },
+    "photography": {
+      "title": "Photography",
+      "description": "Connect with photographers, capture memories and their visual narratives in protected digital vaults"
+    },
+    "goLive": {
+      "title": "Go Live",
+      "description": "Live stream your event, get connected to far attendance, share moments and memories"
+    },
+    "forPhotographers": {
+      "title": "Photographers & Videographers",
+      "description": "Whether you're a photographer looking to grow your business or a client seeking to capture life's most important moments, our platform is built for you",
+      "cta": "Get Started"
+    }
+  },
+  "devices": {
+    "phone": "Phone",
+    "tablet": "Tablet",
+    "laptop": "Laptop",
+    "concerts": "Concerts",
+    "weddings": "Weddings",
+    "mockupHeadings": {
+      "phone": {
+        "line1": "Wishings.",
+        "line2": "Birthdays!"
+      },
+      "tablet": {
+        "line1": "Love.",
+        "line2": "Weddings!"
+      },
+      "laptop": {
+        "line1": "Vybes.",
+        "line2": "Concerts!"
+      }
+    }
+  },
+  "whyAmoria": {
+    "title": "Why Amoria Connekyt Only?",
+    "subtitle": "The Amoria Connekyt Photographer Partnership Program is designed to build a strong, engaged, and motivated network of professional photographers who contribute to the creation of unforgettable and meaningful video stories.",
+    "ratedPhotographers": {
+      "title": "Rated Photographers",
+      "description": "Work with trusted photographers reviewed by the community and backed by platform verification"
+    },
+    "liveStreaming": {
+      "title": "Live Streaming",
+      "description": "Go beyond memories, host and share your event live with real-time reactions and over dual-event split-screen streaming!"
+    },
+    "securePayments": {
+      "title": "Secure Payments",
+      "description": "Set your price, get offers, and pay safely through our secure platform. Your payment is protected until you're satisfied with the results"
+    },
+    "fullEventGallery": {
+      "title": "Full Event Gallery",
+      "description": "Receive a beautifully curated gallery from your hired photographer and relive the memories anytime"
+    }
+  },
+  "globalNetwork": {
+    "title": "Connecting Photographers & Videographers with Clients Worldwide",
+    "description": "Amoria Connekyt brings together photographers and clients across continents. From live streaming events to secure digital vaults, we're building a global community that captures and preserves life's most precious moments.",
+    "connectNow": "Connect Now",
+    "findEvents": "Find Events"
+  },
+  "footer": {
+    "emailPlaceholder": "Enter Email Address",
+    "subscribe": "SUBSCRIBE",
+    "description": "Connecting moments, creating memories. Your trusted platform for professional event photography and live streaming.",
+    "getApp": "Get the App",
+    "getAppDescription": "Experience instant face-matching, live events and real-time updates on your phone.",
+    "downloadOnAppStore": "Download on the App Store",
+    "getItOnGooglePlay": "Get it on Google Play",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "downloadOn": "Download on the",
+    "getItOn": "GET IT ON",
+    "followUs": "Follow us on:",
+    "forClients": "For Clients",
+    "forPhotographers": "For Photographers",
+    "company": "Company",
+    "support": "Support",
+    "links": {
+      "findPhotographer": "Tafuta Mpiga Picha",
+      "howItWorks": "Jinsi inavyofanya kazi",
+      "browseEvents": "Browse Events",
+      "joinPhotographer": "Join As A Photographer",
+      "photographerGuide": "Mwongozo wa Mpiga Picha",
+      "portfolioTips": "Portfolio Tips",
+      "aboutUs": "Kuhusu Sisi",
+      "contact": "Mawasiliano",
+      "blog": "Blog",
+      "helpCenter": "Kituo cha Usaidizi",
+      "privacyPolicy": "Sera ya Faragha",
+      "termsOfService": "Masharti ya Huduma",
+      "trustSafety": "Uaminifu na Usalama",
+      "donations": "Michango",
+      "deleteAccount": "Futa Your Account"
+    },
+    "copyright": "© {year} Amoria Connekyt. All rights reserved."
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "phoneNumber": "Phone Number",
+    "login": "Login",
+    "signup": "Jisajili",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "signupType": {
+      "title": "How do you want to use Connekyt?",
+      "subtitle": "Chagua the option that best describes you",
+      "photographerTitle": "I'm a Photographer looking for a job",
+      "photographerDescription": "Showcase your portfolio, find gigs, and grow your photography business",
+      "clientTitle": "I'm a Client hiring for an event",
+      "clientDescription": "Find and hire professional photographers for your events",
+      "coordinatorTitle": "I'm an Event Coordinator",
+      "coordinatorDescription": "Create commercial live stream events and manage live stream ticketing",
+      "continue": "Continue",
+      "alreadyHaveAccount": "Already have an account?",
+      "login": "Ingia"
+    },
+    "loginPage": {
+      "title": "Log In to your existing account",
+      "connectWith": "Connect with photographer or videographer",
+      "orContinueWith": "Or continue with",
+      "yourEmail": "Your Email",
+      "emailPlaceholder": "example@gmail.com",
+      "emailHelper": "Enter Email Address associated with your account",
+      "passwordPlaceholder": "Enter your Password",
+      "loginButton": "Ingia",
+      "forgotPasswordLink": "Forgot your password?",
+      "notRegistered": "Not registered yet?",
+      "createAccount": "Create an account"
+    },
+    "signupPage": {
+      "title": "Create your first account",
+      "orSignUpWith": "Or sign up with",
+      "firstName": "First name",
+      "firstNamePlaceholder": "Enter your First Name",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "Enter your Last Name",
+      "yourEmail": "Your Email",
+      "emailPlaceholder": "example@gmail.com",
+      "phone": "Phone",
+      "passwordPlaceholder": "Enter your Password",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your Password",
+      "passwordHelper": "Must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)",
+      "termsText": "By creating an account, you consent that you have read and agree to our",
+      "termsOfService": "Masharti ya Huduma",
+      "and": "and",
+      "privacyPolicy": "Sera ya Faragha",
+      "createAccountButton": "Create account",
+      "alreadyHaveAccountText": "Already have an account?",
+      "loginLink": "Ingia",
+      "launchEvent": "Launch your event and let it dazzle with guests from afar!",
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "phoneRequired": "Phone number is required",
+      "emailRequired": "Email is required",
+      "passwordInvalid": "Password must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)",
+      "passwordsNotMatch": "Passwords do not match"
+    }
+  },
+  "events": {
+    "title": "Discover Amazing Events Near You",
+    "subtitle": "Browse through upcoming events, concerts, weddings, and gatherings",
+    "searchPlaceholder": "Search events by name, category, or location...",
+    "allCategories": "Vitengo Vyote",
+    "allLocations": "Yote (Locations)",
+    "allDates": "Yote (Dates)",
+    "allStatuses": "Hali Zote",
+    "categories": {
+      "sports": "Sports",
+      "wedding": "Wedding",
+      "academic": "Academic",
+      "gathering": "Gathering",
+      "concert": "Concert",
+      "fashion": "Fashion",
+      "religious": "Religious",
+      "cultural": "Cultural",
+      "corporate": "Corporate",
+      "conference": "Conference",
+      "entertainment": "Entertainment",
+      "birthday": "Birthday",
+      "babyShower": "Baby Shower",
+      "graduation": "Graduation"
+    },
+    "status": {
+      "upcoming": "UPCOMING",
+      "live": "LIVE",
+      "ended": "ENDED",
+      "completed": "Imekamilika",
+      "cancelled": "Imeghairiwa"
+    },
+    "liveNow": "Live Now",
+    "trending": "Trending Events",
+    "viewDetails": "Tazama maelezo",
+    "joinEvent": "Join Event",
+    "noEvents": "Hakuna matukio yaliyopatikana",
+    "pagination": {
+      "page": "Page",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "joinEventPage": {
+      "title": "Join Live Event",
+      "mainTitle": "Live Moments, Shared Instantly",
+      "subtitle1": "Stream Your Event In Real-Time And Let Remote Guests Celebrate With You",
+      "subtitle2": "Through Reactions, Wishes, And Gifts, No Matter Where They Are.",
+      "enterCode": "Enter Event Code",
+      "codePlaceholder": "Enter Event Link or Host ID from your event host",
+      "join": "Join",
+      "invalidCode": "Invalid event code",
+      "loading": "Joining event..."
+    },
+    "hotLiveTrends": "Hot Live Trends 🔥",
+    "liveStream": {
+      "title": "Live Stream",
+      "viewers": "Viewers",
+      "chat": "Live Chat",
+      "sendMessage": "Tuma Ujumbe",
+      "share": "Share",
+      "fullscreen": "Fullscreen",
+      "settings": "Mipangilio",
+      "leave": "Leave Stream",
+      "connecting": "Connecting to stream...",
+      "error": "Failed to load stream"
+    },
+    "multiStream": {
+      "title": "Multi-Stream View",
+      "selectStreams": "Chagua Streams to Watch",
+      "layout": "Layout",
+      "grid": "Grid",
+      "sideBySide": "Side by Side",
+      "picInPic": "Picture in Picture",
+      "noStreams": "No active streams available"
+    },
+    "record": {
+      "title": "Record Event",
+      "startRecording": "Start Recording",
+      "stopRecording": "Stop Recording",
+      "pauseRecording": "Pause Recording",
+      "resumeRecording": "Resume Recording",
+      "recording": "Recording",
+      "paused": "Paused",
+      "duration": "Duration",
+      "save": "Save Recording",
+      "discard": "Discard",
+      "settings": "Recording Settings",
+      "quality": "Quality",
+      "format": "Format"
+    },
+    "viewEvent": {
+      "viewFull": "Tazama Full",
+      "eventDate": "Event Date",
+      "eventTime": "Event Time",
+      "location": "Mahali",
+      "entryFee": "Live Stream Access Fee",
+      "expectedAttendees": "Expected Attendees",
+      "people": "People",
+      "organizedBy": "Organized By",
+      "aboutThisEvent": "About This Event",
+      "eventTags": "Event Tags",
+      "joinLiveStream": "Join Live Stream",
+      "eventBanner": "Event Banner",
+      "closeInstructions": "Press ESC or click outside to close",
+      "loadingEventDetails": "Loading event details..."
+    }
+  },
+  "photographers": {
+    "title": "Find Your Perfect Photographer",
+    "subtitle": "Browse through professional photographers and videographers",
+    "searchPlaceholder": "Search by name, specialty, or location...",
+    "allCategories": "Vitengo Vyote",
+    "allLocations": "Yote (Locations)",
+    "allPrices": "Yote (Prices)",
+    "allRatings": "Yote (Ratings)",
+    "categories": {
+      "weddings": "Weddings",
+      "events": "Matukio",
+      "portraits": "Portraits",
+      "commercial": "Commercial",
+      "fashion": "Fashion",
+      "product": "Product"
+    },
+    "priceRanges": {
+      "budget": "Budget (< 50k RWF)",
+      "standard": "Standard (50k - 100k RWF)",
+      "premium": "Premium (> 100k RWF)"
+    },
+    "verified": "Verified",
+    "rating": "Rating",
+    "reviews": "Tathmini",
+    "completedJobs": "Completed Jobs",
+    "accuracy": "Accuracy",
+    "responseTime": "Response Time",
+    "getInTouch": "Get In Touch",
+    "bookNow": "Book Now",
+    "noPhotographers": "Hakuna matokeo yaliyopatikana",
+    "loading": "Loading photographers..."
+  },
+  "viewProfile": {
+    "events": "Matukio",
+    "bookNow": "BOOK NOW",
+    "startChat": "START CHAT",
+    "viewFull": "Tazama Full",
+    "tabs": {
+      "overview": "Muhtasari",
+      "portfolio": "Kwingineko",
+      "reviews": "Tathmini",
+      "workingExperience": "Working Experience"
+    },
+    "overview": {
+      "about": "Kuhusu",
+      "specialties": "Utaalamu",
+      "equipment": "Vifaa",
+      "noEquipment": "No equipment listed",
+      "availability": "Availability",
+      "workingHours": "Working Hours",
+      "startingPrice": "Starting Price"
+    },
+    "portfolio": {
+      "professionalSkills": "Professional Skills",
+      "education": "Education",
+      "qualifications": "Qualifications & Certifications"
+    },
+    "reviews": {
+      "reviewsCount": "Tathmini",
+      "writeReview": "Write a Review"
+    },
+    "workingExperience": {
+      "title": "Professional Experience"
+    },
+    "loadingProfile": "Loading profile..."
+  },
+  "booking": {
+    "step1": {
+      "title": "Choose Your Preferred Package",
+      "back": "Back",
+      "professionalPhotographer": "Professional Photographer",
+      "availability": "Availability",
+      "workingHours": "Working Hours",
+      "location": "Mahali",
+      "startingPrice": "Starting Price",
+      "cancel": "CANCEL",
+      "next": "NEXT",
+      "packages": {
+        "essential": {
+          "name": "Essential Package",
+          "hours": "3 Hours",
+          "description": "Great for small events and birthdays"
+        },
+        "custom": {
+          "name": "Custom Package",
+          "hours": "4 Hours",
+          "description": "Great for corporate events and parties"
+        },
+        "premium": {
+          "name": "Premium Package",
+          "hours": "5 Hours",
+          "description": "Great for large events, concerts, and weddings"
+        },
+        "features": {
+          "coverage3h": "3 hours coverage",
+          "coverage4h": "4 hours coverage",
+          "coverage5h": "5 hours coverage",
+          "unlimitedPhotos": "Unlimited photos & videos",
+          "onlineGallery": "Online gallery storage",
+          "sameDayPreview": "Same-day preview",
+          "digitalMemorySharing": "Digital Memory Sharing Experience",
+          "printedAlbum": "Printed photo album",
+          "liveStreaming": "Live-streaming",
+          "dronePhotography": "Drone photography"
+        }
+      }
+    },
+    "step2": {
+      "title": "Event Details",
+      "back": "Back",
+      "professionalPhotographer": "Professional Photographer",
+      "availability": "Availability",
+      "workingHours": "Working Hours",
+      "location": "Mahali",
+      "startingPrice": "Starting Price",
+      "specialRequestsLabel": "Any Special Requests:",
+      "specialRequestsPlaceholder": "Any specific shots, requirements or preferences...",
+      "previous": "PREVIOUS",
+      "cancel": "CANCEL",
+      "next": "NEXT"
+    },
+    "step3": {
+      "title": "Contact Information",
+      "back": "Back",
+      "professionalPhotographer": "Professional Photographer",
+      "availability": "Availability",
+      "workingHours": "Working Hours",
+      "location": "Mahali",
+      "startingPrice": "Starting Price",
+      "emailLabel": "Email Address (Required)",
+      "phoneLabel": "Phone Number (Required)",
+      "bookingSummary": "Booking Summary",
+      "package": "Package",
+      "eventDate": "Event Date",
+      "eventTime": "Event Time",
+      "eventType": "Event Type",
+      "termsText": "I have read and agree to the",
+      "previous": "PREVIOUS",
+      "cancel": "CANCEL",
+      "bookNow": "BOOK NOW"
+    }
+  },
+  "chat": {
+    "title": "Chats",
+    "searchPlaceholder": "Search for Messages",
+    "filterChats": "Filter Chats",
+    "allChats": "Yote (Chats)",
+    "unreadChats": "Unread",
+    "onlineChats": "Online",
+    "archivedChats": "Imehifadhiwa",
+    "noChatsFound": "Hakuna matokeo yaliyopatikana",
+    "today": "Today",
+    "noMessagesYet": "No messages yet. Start the conversation!",
+    "typeMessage": "Andika ujumbe...",
+    "selectChat": "Chagua a chat to start messaging",
+    "send": "Send",
+    "online": "Online",
+    "offline": "Offline",
+    "typing": "typing...",
+    "loadingMessages": "Loading messages..."
+  },
+  "common": {
+    "loading": "Inapakia...",
+    "error": "Hitilafu",
+    "success": "Mafanikio",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Tafuta",
+    "filter": "Filter",
+    "viewMore": "Tazama More",
+    "backToTop": "Back to Top"
+  }
+}

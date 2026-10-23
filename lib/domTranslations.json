@@ -2,199 +2,239 @@
   "Photographers": [
     "Photographes",
     "Fotógrafos",
-    "Abafotora"
+    "Abafotora",
+    "Wapiga Picha"
   ],
   "Events": [
     "Événements",
     "Eventos",
-    "Ibirori"
+    "Ibirori",
+    "Matukio"
   ],
   "About": [
     "À Propos",
     "Acerca de",
-    "Ibyerekeye"
+    "Ibyerekeye",
+    "Kuhusu"
   ],
   "Log In": [
     "Se connecter",
     "Iniciar sesión",
-    "Injira"
+    "Injira",
+    "Ingia"
   ],
   "Sign Up": [
     "S'inscrire",
     "Registrarse",
-    "Iyandikishe"
+    "Iyandikishe",
+    "Jisajili"
   ],
   "Get App": [
     "Télécharger l'app",
     "Obtener App",
-    "Shaka Porogaramu"
+    "Shaka Porogaramu",
+    "Pata App"
   ],
   "Get Connekyt App": [
     "Téléchargez l'application Connekyt",
     "Descarga Connekyt App",
-    "Shaka Porogaramu ya Connekyt"
+    "Shaka Porogaramu ya Connekyt",
+    "Get Connekyt App"
   ],
   "Instant photo finding, live streams & lock screen updates on your phone.": [
     "Reconnaissance de photos instantanée, diffusions en direct et alertes sur votre téléphone.",
     "Reconocimiento de fotos al instante, eventos en vivo y alertas en tu teléfono.",
-    "Kubona amafoto yawe ako kanya, imyidagaduro imbonankubone n'amakuru kuri telefoni yawe."
+    "Kubona amafoto yawe ako kanya, imyidagaduro imbonankubone n'amakuru kuri telefoni yawe.",
+    "Instant photo finding, live streams & lock screen updates on your phone."
   ],
   "Download on the App Store": [
     "Télécharger dans l'App Store",
     "Consíguelo en el App Store",
-    "Yikure kuri App Store"
+    "Yikure kuri App Store",
+    "Download on the App Store"
   ],
   "Get it on Google Play": [
     "DISPONIBLE SUR Google Play",
     "DISPONIBLE EN Google Play",
-    "Yikure kuri Google Play"
+    "Yikure kuri Google Play",
+    "Get it on Google Play"
   ],
   "Language": [
     "Langue",
     "Idioma",
-    "Ururimi"
+    "Ururimi",
+    "Lugha"
   ],
   "Location": [
     "Lieu",
     "Ubicación",
-    "Ahantu"
+    "Ahantu",
+    "Mahali"
   ],
   "Detecting location...": [
     "Détection de la localisation...",
     "Detectando ubicación...",
-    "Gushaka aho uherereye..."
+    "Gushaka aho uherereye...",
+    "Detecting location..."
   ],
   "Select Country": [
     "Sélectionner le Pays",
     "Seleccionar País",
-    "Hitamo Igihugu"
+    "Hitamo Igihugu",
+    "Chagua Country"
   ],
   "Select District": [
     "Sélectionner le District",
     "Seleccionar Distrito",
-    "Hitamo Akarere"
+    "Hitamo Akarere",
+    "Chagua District"
   ],
   "All Districts": [
     "Tous les Districts",
     "Todos los Distritos",
-    "Uturere Twose"
+    "Uturere Twose",
+    "Yote (Districts)"
   ],
   "Change Location": [
     "Changer de Localisation",
     "Cambiar Ubicación",
-    "Hindura Ahantu"
+    "Hindura Ahantu",
+    "Change Location"
   ],
   "Search location...": [
     "Rechercher un lieu...",
     "Buscar ubicación...",
-    "Shakisha ahantu..."
+    "Shakisha ahantu...",
+    "Search location..."
   ],
   "No results found": [
     "Aucun résultat trouvé",
     "No se encontraron resultados",
-    "Nta bisubizo byabonetse"
+    "Nta bisubizo byabonetse",
+    "Hakuna matokeo yaliyopatikana"
   ],
   "For Wedding": [
     "Pour Mariage",
     "Para Bodas",
-    "Ubukwe"
+    "Ubukwe",
+    "For Wedding"
   ],
   "For Portrait": [
     "Pour Portrait",
     "Para Retratos",
-    "Amafoto y'umuntu (Portrait)"
+    "Amafoto y'umuntu (Portrait)",
+    "For Portrait"
   ],
   "For Event": [
     "Pour Événement",
     "Para Eventos",
-    "Ibirori"
+    "Ibirori",
+    "For Event"
   ],
   "For Commercial": [
     "Pour Commercial",
     "Para Comercial",
-    "Ubucuruzi"
+    "Ubucuruzi",
+    "For Commercial"
   ],
   "For Fashion": [
     "Pour Mode",
     "Para Moda",
-    "Imideri"
+    "Imideri",
+    "For Fashion"
   ],
   "For Product": [
     "Pour Produit",
     "Para Productos",
-    "Ibicuruzwa"
+    "Ibicuruzwa",
+    "For Product"
   ],
   "Browse Photographers": [
     "Parcourir les photographes",
     "Explorar fotógrafos",
-    "Shakisha abafotora"
+    "Shakisha abafotora",
+    "Browse Photographers"
   ],
   "Find the perfect photographer for your special moments": [
     "Trouvez le photographe parfait pour vos moments spéciaux",
     "Encuentra el fotógrafo perfecto para tus momentos especiales",
-    "Shaka umufotozi ukwiye ibihe byawe by'ingenzi"
+    "Shaka umufotozi ukwiye ibihe byawe by'ingenzi",
+    "Find the perfect photographer for your special moments"
   ],
   "Sports": [
     "Sports",
     "Deportes",
-    "Imikino"
+    "Imikino",
+    "Sports"
   ],
   "Wedding": [
     "Mariage",
     "Boda",
-    "Ubukwe"
+    "Ubukwe",
+    "Wedding"
   ],
   "Academic": [
     "Académique",
     "Académico",
-    "Amashuri"
+    "Amashuri",
+    "Academic"
   ],
   "Gathering": [
     "Rassemblement",
     "Reunión",
-    "Ihura ry'abantu"
+    "Ihura ry'abantu",
+    "Gathering"
   ],
   "Concert": [
     "Concert",
     "Concierto",
-    "Igitaramo"
+    "Igitaramo",
+    "Concert"
   ],
   "Fashion": [
     "Mode",
     "Moda",
-    "Imideri"
+    "Imideri",
+    "Fashion"
   ],
   "Religious": [
     "Religieux",
     "Religioso",
-    "Iyobokamana"
+    "Iyobokamana",
+    "Religious"
   ],
   "Cultural": [
     "Culturel",
     "Cultural",
-    "Umuco"
+    "Umuco",
+    "Cultural"
   ],
   "Corporate": [
     "Entreprise",
     "Corporativo",
-    "Ibigo n'Ubucuruzi"
+    "Ibigo n'Ubucuruzi",
+    "Corporate"
   ],
   "Conference": [
     "Conférence",
     "Conferencia",
-    "Inama"
+    "Inama",
+    "Conference"
   ],
   "Entertainment": [
     "Divertissement",
     "Entretenimiento",
-    "Imyidagaduro"
+    "Imyidagaduro",
+    "Entertainment"
   ],
   "Birthday": [
     "Anniversaire",
     "Cumpleaños",
-    "Isabukuru y'amavuko"
+    "Isabukuru y'amavuko",
+    "Birthday"
   ],
   "Baby Shower": [
+    "Baby Shower",
     "Baby Shower",
     "Baby Shower",
     "Baby Shower"
@@ -202,29 +242,35 @@
   "Graduation": [
     "Remise de Diplôme",
     "Graduación",
-    "Kurangiza amashuri"
+    "Kurangiza amashuri",
+    "Graduation"
   ],
   "Anniversary": [
     "Anniversaire de Mariage",
     "Aniversario",
-    "Isabukuru"
+    "Isabukuru",
+    "Anniversary"
   ],
   "Other": [
     "Autre",
     "Otro",
-    "Ibindi"
+    "Ibindi",
+    "Other"
   ],
   "Browse Events": [
     "Parcourir les événements",
     "Explorar eventos",
-    "Shakisha ibirori"
+    "Shakisha ibirori",
+    "Browse Events"
   ],
   "Discover amazing events happening near you": [
     "Découvrez des événements incroyables près de chez vous",
     "Descubre eventos increíbles cerca de ti",
-    "Vumbura ibirori bidasanzwe bibera hafi yawe"
+    "Vumbura ibirori bidasanzwe bibera hafi yawe",
+    "Discover amazing events happening near you"
   ],
   "@AmoriaConnekyt": [
+    "@AmoriaConnekyt",
     "@AmoriaConnekyt",
     "@AmoriaConnekyt",
     "@AmoriaConnekyt"
@@ -232,209 +278,251 @@
   "Connekyt": [
     "Connekyt",
     "Connekyt",
+    "Connekyt",
     "Connekyt"
   ],
   "With Professional": [
     "Avec des Photographes",
     "Con Fotógrafos",
-    "N'Abafotora"
+    "N'Abafotora",
+    "With Professional"
   ],
   "Find A Photographer": [
     "Trouver un photographe",
     "Encontrar un fotógrafo",
-    "Shaka umufotozi"
+    "Shaka umufotozi",
+    "Tafuta Mpiga Picha"
   ],
   "Join As A Photographer": [
     "Rejoindre en tant que photographe",
     "Unirse como fotógrafo",
-    "Injira nk'umufotozi"
+    "Injira nk'umufotozi",
+    "Join As A Photographer"
   ],
   "Oooh! Wow! 😍": [
     "Ooh! Wow! 😍",
     "¡Ooh! ¡Wow! 😍",
-    "Yego we! Byiza cyane! 😍"
+    "Yego we! Byiza cyane! 😍",
+    "Oooh! Wow! 😍"
   ],
   "Smile Please 🤩": [
     "Souriez S'il Vous Plaît 🤩",
     "Sonríe Por Favor 🤩",
-    "Sekamo gato 🤩"
+    "Sekamo gato 🤩",
+    "Smile Please 🤩"
   ],
   "How it works": [
     "Comment ça marche",
     "Cómo funciona",
-    "Uko bikora"
+    "Uko bikora",
+    "Jinsi inavyofanya kazi"
   ],
   "Get Started": [
     "Commencer",
     "Comenzar",
-    "Tangira Nonaha"
+    "Tangira Nonaha",
+    "Get Started"
   ],
   "Describe your event and details. Get reviewed and recognized globally. Capture moments. Let every one come to you": [
     "Décrivez votre événement et ses détails. Soyez évalué et reconnu mondialement. Capturez des moments. Laissez tout le monde venir à vous",
     "Describe tu evento y detalles. Sé revisado y reconocido globalmente. Captura momentos. Deja que todos vengan a ti",
-    "Sobanura ibirori byawe n'amakuru arambuye. Menyekana hose ku isi. Fata ibihe by'ingenzi. Reka abantu bose bakugane"
+    "Sobanura ibirori byawe n'amakuru arambuye. Menyekana hose ku isi. Fata ibihe by'ingenzi. Reka abantu bose bakugane",
+    "Describe your event and details. Get reviewed and recognized globally. Capture moments. Let every one come to you"
   ],
   "Photography": [
     "Photographie",
     "Fotografía",
-    "Gufotora"
+    "Gufotora",
+    "Photography"
   ],
   "Connect with photographers, capture memories and their visual narratives in protected digital vaults": [
     "Connectez-vous avec des photographes, capturez des souvenirs et leurs récits visuels dans des coffres numériques protégés",
     "Conéctate con fotógrafos, captura recuerdos y sus narrativas visuales en bóvedas digitales protegidas",
-    "Hura n'abafotora, fata urwibutso kandi ubike inkuru z'amashusho mu bubiko bw'ikoranabuhanga burinzwe"
+    "Hura n'abafotora, fata urwibutso kandi ubike inkuru z'amashusho mu bubiko bw'ikoranabuhanga burinzwe",
+    "Connect with photographers, capture memories and their visual narratives in protected digital vaults"
   ],
   "Go Live": [
     "En Direct",
     "En Vivo",
-    "Tangiza Imbonankubone"
+    "Tangiza Imbonankubone",
+    "Go Live"
   ],
   "Live stream your event, get connected to far attendance, share moments and memories": [
     "Diffusez votre événement en direct, connectez-vous à une audience éloignée, partagez des moments et des souvenirs",
     "Transmite tu evento en vivo, conéctate con audiencias lejanas, comparte momentos y recuerdos",
-    "Erekana ibirori byawe imbonankubone, huza n'abari kure, musangire ibihe byiza n'urwibutso"
+    "Erekana ibirori byawe imbonankubone, huza n'abari kure, musangire ibihe byiza n'urwibutso",
+    "Live stream your event, get connected to far attendance, share moments and memories"
   ],
   "Photographers & Videographers": [
     "Photographes & Vidéastes",
     "Fotógrafos y Videógrafos",
-    "Abafotora n'Abafata Amashusho"
+    "Abafotora n'Abafata Amashusho",
+    "Photographers & Videographers"
   ],
   "Phone": [
     "Téléphone",
     "Teléfono",
-    "Telefoni"
+    "Telefoni",
+    "Phone"
   ],
   "Tablet": [
     "Tablette",
     "Tableta",
-    "Tabuleti"
+    "Tabuleti",
+    "Tablet"
   ],
   "Laptop": [
     "Ordinateur",
     "Portátil",
-    "Mudasobwa"
+    "Mudasobwa",
+    "Laptop"
   ],
   "Concerts": [
     "Concerts",
     "Conciertos",
-    "Ibitaramo"
+    "Ibitaramo",
+    "Concerts"
   ],
   "Weddings": [
     "Mariages",
     "Bodas",
-    "Ubukwe"
+    "Ubukwe",
+    "Weddings"
   ],
   "Wishings.": [
     "Vœux.",
     "Deseos.",
-    "Intashyo."
+    "Intashyo.",
+    "Wishings."
   ],
   "Birthdays!": [
     "Anniversaires!",
     "¡Cumpleaños!",
-    "Isabukuru!"
+    "Isabukuru!",
+    "Birthdays!"
   ],
   "Love.": [
     "Amour.",
     "Amor.",
-    "Urukundo."
+    "Urukundo.",
+    "Love."
   ],
   "Weddings!": [
     "Mariages!",
     "¡Bodas!",
-    "Ubukwe!"
+    "Ubukwe!",
+    "Weddings!"
   ],
   "Vybes.": [
     "Vibes.",
     "Vibras.",
-    "Ibyishimo."
+    "Ibyishimo.",
+    "Vybes."
   ],
   "Concerts!": [
     "Concerts!",
     "¡Conciertos!",
-    "Ibitaramo!"
+    "Ibitaramo!",
+    "Concerts!"
   ],
   "Why Amoria Connekyt Only?": [
     "Pourquoi Uniquement Amoria Connekyt?",
     "¿Por Qué Solo Amoria Connekyt?",
-    "Kuki Ari Amoria Connekyt Gusa?"
+    "Kuki Ari Amoria Connekyt Gusa?",
+    "Why Amoria Connekyt Only?"
   ],
   "Rated Photographers": [
     "Photographes Évalués",
     "Fotógrafos Calificados",
-    "Abafotora Bizewe"
+    "Abafotora Bizewe",
+    "Rated Photographers"
   ],
   "Work with trusted photographers reviewed by the community and backed by platform verification": [
     "Travaillez avec des photographes de confiance évalués par la communauté et soutenus par la vérification de la plateforme",
     "Trabaja con fotógrafos de confianza revisados por la comunidad y respaldados por la verificación de la plataforma",
-    "Korana n'abafotora bizewe bahawe amanota n'abakiriya kandi bagenzuwe n'urubuga"
+    "Korana n'abafotora bizewe bahawe amanota n'abakiriya kandi bagenzuwe n'urubuga",
+    "Work with trusted photographers reviewed by the community and backed by platform verification"
   ],
   "Live Streaming": [
     "Diffusion en Direct",
     "Transmisión en Vivo",
-    "Kwerekanwa Imbonankubone"
+    "Kwerekanwa Imbonankubone",
+    "Live Streaming"
   ],
   "Go beyond memories, host and share your event live with real-time reactions and over dual-event split-screen streaming!": [
     "Allez au-delà des souvenirs, organisez et partagez votre événement en direct avec des réactions en temps réel et une diffusion en écran partagé double événement!",
     "Ve más allá de los recuerdos, organiza y comparte tu evento en vivo con reacciones en tiempo real y transmisión en pantalla dividida de eventos duales",
-    "Renga urwibutso rusanzwe, tegura kandi usangize ibirori byawe imbonankubone hamwe n'ibitekerezo by'ako kanya!"
+    "Renga urwibutso rusanzwe, tegura kandi usangize ibirori byawe imbonankubone hamwe n'ibitekerezo by'ako kanya!",
+    "Go beyond memories, host and share your event live with real-time reactions and over dual-event split-screen streaming!"
   ],
   "Secure Payments": [
     "Paiements sécurisés",
     "Pagos seguros",
-    "Ubwishyu bwizewe"
+    "Ubwishyu bwizewe",
+    "Secure Payments"
   ],
   "Full Event Gallery": [
     "Galerie d'Événement Complète",
     "Galería Completa del Evento",
-    "Ububiko Bwuzuye bw'Ibirori"
+    "Ububiko Bwuzuye bw'Ibirori",
+    "Full Event Gallery"
   ],
   "Receive a beautifully curated gallery from your hired photographer and relive the memories anytime": [
     "Recevez une galerie magnifiquement organisée de votre photographe engagé et revivez les souvenirs à tout moment",
     "Recibe una galería bellamente curada de tu fotógrafo contratado y revive los recuerdos en cualquier momento",
-    "Akira ububiko bw'amafoto atunganyije neza uturutse ku mufotozi wawe kandi wongere ube muri ibyo bihe igihe cyose"
+    "Akira ububiko bw'amafoto atunganyije neza uturutse ku mufotozi wawe kandi wongere ube muri ibyo bihe igihe cyose",
+    "Receive a beautifully curated gallery from your hired photographer and relive the memories anytime"
   ],
   "Connecting Photographers & Videographers with Clients Worldwide": [
     "Connecter Photographes & Vidéastes avec des Clients dans le Monde Entier",
     "Conectando Fotógrafos y Videógrafos con Clientes en Todo el Mundo",
-    "Guhuza Abafotora n'Abafata Amashusho n'Abakiriya ku Isi Hose"
+    "Guhuza Abafotora n'Abafata Amashusho n'Abakiriya ku Isi Hose",
+    "Connecting Photographers & Videographers with Clients Worldwide"
   ],
   "Connect Now": [
     "Se Connecter Maintenant",
     "Conectar Ahora",
-    "Ihuze Nonaha"
+    "Ihuze Nonaha",
+    "Connect Now"
   ],
   "Find Events": [
     "Trouver des Événements",
     "Encontrar Eventos",
-    "Shaka Ibirori"
+    "Shaka Ibirori",
+    "Find Events"
   ],
   "Enter Email Address": [
     "Entrez l'Adresse Email",
     "Ingrese Dirección de Email",
-    "Andika Imeyili Yawe"
+    "Andika Imeyili Yawe",
+    "Enter Email Address"
   ],
   "SUBSCRIBE": [
     "S'ABONNER",
     "SUSCRIBIRSE",
-    "IYANDIKISHE"
+    "IYANDIKISHE",
+    "SUBSCRIBE"
   ],
   "Connecting moments, creating memories. Your trusted platform for professional event photography and live streaming.": [
     "Connecter des moments, créer des souvenirs. Votre plateforme de confiance pour la photographie d'événements professionnels et la diffusion en direct.",
     "Conectando momentos, creando recuerdos. Tu plataforma de confianza para fotografía de eventos profesional y transmisión en vivo.",
-    "Guhuza ibihe, kurema urwibutso. Urubuga rwawe rwizewe rwo gufotora ibirori by'umwuga no kwerekana imbonankubone."
+    "Guhuza ibihe, kurema urwibutso. Urubuga rwawe rwizewe rwo gufotora ibirori by'umwuga no kwerekana imbonankubone.",
+    "Connecting moments, creating memories. Your trusted platform for professional event photography and live streaming."
   ],
   "Get the App": [
     "Téléchargez l'application",
     "Descarga la App",
-    "Shaka Porogaramu"
+    "Shaka Porogaramu",
+    "Get the App"
   ],
   "Experience instant face-matching, live events and real-time updates on your phone.": [
     "Reconnaissance de photos instantanée, événements en direct et notifications en temps réel.",
     "Reconocimiento de fotos al instante, eventos en vivo y notificaciones en tiempo real.",
-    "Gerageza kubona amafoto yawe ukoresheje isura, ibirori by'imbonankubone n'amakuru y'ako kanya kuri telefoni yawe."
+    "Gerageza kubona amafoto yawe ukoresheje isura, ibirori by'imbonankubone n'amakuru y'ako kanya kuri telefoni yawe.",
+    "Experience instant face-matching, live events and real-time updates on your phone."
   ],
   "App Store": [
+    "App Store",
     "App Store",
     "App Store",
     "App Store"
@@ -442,1344 +530,1613 @@
   "Google Play": [
     "Google Play",
     "Google Play",
+    "Google Play",
     "Google Play"
   ],
   "Download on the": [
     "Télécharger dans l'",
     "Consíguelo en el",
-    "Yikure kuri"
+    "Yikure kuri",
+    "Download on the"
   ],
   "GET IT ON": [
     "DISPONIBLE SUR",
     "DISPONIBLE EN",
-    "YIKURE KURI"
+    "YIKURE KURI",
+    "GET IT ON"
   ],
   "Follow us on:": [
     "Suivez-nous sur:",
     "Síguenos en:",
-    "Dukurikire kuri:"
+    "Dukurikire kuri:",
+    "Follow us on:"
   ],
   "For Clients": [
     "Pour les clients",
     "Para clientes",
-    "Ku bakiriya"
+    "Ku bakiriya",
+    "For Clients"
   ],
   "For Photographers": [
     "Pour les photographes",
     "Para fotógrafos",
-    "Ku bafotora"
+    "Ku bafotora",
+    "For Photographers"
   ],
   "Company": [
     "Entreprise",
     "Empresa",
-    "Ikigo"
+    "Ikigo",
+    "Company"
   ],
   "Support": [
     "Assistance",
     "Soporte",
-    "Ubufasha"
+    "Ubufasha",
+    "Support"
   ],
   "How it Works": [
     "Comment ça marche",
     "Cómo funciona",
-    "Uko bikora"
+    "Uko bikora",
+    "Jinsi inavyofanya kazi"
   ],
   "Photographer Guide": [
     "Guide du photographe",
     "Guía del fotógrafo",
-    "Igitabo cy'umufotozi"
+    "Igitabo cy'umufotozi",
+    "Mwongozo wa Mpiga Picha"
   ],
   "Portfolio Tips": [
     "Conseils de Portfolio",
     "Consejos de Portafolio",
-    "Inama za Portfolio"
+    "Inama za Portfolio",
+    "Portfolio Tips"
   ],
   "About Us": [
     "À propos de nous",
     "Sobre nosotros",
-    "Ibyerekeye twebwe"
+    "Ibyerekeye twebwe",
+    "Kuhusu Sisi"
   ],
   "Contact": [
     "Contact",
     "Contacto",
-    "Twandikire"
+    "Twandikire",
+    "Mawasiliano"
   ],
   "Blog": [
     "Blog",
     "Blog",
-    "Inkuru (Blog)"
+    "Inkuru (Blog)",
+    "Blog"
   ],
   "Help Center": [
     "Centre d'aide",
     "Centro de ayuda",
-    "Ahabarizwa ubufasha"
+    "Ahabarizwa ubufasha",
+    "Kituo cha Usaidizi"
   ],
   "Privacy Policy": [
     "Politique de confidentialité",
     "Política de privacidad",
-    "Politiki y'ubuzima bwite"
+    "Politiki y'ubuzima bwite",
+    "Sera ya Faragha"
   ],
   "Terms of Service": [
     "Conditions d'utilisation",
     "Términos de servicio",
-    "Amabwiriza y'imikoreshereze"
+    "Amabwiriza y'imikoreshereze",
+    "Masharti ya Huduma"
   ],
   "Trust & Safety": [
     "Confiance et sécurité",
     "Confianza y seguridad",
-    "Kwizera n'umutekano"
+    "Kwizera n'umutekano",
+    "Uaminifu na Usalama"
   ],
   "Donations": [
     "Dons",
     "Donaciones",
-    "Inkunga"
+    "Inkunga",
+    "Michango"
   ],
   "Delete Your Account": [
     "Supprimer votre compte",
     "Eliminar tu cuenta",
-    "Siba Konti Yawe"
+    "Siba Konti Yawe",
+    "Futa Your Account"
   ],
   "Email": [
     "E-mail",
     "Correo",
-    "Imeri"
+    "Imeri",
+    "Email"
   ],
   "Password": [
     "Mot de passe",
     "Contraseña",
-    "Ijambobanga"
+    "Ijambobanga",
+    "Password"
   ],
   "Confirm Password": [
     "Confirmer le Mot de passe",
     "Confirmar Contraseña",
-    "Emeza Ijambo ry'ibanga"
+    "Emeza Ijambo ry'ibanga",
+    "Confirm Password"
   ],
   "Full Name": [
     "Nom complet",
     "Nombre completo",
-    "Amazina yose"
+    "Amazina yose",
+    "Full Name"
   ],
   "Phone Number": [
     "Numéro de téléphone",
     "Número de teléfono",
-    "Nimero ya telefoni"
+    "Nimero ya telefoni",
+    "Phone Number"
   ],
   "Login": [
     "Se Connecter",
     "Iniciar Sesión",
-    "Injira"
+    "Injira",
+    "Login"
   ],
   "Forgot Password": [
     "Mot de passe Oublié",
     "Olvidé mi Contraseña",
-    "Wibagiwe Ijambo ry'ibanga?"
+    "Wibagiwe Ijambo ry'ibanga?",
+    "Forgot Password"
   ],
   "Reset Password": [
     "Réinitialiser le mot de passe",
     "Restablecer contraseña",
-    "Hindura ijambobanga"
+    "Hindura ijambobanga",
+    "Reset Password"
   ],
   "Don't have an account?": [
     "Vous n'avez pas de compte ?",
     "¿No tienes una cuenta?",
-    "Nta konti ufite?"
+    "Nta konti ufite?",
+    "Don't have an account?"
   ],
   "Already have an account?": [
     "Vous avez déjà un compte ?",
     "¿Ya tienes una cuenta?",
-    "Usanzwe ufite konti?"
+    "Usanzwe ufite konti?",
+    "Already have an account?"
   ],
   "How do you want to use Connekyt?": [
     "Comment souhaitez-vous utiliser Connekyt?",
     "¿Cómo quieres usar Connekyt?",
-    "Ushaka gukoresha Connekyt ute?"
+    "Ushaka gukoresha Connekyt ute?",
+    "How do you want to use Connekyt?"
   ],
   "Select the option that best describes you": [
     "Sélectionnez l'option qui vous décrit le mieux",
     "Selecciona la opción que mejor te describa",
-    "Hitamo icyiciro kikuranga neza"
+    "Hitamo icyiciro kikuranga neza",
+    "Chagua the option that best describes you"
   ],
   "I'm a Photographer looking for a job": [
     "Je suis un Photographe à la recherche d'un emploi",
     "Soy un Fotógrafo buscando trabajo",
-    "Ndi Umufotozi ushaka akazi"
+    "Ndi Umufotozi ushaka akazi",
+    "I'm a Photographer looking for a job"
   ],
   "Showcase your portfolio, find gigs, and grow your photography business": [
     "Présentez votre portfolio, trouvez des missions et développez votre activité de photographe",
     "Muestra tu portafolio, encuentra trabajos y haz crecer tu negocio de fotografía",
-    "Erekana ibikorwa byawe, ubona akazi kandi wagure ubucuruzi bwawe bwo gufotora"
+    "Erekana ibikorwa byawe, ubona akazi kandi wagure ubucuruzi bwawe bwo gufotora",
+    "Showcase your portfolio, find gigs, and grow your photography business"
   ],
   "I'm a Client hiring for an event": [
     "Je suis un Client qui embauche pour un événement",
     "Soy un Cliente contratando para un evento",
-    "Ndi Umukiriya ushaka gufotora ibirori"
+    "Ndi Umukiriya ushaka gufotora ibirori",
+    "I'm a Client hiring for an event"
   ],
   "Find and hire professional photographers for your events": [
     "Trouvez et engagez des photographes professionnels pour vos événements",
     "Encuentra y contrata fotógrafos profesionales para tus eventos",
-    "Shaka kandi ukodeshe abafotozi b'abanyamwuga mu birori byawe"
+    "Shaka kandi ukodeshe abafotozi b'abanyamwuga mu birori byawe",
+    "Find and hire professional photographers for your events"
   ],
   "I'm an Event Coordinator": [
     "Je suis un Coordinateur d'Événements",
     "Soy un Coordinador de Eventos",
-    "Ndi Umuhuzabikorwa w'Ibirori"
+    "Ndi Umuhuzabikorwa w'Ibirori",
+    "I'm an Event Coordinator"
   ],
   "Create commercial live stream events and manage live stream ticketing": [
     "Créez des événements de diffusion en direct commerciaux et gérez la billetterie en streaming",
     "Crea eventos de transmisión en vivo comerciales y gestiona la venta de entradas en streaming",
-    "Tegura ibirori by'imbonankubone kandi ucunge amatike yo kubireba"
+    "Tegura ibirori by'imbonankubone kandi ucunge amatike yo kubireba",
+    "Create commercial live stream events and manage live stream ticketing"
   ],
   "Continue": [
     "Continuer",
     "Continuar",
-    "Komeza"
+    "Komeza",
+    "Continue"
   ],
   "Log In to your existing account": [
     "Connectez-vous à votre compte existant",
     "Inicia sesión en tu cuenta existente",
-    "Injira muri konti yawe isanzwe"
+    "Injira muri konti yawe isanzwe",
+    "Log In to your existing account"
   ],
   "Connect with photographer or videographer": [
     "Connectez-vous avec un photographe ou vidéaste",
     "Conéctate con fotógrafo o videógrafo",
-    "Hura n'umufotozi cyangwa umufata-mashusho"
+    "Hura n'umufotozi cyangwa umufata-mashusho",
+    "Connect with photographer or videographer"
   ],
   "Or continue with": [
     "Ou continuer avec",
     "O continuar con",
-    "Cyangwa ukomeze na"
+    "Cyangwa ukomeze na",
+    "Or continue with"
   ],
   "Your Email": [
     "Votre Email",
     "Tu Email",
-    "Imeyili Yawe"
+    "Imeyili Yawe",
+    "Your Email"
   ],
   "example@gmail.com": [
     "exemple@gmail.com",
     "ejemplo@gmail.com",
-    "urugero@gmail.com"
+    "urugero@gmail.com",
+    "example@gmail.com"
   ],
   "Enter Email Address associated with your account": [
     "Entrez l'adresse email associée à votre compte",
     "Ingresa la dirección de email asociada con tu cuenta",
-    "Andika imeyili ihuye na konti yawe"
+    "Andika imeyili ihuye na konti yawe",
+    "Enter Email Address associated with your account"
   ],
   "Enter your Password": [
     "Entrez votre Mot de passe",
     "Ingresa tu Contraseña",
-    "Andika ijambo ry'ibanga ryawe"
+    "Andika ijambo ry'ibanga ryawe",
+    "Enter your Password"
   ],
   "Log in": [
     "Se connecter",
     "Iniciar sesión",
-    "Injira"
+    "Injira",
+    "Ingia"
   ],
   "Forgot your password?": [
     "Mot de passe oublié?",
     "¿Olvidaste tu contraseña?",
-    "Wibagiwe ijambo ry'ibanga?"
+    "Wibagiwe ijambo ry'ibanga?",
+    "Forgot your password?"
   ],
   "Not registered yet?": [
     "Pas encore inscrit?",
     "¿Aún no estás registrado?",
-    "Nturiyandikisha?"
+    "Nturiyandikisha?",
+    "Not registered yet?"
   ],
   "Create an account": [
     "Créer un compte",
     "Crear una cuenta",
-    "Fungura konti"
+    "Fungura konti",
+    "Create an account"
   ],
   "Create your first account": [
     "Créez votre premier compte",
     "Crea tu primera cuenta",
-    "Fungura konti yawe ya mbere"
+    "Fungura konti yawe ya mbere",
+    "Create your first account"
   ],
   "Or sign up with": [
     "Ou s'inscrire avec",
     "O registrarse con",
-    "Cyangwa wiyandikishe na"
+    "Cyangwa wiyandikishe na",
+    "Or sign up with"
   ],
   "First name": [
     "Prénom",
     "Nombre",
-    "Izina rya mbere"
+    "Izina rya mbere",
+    "First name"
   ],
   "Enter your First Name": [
     "Entrez votre Prénom",
     "Ingresa tu Nombre",
-    "Andika izina ryawe rya mbere"
+    "Andika izina ryawe rya mbere",
+    "Enter your First Name"
   ],
   "Last name": [
     "Nom de famille",
     "Apellido",
-    "Izina ry'umuryango"
+    "Izina ry'umuryango",
+    "Last name"
   ],
   "Enter your Last Name": [
     "Entrez votre Nom de famille",
     "Ingresa tu Apellido",
-    "Andika izina ryawe ry'umuryango"
+    "Andika izina ryawe ry'umuryango",
+    "Enter your Last Name"
   ],
   "Confirm your Password": [
     "Confirmez votre Mot de passe",
     "Confirma tu Contraseña",
-    "Subiramo ijambo ry'ibanga ryawe"
+    "Subiramo ijambo ry'ibanga ryawe",
+    "Confirm your Password"
   ],
   "Must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)": [
     "Doit contenir au moins 8 caractères, 1 chiffre, 1 lettre et 1 caractère spécial (@!#$%^&*=+)",
     "Debe contener al menos 8 caracteres, 1 número, 1 letra y 1 carácter especial (@!#$%^&*=+)",
-    "Rigomba kugira nibura inyuguti 8, umubare 1, inyuguti nkuru n'into, n'ikimenyetso cyihariye (@!#$%^&*=+)."
+    "Rigomba kugira nibura inyuguti 8, umubare 1, inyuguti nkuru n'into, n'ikimenyetso cyihariye (@!#$%^&*=+).",
+    "Must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)"
   ],
   "By creating an account, you consent that you have read and agree to our": [
     "En créant un compte, vous consentez à avoir lu et accepté nos",
     "Al crear una cuenta, aceptas que has leído y estás de acuerdo con nuestros",
-    "Mu gufungura konti, wemera ko wasomye kandi ukemera"
+    "Mu gufungura konti, wemera ko wasomye kandi ukemera",
+    "By creating an account, you consent that you have read and agree to our"
   ],
   "and": [
     "et",
     "y",
-    "na"
+    "na",
+    "and"
   ],
   "Create account": [
     "Créer un compte",
     "Crear cuenta",
-    "Kora konti nshya"
+    "Kora konti nshya",
+    "Create account"
   ],
   "Launch your event and let it dazzle with guests from afar!": [
     "Lancez votre événement et laissez-le éblouir avec des invités de loin!",
     "¡Lanza tu evento y deja que deslumbre con invitados desde lejos!",
-    "Tangiza ibirori byawe kandi ushimishe abatumirwa bari kure!"
+    "Tangiza ibirori byawe kandi ushimishe abatumirwa bari kure!",
+    "Launch your event and let it dazzle with guests from afar!"
   ],
   "First name is required": [
     "Le prénom est requis",
     "El nombre es requerido",
-    "Izina rya mbere rirakenewe"
+    "Izina rya mbere rirakenewe",
+    "First name is required"
   ],
   "Last name is required": [
     "Le nom de famille est requis",
     "El apellido es requerido",
-    "Izina ry'umuryango rirakenewe"
+    "Izina ry'umuryango rirakenewe",
+    "Last name is required"
   ],
   "Phone number is required": [
     "Le numéro de téléphone est requis",
     "El número de teléfono es requerido",
-    "Nimero ya telefoni irakenewe"
+    "Nimero ya telefoni irakenewe",
+    "Phone number is required"
   ],
   "Email is required": [
     "L'email est requis",
     "El email es requerido",
-    "Imeyili irakenewe"
+    "Imeyili irakenewe",
+    "Email is required"
   ],
   "Password must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)": [
     "Le mot de passe doit contenir au moins 8 caractères, 1 chiffre, 1 lettre et 1 caractère spécial (@!#$%^&*=+)",
     "La contraseña debe contener al menos 8 caracteres, 1 número, 1 letra y 1 carácter especial (@!#$%^&*=+)",
-    "Ijambo ry'ibanga rigomba kugira nibura inyuguti 8, umubare 1, inyuguti nkuru n'into, n'ikimenyetso cyihariye (@!#$%^&*=+)."
+    "Ijambo ry'ibanga rigomba kugira nibura inyuguti 8, umubare 1, inyuguti nkuru n'into, n'ikimenyetso cyihariye (@!#$%^&*=+).",
+    "Password must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)"
   ],
   "Passwords do not match": [
     "Les mots de passe ne correspondent pas",
     "Las contraseñas no coinciden",
-    "Amagambo y'ibanga ntabwo ahuye"
+    "Amagambo y'ibanga ntabwo ahuye",
+    "Passwords do not match"
   ],
   "Discover Amazing Events Near You": [
     "Découvrez des Événements Incroyables Près de Chez Vous",
     "Descubre Eventos Increíbles Cerca de Ti",
-    "Vumbura Ibirori Bidasanzwe Hafi Yawe"
+    "Vumbura Ibirori Bidasanzwe Hafi Yawe",
+    "Discover Amazing Events Near You"
   ],
   "Browse through upcoming events, concerts, weddings, and gatherings": [
     "Parcourez les événements à venir, concerts, mariages et rassemblements",
     "Explora eventos próximos, conciertos, bodas y reuniones",
-    "Reba ibirori biri imbere, ibitaramo, ubukwe, n'inama"
+    "Reba ibirori biri imbere, ibitaramo, ubukwe, n'inama",
+    "Browse through upcoming events, concerts, weddings, and gatherings"
   ],
   "Search events by name, category, or location...": [
     "Rechercher des événements par nom, catégorie ou lieu...",
     "Buscar eventos por nombre, categoría o ubicación...",
-    "Shakisha ibirori ku izina, icyiciro, cyangwa ahantu..."
+    "Shakisha ibirori ku izina, icyiciro, cyangwa ahantu...",
+    "Search events by name, category, or location..."
   ],
   "All Categories": [
     "Toutes les catégories",
     "Todas las categorías",
-    "Ibyiciro byose"
+    "Ibyiciro byose",
+    "Vitengo Vyote"
   ],
   "All Locations": [
     "Tous les Lieux",
     "Todas las Ubicaciones",
-    "Ahantu Hose"
+    "Ahantu Hose",
+    "Yote (Locations)"
   ],
   "All Dates": [
     "Toutes les Dates",
     "Todas las Fechas",
-    "Amatariki Yose"
+    "Amatariki Yose",
+    "Yote (Dates)"
   ],
   "All Statuses": [
     "Tous les statuts",
     "Todos los estados",
-    "Imiterere yose"
+    "Imiterere yose",
+    "Hali Zote"
   ],
   "UPCOMING": [
     "À VENIR",
     "PRÓXIMO",
-    "BITEGANYIJWE"
+    "BITEGANYIJWE",
+    "UPCOMING"
   ],
   "LIVE": [
     "EN DIRECT",
     "EN VIVO",
-    "IMBONANKUBONE"
+    "IMBONANKUBONE",
+    "LIVE"
   ],
   "ENDED": [
     "TERMINÉ",
     "FINALIZADO",
-    "BYARANGIYE"
+    "BYARANGIYE",
+    "ENDED"
   ],
   "COMPLETED": [
     "TERMINÉ",
     "COMPLETADO",
-    "BYARANGIYE"
+    "BYARANGIYE",
+    "Imekamilika"
   ],
   "CANCELLED": [
     "ANNULÉ",
     "CANCELADO",
-    "BYAHAGARITSWE"
+    "BYAHAGARITSWE",
+    "Imeghairiwa"
   ],
   "Live Now": [
     "En Direct Maintenant",
     "En Vivo Ahora",
-    "Imbonankubone Nonaha"
+    "Imbonankubone Nonaha",
+    "Live Now"
   ],
   "Trending Events": [
     "Événements Tendance",
     "Eventos Populares",
-    "Ibirori Bikunzwe"
+    "Ibirori Bikunzwe",
+    "Trending Events"
   ],
   "View Details": [
     "Voir les détails",
     "Ver detalles",
-    "Reba birambuye"
+    "Reba birambuye",
+    "Tazama maelezo"
   ],
   "Join Event": [
     "Rejoindre l'Événement",
     "Unirse al Evento",
-    "Injira mu Birori"
+    "Injira mu Birori",
+    "Join Event"
   ],
   "No events found": [
     "Aucun événement trouvé",
     "No se encontraron eventos",
-    "Nta birori byabonetse"
+    "Nta birori byabonetse",
+    "Hakuna matukio yaliyopatikana"
   ],
   "Page": [
     "Page",
     "Página",
-    "Urupapuro"
+    "Urupapuro",
+    "Page"
   ],
   "of": [
     "sur",
     "de",
-    "kuri"
+    "kuri",
+    "of"
   ],
   "Previous": [
     "Précédent",
     "Anterior",
-    "Ibanziriza"
+    "Ibanziriza",
+    "Previous"
   ],
   "Next": [
     "Suivant",
     "Siguiente",
-    "Ikurikira"
+    "Ikurikira",
+    "Next"
   ],
   "Join Live Event": [
     "Rejoindre un Événement en Direct",
     "Unirse a Evento en Vivo",
-    "Injira mu Birori by'Imbonankubone"
+    "Injira mu Birori by'Imbonankubone",
+    "Join Live Event"
   ],
   "Live Moments, Shared Instantly": [
     "Moments En Direct, Partagés Instantanément",
     "Momentos En Vivo, Compartidos Instantáneamente",
-    "Ibihe by'Imbonankubone, Bisangirwa Ako Kanya"
+    "Ibihe by'Imbonankubone, Bisangirwa Ako Kanya",
+    "Live Moments, Shared Instantly"
   ],
   "Stream Your Event In Real-Time And Let Remote Guests Celebrate With You": [
     "Diffusez Votre Événement En Temps Réel Et Laissez Les Invités À Distance Célébrer Avec Vous",
     "Transmite Tu Evento En Tiempo Real Y Deja Que Los Invitados Remotos Celebren Contigo",
-    "Erekana Ibirori Byawe mu Gihe Nyacyo Kandi Ureke Abatumirwa Bari Kure Mwishimane"
+    "Erekana Ibirori Byawe mu Gihe Nyacyo Kandi Ureke Abatumirwa Bari Kure Mwishimane",
+    "Stream Your Event In Real-Time And Let Remote Guests Celebrate With You"
   ],
   "Through Reactions, Wishes, And Gifts, No Matter Where They Are.": [
     "À Travers Des Réactions, Des Souhaits Et Des Cadeaux, Peu Importe Où Ils Sont.",
     "A Través De Reacciones, Deseos Y Regalos, Sin Importar Dónde Estén.",
-    "Binyuze mu Bitekerezo, Intashyo, n'Impano, Aho Baba Bari Hose."
+    "Binyuze mu Bitekerezo, Intashyo, n'Impano, Aho Baba Bari Hose.",
+    "Through Reactions, Wishes, And Gifts, No Matter Where They Are."
   ],
   "Enter Event Code": [
     "Entrer le Code de l'Événement",
     "Ingresar Código del Evento",
-    "Andika Kode y'Ibirori"
+    "Andika Kode y'Ibirori",
+    "Enter Event Code"
   ],
   "Enter Event Link or Host ID from your event host": [
     "Entrez le lien de l'événement ou l'ID de l'hôte",
     "Ingresa el enlace del evento o ID del anfitrión",
-    "Andika ihuza ry'ibirori cyangwa ID y'uwateguye ibirori"
+    "Andika ihuza ry'ibirori cyangwa ID y'uwateguye ibirori",
+    "Enter Event Link or Host ID from your event host"
   ],
   "Join": [
     "Rejoindre",
     "Unirse",
-    "Injira"
+    "Injira",
+    "Join"
   ],
   "Invalid event code": [
     "Code d'événement invalide",
     "Código de evento inválido",
-    "Kode y'ibirori si yo"
+    "Kode y'ibirori si yo",
+    "Invalid event code"
   ],
   "Joining event...": [
     "Connexion à l'événement...",
     "Uniéndose al evento...",
-    "Kwinjira mu birori..."
+    "Kwinjira mu birori...",
+    "Joining event..."
   ],
   "Hot Live Trends 🔥": [
     "Tendances En Direct 🔥",
     "Tendencias En Vivo 🔥",
-    "Ibigezweho Imbonankubone 🔥"
+    "Ibigezweho Imbonankubone 🔥",
+    "Hot Live Trends 🔥"
   ],
   "Live Stream": [
     "Diffusion en Direct",
     "Transmisión en Vivo",
-    "Imbonankubone"
+    "Imbonankubone",
+    "Live Stream"
   ],
   "Viewers": [
     "Spectateurs",
     "Espectadores",
-    "Abareba"
+    "Abareba",
+    "Viewers"
   ],
   "Live Chat": [
     "Chat en Direct",
     "Chat en Vivo",
-    "Ikiganiro Imbonankubone"
+    "Ikiganiro Imbonankubone",
+    "Live Chat"
   ],
   "Send message": [
     "Envoyer un message",
     "Enviar mensaje",
-    "Ohereza ubutumwa"
+    "Ohereza ubutumwa",
+    "Tuma Ujumbe"
   ],
   "Share": [
     "Partager",
     "Compartir",
-    "Sangiza"
+    "Sangiza",
+    "Share"
   ],
   "Fullscreen": [
     "Plein Écran",
     "Pantalla Completa",
-    "Mugaragaza Yuzuye"
+    "Mugaragaza Yuzuye",
+    "Fullscreen"
   ],
   "Settings": [
     "Paramètres",
     "Configuración",
-    "Igenamiterere"
+    "Igenamiterere",
+    "Mipangilio"
   ],
   "Leave Stream": [
     "Quitter la Diffusion",
     "Salir de la Transmisión",
-    "Sohoka mu Mbonankubone"
+    "Sohoka mu Mbonankubone",
+    "Leave Stream"
   ],
   "Connecting to stream...": [
     "Connexion à la diffusion...",
     "Conectando a la transmisión...",
-    "Kwihuza n'imbonankubone..."
+    "Kwihuza n'imbonankubone...",
+    "Connecting to stream..."
   ],
   "Failed to load stream": [
     "Échec du chargement de la diffusion",
     "Error al cargar la transmisión",
-    "Ntibyakunze gufungura imbonankubone"
+    "Ntibyakunze gufungura imbonankubone",
+    "Failed to load stream"
   ],
   "Multi-Stream View": [
     "Vue Multi-Diffusion",
     "Vista Multi-Transmisión",
-    "Kureba Imbonankubone Nyinshi"
+    "Kureba Imbonankubone Nyinshi",
+    "Multi-Stream View"
   ],
   "Select Streams to Watch": [
     "Sélectionner les Diffusions à Regarder",
     "Seleccionar Transmisiones para Ver",
-    "Hitamo Imbonankubone Ureba"
+    "Hitamo Imbonankubone Ureba",
+    "Chagua Streams to Watch"
   ],
   "Layout": [
     "Disposition",
     "Diseño",
-    "Imiterere"
+    "Imiterere",
+    "Layout"
   ],
   "Grid": [
     "Grille",
     "Cuadrícula",
-    "Urutonde"
+    "Urutonde",
+    "Grid"
   ],
   "Side by Side": [
     "Côte à Côte",
     "Lado a Lado",
-    "Uruhande ku Rundi"
+    "Uruhande ku Rundi",
+    "Side by Side"
   ],
   "Picture in Picture": [
     "Image dans l'Image",
     "Imagen en Imagen",
-    "Ishusho mu Yindi"
+    "Ishusho mu Yindi",
+    "Picture in Picture"
   ],
   "No active streams available": [
     "Aucune diffusion active disponible",
     "No hay transmisiones activas disponibles",
-    "Nta mbonankubone zirimo gukora"
+    "Nta mbonankubone zirimo gukora",
+    "No active streams available"
   ],
   "Record Event": [
     "Enregistrer l'Événement",
     "Grabar Evento",
-    "Fata Amashusho y'Ibirori"
+    "Fata Amashusho y'Ibirori",
+    "Record Event"
   ],
   "Start Recording": [
     "Démarrer l'Enregistrement",
     "Iniciar Grabación",
-    "Tangira Gufata"
+    "Tangira Gufata",
+    "Start Recording"
   ],
   "Stop Recording": [
     "Arrêter l'Enregistrement",
     "Detener Grabación",
-    "Hagarika Gufata"
+    "Hagarika Gufata",
+    "Stop Recording"
   ],
   "Pause Recording": [
     "Mettre en Pause",
     "Pausar Grabación",
-    "Subika Gato"
+    "Subika Gato",
+    "Pause Recording"
   ],
   "Resume Recording": [
     "Reprendre l'Enregistrement",
     "Reanudar Grabación",
-    "Komeza Gufata"
+    "Komeza Gufata",
+    "Resume Recording"
   ],
   "Recording": [
     "Enregistrement en Cours",
     "Grabando",
-    "Birimo Gufatwa"
+    "Birimo Gufatwa",
+    "Recording"
   ],
   "Paused": [
     "En Pause",
     "Pausado",
-    "Byasubitswe"
+    "Byasubitswe",
+    "Paused"
   ],
   "Duration": [
     "Durée",
     "Duración",
-    "Igihe Bimaze"
+    "Igihe Bimaze",
+    "Duration"
   ],
   "Save Recording": [
     "Sauvegarder l'Enregistrement",
     "Guardar Grabación",
-    "Bika Amashusho"
+    "Bika Amashusho",
+    "Save Recording"
   ],
   "Discard": [
     "Supprimer",
     "Descartar",
-    "Siba"
+    "Siba",
+    "Discard"
   ],
   "Recording Settings": [
     "Paramètres d'Enregistrement",
     "Configuración de Grabación",
-    "Igenamiterere ryo Gufata"
+    "Igenamiterere ryo Gufata",
+    "Recording Settings"
   ],
   "Quality": [
     "Qualité",
     "Calidad",
-    "Ireme ry'amashusho"
+    "Ireme ry'amashusho",
+    "Quality"
   ],
   "Format": [
     "Format",
     "Formato",
-    "Ubwoko"
+    "Ubwoko",
+    "Format"
   ],
   "View Full": [
     "Voir en Entier",
     "Ver Completo",
-    "Reba Byose"
+    "Reba Byose",
+    "Tazama Full"
   ],
   "Event Date": [
     "Date de l'Événement",
     "Fecha del Evento",
-    "Itariki y'Ibirori"
+    "Itariki y'Ibirori",
+    "Event Date"
   ],
   "Event Time": [
     "Heure de l'Événement",
     "Hora del Evento",
-    "Isaha y'Ibirori"
+    "Isaha y'Ibirori",
+    "Event Time"
   ],
   "Live Stream Access Fee": [
     "Frais d'Entrée",
     "Tarifa de Entrada",
-    "Ikiguzi cyo Kureba Imbonankubone"
+    "Ikiguzi cyo Kureba Imbonankubone",
+    "Live Stream Access Fee"
   ],
   "Expected Attendees": [
     "Participants Attendus",
     "Asistentes Esperados",
-    "Abantu Biteze Kwitabira"
+    "Abantu Biteze Kwitabira",
+    "Expected Attendees"
   ],
   "People": [
     "Personnes",
     "Personas",
-    "Abantu"
+    "Abantu",
+    "People"
   ],
   "Organized By": [
     "Organisé Par",
     "Organizado Por",
-    "Byateguwe na"
+    "Byateguwe na",
+    "Organized By"
   ],
   "About This Event": [
     "À Propos de Cet Événement",
     "Acerca de Este Evento",
-    "Ibyerekeye Ibi Birori"
+    "Ibyerekeye Ibi Birori",
+    "About This Event"
   ],
   "Event Tags": [
     "Étiquettes de l'Événement",
     "Etiquetas del Evento",
-    "Ibimenyetso by'Ibirori"
+    "Ibimenyetso by'Ibirori",
+    "Event Tags"
   ],
   "Join Live Stream": [
     "Rejoindre la Diffusion en Direct",
     "Unirse a la Transmisión en Vivo",
-    "Injira mu Mbonankubone"
+    "Injira mu Mbonankubone",
+    "Join Live Stream"
   ],
   "Event Banner": [
     "Bannière de l'Événement",
     "Banner del Evento",
-    "Ifoto y'Ibirori"
+    "Ifoto y'Ibirori",
+    "Event Banner"
   ],
   "Press ESC or click outside to close": [
     "Appuyez sur ESC ou cliquez à l'extérieur pour fermer",
     "Presione ESC o haga clic afuera para cerrar",
-    "Kanda ESC cyangwa hanze kugira ngo ufunge"
+    "Kanda ESC cyangwa hanze kugira ngo ufunge",
+    "Press ESC or click outside to close"
   ],
   "Loading event details...": [
     "Chargement des détails de l'événement...",
     "Cargando detalles del evento...",
-    "Gutegura amakuru y'ibirori..."
+    "Gutegura amakuru y'ibirori...",
+    "Loading event details..."
   ],
   "Find Your Perfect Photographer": [
     "Trouvez Votre Photographe Parfait",
     "Encuentra Tu Fotógrafo Perfecto",
-    "Shaka Umufotozi Ukwiye"
+    "Shaka Umufotozi Ukwiye",
+    "Find Your Perfect Photographer"
   ],
   "Browse through professional photographers and videographers": [
     "Parcourez les photographes et vidéastes professionnels",
     "Explora fotógrafos y videógrafos profesionales",
-    "Shakisha mu bafotora n'abafata amashusho b'abanyamwuga"
+    "Shakisha mu bafotora n'abafata amashusho b'abanyamwuga",
+    "Browse through professional photographers and videographers"
   ],
   "Search by name, specialty, or location...": [
     "Rechercher par nom, spécialité ou lieu...",
     "Buscar por nombre, especialidad o ubicación...",
-    "Shakisha ku izina, umwuga, cyangwa ahantu..."
+    "Shakisha ku izina, umwuga, cyangwa ahantu...",
+    "Search by name, specialty, or location..."
   ],
   "All Prices": [
     "Tous les Prix",
     "Todos los Precios",
-    "Ibiciro Byose"
+    "Ibiciro Byose",
+    "Yote (Prices)"
   ],
   "All Ratings": [
     "Toutes les Notes",
     "Todas las Calificaciones",
-    "Amanota Yose"
+    "Amanota Yose",
+    "Yote (Ratings)"
   ],
   "Portraits": [
     "Portraits",
     "Retratos",
-    "Amafoto y'umuntu"
+    "Amafoto y'umuntu",
+    "Portraits"
   ],
   "Commercial": [
     "Commercial",
     "Comercial",
-    "Ubucuruzi"
+    "Ubucuruzi",
+    "Commercial"
   ],
   "Product": [
     "Produit",
     "Producto",
-    "Ibicuruzwa"
+    "Ibicuruzwa",
+    "Product"
   ],
   "Budget (< 50k RWF)": [
     "Budget (< 50k RWF)",
     "Económico (< 50k RWF)",
-    "Icya make (< 50,000 RWF)"
+    "Icya make (< 50,000 RWF)",
+    "Budget (< 50k RWF)"
   ],
   "Standard (50k - 100k RWF)": [
     "Standard (50k - 100k RWF)",
     "Estándar (50k - 100k RWF)",
-    "Iringaniye (50,000 - 100,000 RWF)"
+    "Iringaniye (50,000 - 100,000 RWF)",
+    "Standard (50k - 100k RWF)"
   ],
   "Premium (> 100k RWF)": [
     "Premium (> 100k RWF)",
     "Premium (> 100k RWF)",
-    "Icyo hejuru (> 100,000 RWF)"
+    "Icyo hejuru (> 100,000 RWF)",
+    "Premium (> 100k RWF)"
   ],
   "Verified": [
     "Vérifié",
     "Verificado",
-    "Yemejwe"
+    "Yemejwe",
+    "Verified"
   ],
   "Rating": [
     "Note",
     "Calificación",
-    "Amanota"
+    "Amanota",
+    "Rating"
   ],
   "Reviews": [
     "Avis",
     "Reseñas",
-    "Ibitekerezo"
+    "Ibitekerezo",
+    "Tathmini"
   ],
   "Completed Jobs": [
     "Travaux Terminés",
     "Trabajos Completados",
-    "Imirimo yarangiye"
+    "Imirimo yarangiye",
+    "Completed Jobs"
   ],
   "Accuracy": [
     "Précision",
     "Precisión",
-    "Ukuri"
+    "Ukuri",
+    "Accuracy"
   ],
   "Response Time": [
     "Temps de Réponse",
     "Tiempo de Respuesta",
-    "Igihe cyo Gusubiza"
+    "Igihe cyo Gusubiza",
+    "Response Time"
   ],
   "Get In Touch": [
     "Entrer en Contact",
     "Ponerse en Contacto",
-    "Twandikire"
+    "Twandikire",
+    "Get In Touch"
   ],
   "Book Now": [
     "Réserver maintenant",
     "Reservar ahora",
-    "Fata umwanya nonaha"
+    "Fata umwanya nonaha",
+    "Book Now"
   ],
   "No photographers found": [
     "Aucun photographe trouvé",
     "No se encontraron fotógrafos",
-    "Nta bafotora babonetse"
+    "Nta bafotora babonetse",
+    "Hakuna matokeo yaliyopatikana"
   ],
   "Loading photographers...": [
     "Chargement des photographes...",
     "Cargando fotógrafos...",
-    "Gushakisha abafotora..."
+    "Gushakisha abafotora...",
+    "Loading photographers..."
   ],
   "BOOK NOW": [
     "RÉSERVER",
     "RESERVAR AHORA",
-    "FATA IGIHE NONAHA"
+    "FATA IGIHE NONAHA",
+    "BOOK NOW"
   ],
   "START CHAT": [
     "DÉMARRER LA DISCUSSION",
     "INICIAR CHAT",
-    "TANGIRA IKIGANIRO"
+    "TANGIRA IKIGANIRO",
+    "START CHAT"
   ],
   "Overview": [
     "Aperçu",
     "Resumen",
-    "Incamake"
+    "Incamake",
+    "Muhtasari"
   ],
   "Portfolio": [
     "Portfolio",
     "Portafolio",
-    "Ibikorwa (Portfolio)"
+    "Ibikorwa (Portfolio)",
+    "Kwingineko"
   ],
   "Working Experience": [
     "Expérience Professionnelle",
     "Experiencia Laboral",
-    "Uburambe mu Kazi"
+    "Uburambe mu Kazi",
+    "Working Experience"
   ],
   "Specialties": [
     "Spécialités",
     "Especialidades",
-    "Imyuga yihariye"
+    "Imyuga yihariye",
+    "Utaalamu"
   ],
   "Equipment": [
     "Équipement",
     "Equipo",
-    "Ibikoresho"
+    "Ibikoresho",
+    "Vifaa"
   ],
   "No equipment listed": [
     "Aucun équipement listé",
     "No hay equipo listado",
-    "Nta bikoresho byanditse"
+    "Nta bikoresho byanditse",
+    "No equipment listed"
   ],
   "Availability": [
     "Disponibilité",
     "Disponibilidad",
-    "Kuboneka"
+    "Kuboneka",
+    "Availability"
   ],
   "Working Hours": [
     "Heures de Travail",
     "Horario de Trabajo",
-    "Amasaha y'Akazi"
+    "Amasaha y'Akazi",
+    "Working Hours"
   ],
   "Starting Price": [
     "Prix de Départ",
     "Precio Inicial",
-    "Igiciro gitangirirwaho"
+    "Igiciro gitangirirwaho",
+    "Starting Price"
   ],
   "Professional Skills": [
     "Compétences Professionnelles",
     "Habilidades Profesionales",
-    "Ubumenyi bw'Umwuga"
+    "Ubumenyi bw'Umwuga",
+    "Professional Skills"
   ],
   "Education": [
     "Éducation",
     "Educación",
-    "Amashuri"
+    "Amashuri",
+    "Education"
   ],
   "Qualifications & Certifications": [
     "Qualifications et Certifications",
     "Calificaciones y Certificaciones",
-    "Impamyabumenyi n'Ibyemezo"
+    "Impamyabumenyi n'Ibyemezo",
+    "Qualifications & Certifications"
   ],
   "reviews": [
     "avis",
     "reseñas",
-    "ibitekerezo"
+    "ibitekerezo",
+    "Tathmini"
   ],
   "Write a Review": [
     "Écrire un Avis",
     "Escribir una Reseña",
-    "Andika Igitekerezo"
+    "Andika Igitekerezo",
+    "Write a Review"
   ],
   "Professional Experience": [
     "Expérience Professionnelle",
     "Experiencia Profesional",
-    "Uburambe bw'Umwuga"
+    "Uburambe bw'Umwuga",
+    "Professional Experience"
   ],
   "Loading profile...": [
     "Chargement du profil...",
     "Cargando perfil...",
-    "Gutegura umwirondoro..."
+    "Gutegura umwirondoro...",
+    "Loading profile..."
   ],
   "Choose Your Preferred Package": [
     "Choisissez Votre Forfait Préféré",
     "Elige Tu Paquete Preferido",
-    "Hitamo Ipaki Ushaka"
+    "Hitamo Ipaki Ushaka",
+    "Choose Your Preferred Package"
   ],
   "Back": [
     "Retour",
     "Atrás",
-    "Subira inyuma"
+    "Subira inyuma",
+    "Back"
   ],
   "Professional Photographer": [
     "Photographe Professionnel",
     "Fotógrafo Profesional",
-    "Umufotozi w'Umunyamwuga"
+    "Umufotozi w'Umunyamwuga",
+    "Professional Photographer"
   ],
   "CANCEL": [
     "ANNULER",
     "CANCELAR",
-    "HAGARIKA"
+    "HAGARIKA",
+    "CANCEL"
   ],
   "NEXT": [
     "SUIVANT",
     "SIGUIENTE",
-    "IKURIKIRA"
+    "IKURIKIRA",
+    "NEXT"
   ],
   "Essential Package": [
     "Forfait Essentiel",
     "Paquete Esencial",
-    "Ipaki y'Ibanze"
+    "Ipaki y'Ibanze",
+    "Essential Package"
   ],
   "3 Hours": [
     "3 Heures",
     "3 Horas",
-    "Amasaha 3"
+    "Amasaha 3",
+    "3 Hours"
   ],
   "Great for small events and birthdays": [
     "Idéal pour les petits événements et anniversaires",
     "Ideal para eventos pequeños y cumpleaños",
-    "Nziza ku birori bito n'isabukuru y'amavuko"
+    "Nziza ku birori bito n'isabukuru y'amavuko",
+    "Great for small events and birthdays"
   ],
   "Custom Package": [
     "Forfait Personnalisé",
     "Paquete Personalizado",
-    "Ipaki Yihariye"
+    "Ipaki Yihariye",
+    "Custom Package"
   ],
   "4 Hours": [
     "4 Heures",
     "4 Horas",
-    "Amasaha 4"
+    "Amasaha 4",
+    "4 Hours"
   ],
   "Great for corporate events and parties": [
     "Idéal pour les événements d'entreprise et fêtes",
     "Ideal para eventos corporativos y fiestas",
-    "Nziza ku birori by'ibigo n'ibirori bisanzwe"
+    "Nziza ku birori by'ibigo n'ibirori bisanzwe",
+    "Great for corporate events and parties"
   ],
   "Premium Package": [
     "Forfait Premium",
     "Paquete Premium",
-    "Ipaki yo Hejuru (Premium)"
+    "Ipaki yo Hejuru (Premium)",
+    "Premium Package"
   ],
   "5 Hours": [
     "5 Heures",
     "5 Horas",
-    "Amasaha 5"
+    "Amasaha 5",
+    "5 Hours"
   ],
   "Great for large events, concerts, and weddings": [
     "Idéal pour les grands événements, concerts et mariages",
     "Ideal para grandes eventos, conciertos y bodas",
-    "Nziza ku birori binini, ibitaramo, n'ubukwe"
+    "Nziza ku birori binini, ibitaramo, n'ubukwe",
+    "Great for large events, concerts, and weddings"
   ],
   "3 hours coverage": [
     "Couverture de 3 heures",
     "Cobertura de 3 horas",
-    "Gufotora amasaha 3"
+    "Gufotora amasaha 3",
+    "3 hours coverage"
   ],
   "4 hours coverage": [
     "Couverture de 4 heures",
     "Cobertura de 4 horas",
-    "Gufotora amasaha 4"
+    "Gufotora amasaha 4",
+    "4 hours coverage"
   ],
   "5 hours coverage": [
     "Couverture de 5 heures",
     "Cobertura de 5 horas",
-    "Gufotora amasaha 5"
+    "Gufotora amasaha 5",
+    "5 hours coverage"
   ],
   "Unlimited photos & videos": [
     "Photos et vidéos illimitées",
     "Fotos y videos ilimitados",
-    "Amafoto n'amashusho bitagira ingano"
+    "Amafoto n'amashusho bitagira ingano",
+    "Unlimited photos & videos"
   ],
   "Online gallery storage": [
     "Stockage de galerie en ligne",
     "Almacenamiento de galería en línea",
-    "Ububiko bw'amafoto kuri interineti"
+    "Ububiko bw'amafoto kuri interineti",
+    "Online gallery storage"
   ],
   "Same-day preview": [
     "Aperçu le jour même",
     "Vista previa el mismo día",
-    "Kureba amafoto kuri uwo munsi"
+    "Kureba amafoto kuri uwo munsi",
+    "Same-day preview"
   ],
   "Digital Memory Sharing Experience": [
     "Expérience de partage de souvenirs numériques",
     "Experiencia de compartir recuerdos digitales",
-    "Gusangira urwibutso hakoreshejwe ikoranabuhanga"
+    "Gusangira urwibutso hakoreshejwe ikoranabuhanga",
+    "Digital Memory Sharing Experience"
   ],
   "Printed photo album": [
     "Album photo imprimé",
     "Álbum de fotos impreso",
-    "Alubumu y'amafoto icapye"
+    "Alubumu y'amafoto icapye",
+    "Printed photo album"
   ],
   "Live-streaming": [
     "Diffusion en direct",
     "Transmisión en vivo",
-    "Kwerekanwa imbonankubone"
+    "Kwerekanwa imbonankubone",
+    "Live-streaming"
   ],
   "Drone photography": [
     "Photographie par drone",
     "Fotografía con dron",
-    "Gufotora hakoreshejwe Drone"
+    "Gufotora hakoreshejwe Drone",
+    "Drone photography"
   ],
   "Event Details": [
     "Détails de l'Événement",
     "Detalles del Evento",
-    "Amakuru y'Ibirori"
+    "Amakuru y'Ibirori",
+    "Event Details"
   ],
   "Any Special Requests:": [
     "Demandes Spéciales:",
     "Solicitudes Especiales:",
-    "Ibyifuzo Byihariye:"
+    "Ibyifuzo Byihariye:",
+    "Any Special Requests:"
   ],
   "Any specific shots, requirements or preferences...": [
     "Des prises de vue spécifiques, exigences ou préférences...",
     "Tomas específicas, requisitos o preferencias...",
-    "Amafoto yihariye, ibisabwa cyangwa ibyo ukunda..."
+    "Amafoto yihariye, ibisabwa cyangwa ibyo ukunda...",
+    "Any specific shots, requirements or preferences..."
   ],
   "PREVIOUS": [
     "PRÉCÉDENT",
     "ANTERIOR",
-    "IBANZIRIZA"
+    "IBANZIRIZA",
+    "PREVIOUS"
   ],
   "Contact Information": [
     "Informations de Contact",
     "Información de Contacto",
-    "Amakuru yo Kuvugana"
+    "Amakuru yo Kuvugana",
+    "Contact Information"
   ],
   "Email Address (Required)": [
     "Adresse E-mail (Requis)",
     "Dirección de Correo Electrónico (Requerido)",
-    "Imeyili (Irakenewe)"
+    "Imeyili (Irakenewe)",
+    "Email Address (Required)"
   ],
   "Phone Number (Required)": [
     "Numéro de Téléphone (Requis)",
     "Número de Teléfono (Requerido)",
-    "Nimero ya Telefoni (Irakenewe)"
+    "Nimero ya Telefoni (Irakenewe)",
+    "Phone Number (Required)"
   ],
   "Booking Summary": [
     "Résumé de la Réservation",
     "Resumen de Reserva",
-    "Incamake yo Gufata Igihe"
+    "Incamake yo Gufata Igihe",
+    "Booking Summary"
   ],
   "Package": [
     "Forfait",
     "Paquete",
-    "Ipaki"
+    "Ipaki",
+    "Package"
   ],
   "Event Type": [
     "Type d'Événement",
     "Tipo de Evento",
-    "Ubwoko bw'Ibirori"
+    "Ubwoko bw'Ibirori",
+    "Event Type"
   ],
   "I have read and agree to the": [
     "J'ai lu et j'accepte les",
     "He leído y acepto los",
-    "Nasomye kandi nemeye"
+    "Nasomye kandi nemeye",
+    "I have read and agree to the"
   ],
   "Chats": [
     "Discussions",
     "Chats",
-    "Ibiganiro"
+    "Ibiganiro",
+    "Chats"
   ],
   "Search for Messages": [
     "Rechercher des Messages",
     "Buscar Mensajes",
-    "Shakisha Ubutumwa"
+    "Shakisha Ubutumwa",
+    "Search for Messages"
   ],
   "Filter Chats": [
     "Filtrer les Discussions",
     "Filtrar Chats",
-    "Shungura Ibiganiro"
+    "Shungura Ibiganiro",
+    "Filter Chats"
   ],
   "All Chats": [
     "Toutes les Discussions",
     "Todos los Chats",
-    "Ibiganiro Byose"
+    "Ibiganiro Byose",
+    "Yote (Chats)"
   ],
   "Unread": [
     "Non Lus",
     "No Leídos",
-    "Ibitarasomwa"
+    "Ibitarasomwa",
+    "Unread"
   ],
   "Online": [
     "En Ligne",
     "En Línea",
-    "Ari kuri interineti"
+    "Ari kuri interineti",
+    "Online"
   ],
   "Archived": [
     "Archivé",
     "Archivado",
-    "Byabitswe"
+    "Byabitswe",
+    "Imehifadhiwa"
   ],
   "No chats found": [
     "Aucune discussion trouvée",
     "No se encontraron chats",
-    "Nta biganiro byabonetse"
+    "Nta biganiro byabonetse",
+    "Hakuna matokeo yaliyopatikana"
   ],
   "Today": [
     "Aujourd'hui",
     "Hoy",
-    "Uyu munsi"
+    "Uyu munsi",
+    "Today"
   ],
   "No messages yet. Start the conversation!": [
     "Pas encore de messages. Commencez la conversation!",
     "Aún no hay mensajes. ¡Comienza la conversación!",
-    "Nta butumwa burahari. Tangira ikiganiro!"
+    "Nta butumwa burahari. Tangira ikiganiro!",
+    "No messages yet. Start the conversation!"
   ],
   "Type a message...": [
     "Écrire un message...",
     "Escribe un mensaje...",
-    "Andika ubutumwa..."
+    "Andika ubutumwa...",
+    "Andika ujumbe..."
   ],
   "Select a chat to start messaging": [
     "Sélectionnez une discussion pour commencer à envoyer des messages",
     "Selecciona un chat para comenzar a enviar mensajes",
-    "Hitamo ikiganiro utangire kwandika"
+    "Hitamo ikiganiro utangire kwandika",
+    "Chagua a chat to start messaging"
   ],
   "Send": [
     "Envoyer",
     "Enviar",
-    "Ohereza"
+    "Ohereza",
+    "Send"
   ],
   "Offline": [
     "Hors Ligne",
     "Desconectado",
-    "Ntabwo ari kuri interineti"
+    "Ntabwo ari kuri interineti",
+    "Offline"
   ],
   "typing...": [
     "en train d'écrire...",
     "escribiendo...",
-    "arimo kwandika..."
+    "arimo kwandika...",
+    "typing..."
   ],
   "Loading messages...": [
     "Chargement des messages...",
     "Cargando mensajes...",
-    "Kuzana ubutumwa..."
+    "Kuzana ubutumwa...",
+    "Loading messages..."
   ],
   "Loading...": [
     "Chargement...",
     "Cargando...",
-    "Gutegura..."
+    "Gutegura...",
+    "Inapakia..."
   ],
   "Error": [
     "Erreur",
     "Error",
-    "Ikosa ryabaye"
+    "Ikosa ryabaye",
+    "Hitilafu"
   ],
   "Success": [
     "Succès",
     "Éxito",
-    "Byagenze neza"
+    "Byagenze neza",
+    "Mafanikio"
   ],
   "Save": [
     "Enregistrer",
     "Guardar",
-    "Bika"
+    "Bika",
+    "Save"
   ],
   "Cancel": [
     "Annuler",
     "Cancelar",
-    "Hagarika"
+    "Hagarika",
+    "Cancel"
   ],
   "Delete": [
     "Supprimer",
     "Eliminar",
-    "Siba"
+    "Siba",
+    "Delete"
   ],
   "Edit": [
     "Modifier",
     "Editar",
-    "Hindura"
+    "Hindura",
+    "Edit"
   ],
   "Search": [
     "Rechercher",
     "Buscar",
-    "Shakisha"
+    "Shakisha",
+    "Tafuta"
   ],
   "Filter": [
     "Filtrer",
     "Filtrar",
-    "Shungura"
+    "Shungura",
+    "Filter"
   ],
   "View More": [
     "Voir Plus",
     "Ver Más",
-    "Reba Ibindi"
+    "Reba Ibindi",
+    "Tazama More"
   ],
   "Back to Top": [
     "Retour en Haut",
     "Volver Arriba",
-    "Subira Hejuru"
+    "Subira Hejuru",
+    "Back to Top"
   ],
   "Close": [
     "Fermer",
     "Cerrar",
-    "Funga"
+    "Funga",
+    "Close"
   ],
   "Submit": [
     "Soumettre",
     "Enviar",
-    "Ohereza"
+    "Ohereza",
+    "Submit"
   ],
   "Download": [
     "Télécharger",
     "Descargar",
-    "Kuramo"
+    "Kuramo",
+    "Download"
   ],
   "Upload": [
     "Téléverser",
     "Subir",
-    "Ohereza"
+    "Ohereza",
+    "Upload"
   ],
   "Copy": [
     "Copier",
     "Copiar",
-    "Koporora"
+    "Koporora",
+    "Copy"
   ],
   "Copied!": [
     "Copié !",
     "¡Copiado!",
-    "Byakoporowe!"
+    "Byakoporowe!",
+    "Copied!"
   ],
   "Accept": [
     "Accepter",
     "Aceptar",
-    "Emeza"
+    "Emeza",
+    "Accept"
   ],
   "Decline": [
     "Refuser",
     "Rechazar",
-    "Anga"
+    "Anga",
+    "Decline"
   ],
   "Pending": [
     "En attente",
     "Pendiente",
-    "Gutegereza"
+    "Gutegereza",
+    "Inasubiri"
   ],
   "Completed": [
     "Terminé",
     "Completado",
-    "Byarangiye"
+    "Byarangiye",
+    "Imekamilika"
   ],
   "Confirmed": [
     "Confirmé",
     "Confirmado",
-    "Byemejwe"
+    "Byemejwe",
+    "Imethibitishwa"
   ],
   "Cancelled": [
     "Annulé",
     "Cancelado",
-    "Byahagaritswe"
+    "Byahagaritswe",
+    "Imeghairiwa"
   ],
   "Failed": [
     "Échoué",
     "Fallido",
-    "Byanze"
+    "Byanze",
+    "Failed"
   ],
   "Active": [
     "Actif",
     "Activo",
-    "Birakora"
+    "Birakora",
+    "Inafanya Kazi"
   ],
   "All": [
     "Tout",
     "Todo",
-    "Byose"
+    "Byose",
+    "All"
   ],
   "Find My Photos": [
     "Trouver mes photos",
     "Encontrar mis fotos",
-    "Shaka amafoto yanjye"
+    "Shaka amafoto yanjye",
+    "Tafuta Picha Zangu"
   ],
   "Take Selfie": [
     "Prendre un selfie",
     "Tomar una selfie",
-    "Fata isura yawe (Selfie)"
+    "Fata isura yawe (Selfie)",
+    "Piga Selfie"
   ],
   "Upload Photo": [
     "Téléverser une photo",
     "Subir una foto",
-    "Shyiraho ifoto"
+    "Shyiraho ifoto",
+    "Pakia Picha"
   ],
   "Processing...": [
     "Traitement en cours...",
     "Procesando...",
-    "Birimo gukorwa..."
+    "Birimo gukorwa...",
+    "Processing..."
   ],
   "An all in one photography platform that allows photographers and their clients to connect for live sessions and safely archives their visual narratives in protected digital vaults.": [
     "Une plateforme de photographie tout-en-un qui permet aux photographes et à leurs clients de se connecter pour des séances en direct et archive en toute sécurité leurs récits visuels dans des coffres numériques protégés.",
     "Una plataforma de fotografía todo en uno que permite a los fotógrafos y sus clientes conectarse para sesiones en vivo y archiva de forma segura sus narrativas visuales en bóvedas digitales protegidas.",
-    "Urubuga rwuzuye rwo gufotora ruhuza abafotora n'abakiriya babo mu birori by'imbonankubone kandi rukabika amafoto n'amashusho yabo mu mutekano usesuye."
+    "Urubuga rwuzuye rwo gufotora ruhuza abafotora n'abakiriya babo mu birori by'imbonankubone kandi rukabika amafoto n'amashusho yabo mu mutekano usesuye.",
+    "An all in one photography platform that allows photographers and their clients to connect for live sessions and safely archives their visual narratives in protected digital vaults."
   ],
   "Whether you're a photographer looking to grow your business or a client seeking to capture life's most important moments, our platform is built for you": [
     "Que vous soyez photographe cherchant à développer votre entreprise ou client cherchant à capturer les moments les plus importants de la vie, notre plateforme est faite pour vous",
     "Ya seas fotógrafo buscando hacer crecer tu negocio o cliente buscando capturar los momentos más importantes de la vida, nuestra plataforma está hecha para ti",
-    "Waba uri umufotozi ushaka kwagura ubucuruzi bwawe cyangwa umukiriya ushaka gufata ibihe by'ingenzi mu buzima, urubuga rwacu rwubakiwe wowe"
+    "Waba uri umufotozi ushaka kwagura ubucuruzi bwawe cyangwa umukiriya ushaka gufata ibihe by'ingenzi mu buzima, urubuga rwacu rwubakiwe wowe",
+    "Whether you're a photographer looking to grow your business or a client seeking to capture life's most important moments, our platform is built for you"
   ],
   "The Amoria Connekyt Photographer Partnership Program is designed to build a strong, engaged, and motivated network of professional photographers who contribute to the creation of unforgettable and meaningful video stories.": [
     "Le Programme de Partenariat Photographe Amoria Connekyt est conçu pour construire un réseau solide, engagé et motivé de photographes professionnels qui contribuent à la création d'histoires vidéo inoubliables et significatives.",
     "El Programa de Asociación de Fotógrafos de Amoria Connekyt está diseñado para construir una red sólida, comprometida y motivada de fotógrafos profesionales que contribuyen a la creación de historias de video inolvidables y significativas.",
-    "Porogaramu y'Ubufatanye bw'Abafotora ya Amoria Connekyt yashyiriweho kubaka urusobe rukomeye rw'abafotora b'abanyamwuga bagira uruhare mu guhanga inkuru z'amashusho zitazibagirana."
+    "Porogaramu y'Ubufatanye bw'Abafotora ya Amoria Connekyt yashyiriweho kubaka urusobe rukomeye rw'abafotora b'abanyamwuga bagira uruhare mu guhanga inkuru z'amashusho zitazibagirana.",
+    "The Amoria Connekyt Photographer Partnership Program is designed to build a strong, engaged, and motivated network of professional photographers who contribute to the creation of unforgettable and meaningful video stories."
   ],
   "Set your price, get offers, and pay safely through our secure platform. Your payment is protected until you're satisfied with the results": [
     "Fixez votre prix, recevez des offres et payez en toute sécurité via notre plateforme sécurisée. Votre paiement est protégé jusqu'à ce que vous soyez satisfait des résultats",
     "Establece tu precio, recibe ofertas y paga de forma segura a través de nuestra plataforma segura. Tu pago está protegido hasta que estés satisfecho con los resultados",
-    "Gena igiciro cyawe, yakire ubusabe bw'akazi, kandi wishyurwe mu mutekano binyuze ku rubuga rwacu rurinzwe. Amafaranga yawe arinzwe neza kugeza unyuzwe."
+    "Gena igiciro cyawe, yakire ubusabe bw'akazi, kandi wishyurwe mu mutekano binyuze ku rubuga rwacu rurinzwe. Amafaranga yawe arinzwe neza kugeza unyuzwe.",
+    "Set your price, get offers, and pay safely through our secure platform. Your payment is protected until you're satisfied with the results"
   ],
   "Amoria Connekyt brings together photographers and clients across continents. From live streaming events to secure digital vaults, we're building a global community that captures and preserves life's most precious moments.": [
     "Amoria Connekyt rassemble photographes et clients à travers les continents. Des événements en streaming en direct aux coffres numériques sécurisés, nous construisons une communauté mondiale qui capture et préserve les moments les plus précieux de la vie.",
     "Amoria Connekyt reúne a fotógrafos y clientes a través de continentes. Desde eventos de transmisión en vivo hasta bóvedas digitales seguras, estamos construyendo una comunidad global que captura y preserva los momentos más preciosos de la vida.",
-    "Amoria Connekyt ihuza abafotora n'abakiriya ku migabane yose. Kuva mu birori by'imbonankubone kugeza ku bubiko bw'amafoto burinzwe, turimo kubaka umuryango mugari ufata kandi ukabika ibihe by'agaciro mu buzima."
+    "Amoria Connekyt ihuza abafotora n'abakiriya ku migabane yose. Kuva mu birori by'imbonankubone kugeza ku bubiko bw'amafoto burinzwe, turimo kubaka umuryango mugari ufata kandi ukabika ibihe by'agaciro mu buzima.",
+    "Amoria Connekyt brings together photographers and clients across continents. From live streaming events to secure digital vaults, we're building a global community that captures and preserves life's most precious moments."
   ],
   "© {year} Amoria Connekyt. All rights reserved.": [
     "© {year} Amoria Connekyt. Tous droits réservés.",
     "© {year} Amoria Connekyt. Todos los derechos reservados.",
-    "© {year} Amoria Connekyt. Uburenganzira bwose burabitswe."
+    "© {year} Amoria Connekyt. Uburenganzira bwose burabitswe.",
+    "© {year} Amoria Connekyt. All rights reserved."
   ],
   "Amoria Connekyt": [
+    "Amoria Connekyt",
     "Amoria Connekyt",
     "Amoria Connekyt",
     "Amoria Connekyt"
@@ -1787,2066 +2144,2479 @@
   "Amoria": [
     "Amoria",
     "Amoria",
+    "Amoria",
     "Amoria"
   ],
   "THE MULTI CREATIVE PLATFORM": [
     "LA PLATEFORME MULTI-CRÉATIVE",
     "LA PLATAFORMA MULTICREATIVA",
-    "URUBURA RW'ABAHANZI BOSE"
+    "URUBURA RW'ABAHANZI BOSE",
+    "THE MULTI CREATIVE PLATFORM"
   ],
   "The Multi Creative Platform": [
     "La plateforme multi-créative",
     "La plataforma multicreativa",
-    "Urubuga rw'abahanzi bose"
+    "Urubuga rw'abahanzi bose",
+    "The Multi Creative Platform"
   ],
   "Multi Creative Platform": [
     "Plateforme Multi-Créative",
     "Plataforma Multicreativa",
-    "Urubuga rw'abahanzi bose"
+    "Urubuga rw'abahanzi bose",
+    "Multi Creative Platform"
   ],
   "Find my photos": [
     "Retrouver mes photos",
     "Encontrar mis fotos",
-    "Shaka amafoto yanjye"
+    "Shaka amafoto yanjye",
+    "Tafuta Picha Zangu"
   ],
   "Find photos": [
     "Trouver des photos",
     "Encontrar fotos",
-    "Shaka amafoto"
+    "Shaka amafoto",
+    "Find photos"
   ],
   "Search by selfie": [
     "Recherche par selfie",
     "Buscar por selfie",
-    "Shakisha ukoresheje selfie"
+    "Shakisha ukoresheje selfie",
+    "Search by selfie"
   ],
   "Take a selfie": [
     "Prendre un selfie",
     "Tomar una selfie",
-    "Fata ifoto yawe"
+    "Fata ifoto yawe",
+    "Take a selfie"
   ],
   "Upload photo": [
     "Téléverser une photo",
     "Subir una foto",
-    "Shyiraho ifoto"
+    "Shyiraho ifoto",
+    "Pakia Picha"
   ],
   "Upload a photo": [
     "Téléverser une photo",
     "Subir una foto",
-    "Shyiraho ifoto"
+    "Shyiraho ifoto",
+    "Pakia picha"
   ],
   "Upload selfie": [
     "Téléverser un selfie",
     "Subir una selfie",
-    "Shyiraho selfie"
+    "Shyiraho selfie",
+    "Upload selfie"
   ],
   "Live Events": [
     "Événements en direct",
     "Eventos en vivo",
-    "Ibirori biri kuba"
+    "Ibirori biri kuba",
+    "Live Events"
   ],
   "Upcoming Events": [
     "Événements à venir",
     "Próximos eventos",
-    "Ibirori biri imbere"
+    "Ibirori biri imbere",
+    "Matukio Yajayo"
   ],
   "Recent Events": [
     "Événements récents",
     "Eventos recientes",
-    "Ibirori biheruka"
+    "Ibirori biheruka",
+    "Recent Events"
   ],
   "All Events": [
     "Tous les événements",
     "Todos los eventos",
-    "Ibirori byose"
+    "Ibirori byose",
+    "Yote (Matukio)"
   ],
   "All Photographers": [
     "Tous les photographes",
     "Todos los fotógrafos",
-    "Abafotora bose"
+    "Abafotora bose",
+    "Yote (Wapiga Picha)"
   ],
   "Find a Photographer": [
     "Trouver un photographe",
     "Encontrar un fotógrafo",
-    "Shaka umufotozi"
+    "Shaka umufotozi",
+    "Tafuta Mpiga Picha"
   ],
   "Join as a Photographer": [
     "Rejoindre en tant que photographe",
     "Unirse como fotógrafo",
-    "Injira nk'umufotozi"
+    "Injira nk'umufotozi",
+    "Join as a Photographer"
   ],
   "Join as a photographer": [
     "Rejoindre en tant que photographe",
     "Unirse como fotógrafo",
-    "Injira nk'umufotozi"
+    "Injira nk'umufotozi",
+    "Join as a photographer"
   ],
   "Book now": [
     "Réserver maintenant",
     "Reservar ahora",
-    "Fata umwanya nonaha"
+    "Fata umwanya nonaha",
+    "Book now"
   ],
   "Book A Photographer": [
     "Réserver un photographe",
     "Reservar un fotógrafo",
-    "Fata umwanya n'umufotozi"
+    "Fata umwanya n'umufotozi",
+    "Book A Photographer"
   ],
   "Book a Photographer": [
     "Réserver un photographe",
     "Reservar un fotógrafo",
-    "Fata umufotozi"
+    "Fata umufotozi",
+    "Book a Photographer"
   ],
   "Instant Digital Delivery": [
     "Livraison numérique instantanée",
     "Entrega digital instantánea",
-    "Kwakira amafoto ako kanya"
+    "Kwakira amafoto ako kanya",
+    "Instant Digital Delivery"
   ],
   "Watch Live Streams": [
     "Regarder en direct",
     "Ver transmisiones en vivo",
-    "Reba imbonankubone"
+    "Reba imbonankubone",
+    "Watch Live Streams"
   ],
   "Watch Live": [
     "Regarder en direct",
     "Ver en vivo",
-    "Reba imbonankubone"
+    "Reba imbonankubone",
+    "Watch Live"
   ],
   "Watch Stream": [
     "Regarder la diffusion",
     "Ver transmisión",
-    "Reba imbonankubone"
+    "Reba imbonankubone",
+    "Watch Stream"
   ],
   "View Profile": [
     "Voir le profil",
     "Ver perfil",
-    "Reba umwirondoro"
+    "Reba umwirondoro",
+    "Tazama Wasifu"
   ],
   "View Event": [
     "Voir l'événement",
     "Ver evento",
-    "Reba ibirori"
+    "Reba ibirori",
+    "Tazama Event"
   ],
   "View Gallery": [
     "Voir la galerie",
     "Ver galería",
-    "Reba ububiko"
+    "Reba ububiko",
+    "Tazama Matunzio"
   ],
   "How It Works": [
     "Comment ça marche",
     "Cómo funciona",
-    "Uko bikora"
+    "Uko bikora",
+    "Jinsi Inavyofanya Kazi"
   ],
   "Why Amoria": [
     "Pourquoi Amoria",
     "¿Por qué Amoria?",
-    "Kuki wahitamo Amoria"
+    "Kuki wahitamo Amoria",
+    "Why Amoria"
   ],
   "Why Connekyt": [
     "Pourquoi Connekyt",
     "¿Por qué Connekyt?",
-    "Kuki wahitamo Connekyt"
+    "Kuki wahitamo Connekyt",
+    "Why Connekyt"
   ],
   "Global Network": [
     "Réseau mondial",
     "Red global",
-    "Urusobe rw'isi yose"
+    "Urusobe rw'isi yose",
+    "Global Network"
   ],
   "For Events": [
     "Pour les événements",
     "Para eventos",
-    "Ku birori"
+    "Ku birori",
+    "For Events"
   ],
   "About us": [
     "À propos de nous",
     "Sobre nosotros",
-    "Ibyerekeye twebwe"
+    "Ibyerekeye twebwe",
+    "Kuhusu Sisi"
   ],
   "Contact Us": [
     "Contactez-nous",
     "Contáctanos",
-    "Twandikire"
+    "Twandikire",
+    "Contact Us"
   ],
   "Contact us": [
     "Contactez-nous",
     "Contáctanos",
-    "Twandikire"
+    "Twandikire",
+    "Contact us"
   ],
   "Help center": [
     "Centre d'aide",
     "Centro de ayuda",
-    "Ahabarizwa ubufasha"
+    "Ahabarizwa ubufasha",
+    "Kituo cha Usaidizi"
   ],
   "Frequently Asked Questions": [
     "Foire aux questions",
     "Preguntas frecuentes",
-    "Ibibazo bikunze kubazwa"
+    "Ibibazo bikunze kubazwa",
+    "Frequently Asked Questions"
   ],
   "Terms of service": [
     "Conditions d'utilisation",
     "Términos de servicio",
-    "Amabwiriza y'imikoreshereze"
+    "Amabwiriza y'imikoreshereze",
+    "Masharti ya Huduma"
   ],
   "Privacy policy": [
     "Politique de confidentialité",
     "Política de privacidad",
-    "Politiki y'ubuzima bwite"
+    "Politiki y'ubuzima bwite",
+    "Sera ya Faragha"
   ],
   "Trust & safety": [
     "Confiance et sécurité",
     "Confianza y seguridad",
-    "Kwizera n'umutekano"
+    "Kwizera n'umutekano",
+    "Uaminifu na Usalama"
   ],
   "Photographer guide": [
     "Guide du photographe",
     "Guía del fotógrafo",
-    "Igitabo cy'umufotozi"
+    "Igitabo cy'umufotozi",
+    "Mwongozo wa Mpiga Picha"
   ],
   "Delete Account": [
     "Supprimer le compte",
     "Eliminar cuenta",
-    "Siba konti"
+    "Siba konti",
+    "Futa Account"
   ],
   "Delete account": [
     "Supprimer le compte",
     "Eliminar cuenta",
-    "Siba konti"
+    "Siba konti",
+    "Futa account"
   ],
   "Sign In": [
     "Se connecter",
     "Iniciar sesión",
-    "Injira"
+    "Injira",
+    "Ingia"
   ],
   "Sign in": [
     "Se connecter",
     "Iniciar sesión",
-    "Injira"
+    "Injira",
+    "Ingia"
   ],
   "Sign In with Google": [
     "Se connecter avec Google",
     "Iniciar sesión con Google",
-    "Injira ukoresheje Google"
+    "Injira ukoresheje Google",
+    "Sign In with Google"
   ],
   "Continue with Google": [
     "Continuer avec Google",
     "Continuar con Google",
-    "Komeza na Google"
+    "Komeza na Google",
+    "Continue with Google"
   ],
   "No account?": [
     "Pas de compte ?",
     "¿No tienes cuenta?",
-    "Nta konti?"
+    "Nta konti?",
+    "No account?"
   ],
   "Email Address": [
     "Adresse e-mail",
     "Dirección de correo electrónico",
-    "Aderesi ya imeri"
+    "Aderesi ya imeri",
+    "Email Address"
   ],
   "Email address": [
     "Adresse e-mail",
     "Dirección de correo electrónico",
-    "Aderesi ya imeri"
+    "Aderesi ya imeri",
+    "Email address"
   ],
   "Forgot Password?": [
     "Mot de passe oublié ?",
     "¿Olvidaste tu contraseña?",
-    "Wibagiwe ijambobanga?"
+    "Wibagiwe ijambobanga?",
+    "Forgot Password?"
   ],
   "Forgot password?": [
     "Mot de passe oublié ?",
     "¿Olvidaste tu contraseña?",
-    "Wibagiwe ijambobanga?"
+    "Wibagiwe ijambobanga?",
+    "Forgot password?"
   ],
   "Reset password": [
     "Réinitialiser le mot de passe",
     "Restablecer contraseña",
-    "Hindura ijambobanga"
+    "Hindura ijambobanga",
+    "Reset password"
   ],
   "Remember me": [
     "Se souvenir de moi",
     "Recordarme",
-    "Unyibuke"
+    "Unyibuke",
+    "Remember me"
   ],
   "Create Account": [
     "Créer un compte",
     "Crear cuenta",
-    "Kora konti nshya"
+    "Kora konti nshya",
+    "Create Account"
   ],
   "Full name": [
     "Nom complet",
     "Nombre completo",
-    "Amazina yose"
+    "Amazina yose",
+    "Full name"
   ],
   "Phone number": [
     "Numéro de téléphone",
     "Número de teléfono",
-    "Nimero ya telefoni"
+    "Nimero ya telefoni",
+    "Phone number"
   ],
   "All Rights Reserved": [
     "Tous droits réservés",
     "Todos los derechos reservados",
-    "Uburenganzira bwose burabitswe"
+    "Uburenganzira bwose burabitswe",
+    "Yote (Rights Reserved)"
   ],
   "All rights reserved": [
     "Tous droits réservés",
     "Todos los derechos reservados",
-    "Uburenganzira bwose burabitswe"
+    "Uburenganzira bwose burabitswe",
+    "Yote (rights reserved)"
   ],
   "All rights reserved.": [
     "Tous droits réservés.",
     "Todos los derechos reservados.",
-    "Uburenganzira bwose burabitswe."
+    "Uburenganzira bwose burabitswe.",
+    "Yote (rights reserved.)"
   ],
   "Search...": [
     "Rechercher...",
     "Buscar...",
-    "Shakisha..."
+    "Shakisha...",
+    "Tafuta..."
   ],
   "Search by name, location...": [
     "Rechercher par nom, lieu...",
     "Buscar por nombre, ubicación...",
-    "Shakisha izina, ahantu..."
+    "Shakisha izina, ahantu...",
+    "Search by name, location..."
   ],
   "Search events...": [
     "Rechercher des événements...",
     "Buscar eventos...",
-    "Shakisha ibirori..."
+    "Shakisha ibirori...",
+    "Search events..."
   ],
   "Search photographers...": [
     "Rechercher des photographes...",
     "Buscar fotógrafos...",
-    "Shakisha abafotora..."
+    "Shakisha abafotora...",
+    "Search photographers..."
   ],
   "Filters": [
     "Filtres",
     "Filtros",
-    "Imiyungururo"
+    "Imiyungururo",
+    "Vichujio"
   ],
   "Clear": [
     "Effacer",
     "Limpiar",
-    "Siba"
+    "Siba",
+    "Clear"
   ],
   "Clear all": [
     "Tout effacer",
     "Borrar todo",
-    "Siba byose"
+    "Siba byose",
+    "Futa yote"
   ],
   "Apply": [
     "Appliquer",
     "Aplicar",
-    "Emeza"
+    "Emeza",
+    "Apply"
   ],
   "Confirm": [
     "Confirmer",
     "Confirmar",
-    "Emeza"
+    "Emeza",
+    "Confirm"
   ],
   "Loading": [
     "Chargement",
     "Cargando",
-    "Biri gupakira"
+    "Biri gupakira",
+    "Inapakia"
   ],
   "Available": [
     "Disponible",
     "Disponible",
-    "Birahari"
+    "Birahari",
+    "Available"
   ],
   "Booked": [
     "Réservé",
     "Reservado",
-    "Byafashwe"
+    "Byafashwe",
+    "Booked"
   ],
   "Free": [
     "Gratuit",
     "Gratis",
-    "Ku buntu"
+    "Ku buntu",
+    "Free"
   ],
   "Download Photo": [
     "Télécharger la photo",
     "Descargar foto",
-    "Manura ifoto"
+    "Manura ifoto",
+    "Download Photo"
   ],
   "Download Photos": [
     "Télécharger les photos",
     "Descargar fotos",
-    "Manura amafoto"
+    "Manura amafoto",
+    "Download Photos"
   ],
   "Download All": [
     "Tout télécharger",
     "Descargar todo",
-    "Manura byose"
+    "Manura byose",
+    "Pakua Zote"
   ],
   "Share Event": [
     "Partager l'événement",
     "Compartir evento",
-    "Sangiza ibirori"
+    "Sangiza ibirori",
+    "Share Event"
   ],
   "Copy Link": [
     "Copier le lien",
     "Copiar enlace",
-    "Koporora umurongo"
+    "Koporora umurongo",
+    "Nakili Kiungo"
   ],
   "Link copied!": [
     "Lien copié !",
     "¡Enlace copiado!",
-    "Umurongo wakoporowe!"
+    "Umurongo wakoporowe!",
+    "Kiungo kimenakiliwa!"
   ],
   "Our Core": [
     "Nos Valeurs",
     "Nuestros Valores",
-    "Indangagaciro Zacu"
+    "Indangagaciro Zacu",
+    "Maadili Yetu"
   ],
   "Values": [
     "Valeurs",
     "Valores",
-    "Indangagaciro"
+    "Indangagaciro",
+    "Maadili"
   ],
   "Our Core Values": [
     "Nos valeurs fondamentales",
     "Nuestros valores fundamentales",
-    "Indangagaciro zacu z'ibanze"
+    "Indangagaciro zacu z'ibanze",
+    "Maadili Yetu ya Msingi"
   ],
   "Our Mission": [
     "Notre Mission",
     "Nuestra Misión",
-    "Ubutumwa Bwacu"
+    "Ubutumwa Bwacu",
+    "Dhamira Yetu"
   ],
   "Our Vision": [
     "Notre Vision",
     "Nuestra Visión",
-    "Icyerekezo Cyacu"
+    "Icyerekezo Cyacu",
+    "Maono Yetu"
   ],
   "The Smart Way to Capture Life": [
     "La façon intelligente de capturer la vie",
     "La forma inteligente de capturar la vida",
-    "Uburyo bugezweho bwo kubika amateka"
+    "Uburyo bugezweho bwo kubika amateka",
+    "Njia Bora ya Kunasa Kumbukumbu za Maisha"
   ],
   "A digital ecosystem": [
     "Un écosystème numérique",
     "Un ecosistema digital",
-    "Urubuga rw'ikoranabuhanga rigezweho"
+    "Urubuga rw'ikoranabuhanga rigezweho",
+    "Mfumo wa kidijitali wa kisasa"
   ],
   "On schedule": [
     "Dans les délais",
     "A tiempo",
-    "Ku gihe nyacyo"
+    "Ku gihe nyacyo",
+    "Kwa wakati uliopangwa"
   ],
   "Worldwide": [
     "Dans le monde entier",
     "En todo el mundo",
-    "Ku isi yose"
+    "Ku isi yose",
+    "Ulimwenguni kote"
   ],
   "Who We Serve": [
     "Qui nous servons",
     "A quién servimos",
-    "Abo dukorera"
+    "Abo dukorera",
+    "Wale Tunaowahudumia"
   ],
   "Built for the": [
     "Conçu pour le",
     "Diseñado para el",
-    "Bigenewe"
+    "Bigenewe",
+    "Imeundwa kwa ajili ya"
   ],
   "For Creators": [
     "Pour les Créateurs",
     "Para Creadores",
-    "Ku Bahanzi"
+    "Ku Bahanzi",
+    "Kwa ajili ya Wabunifu"
   ],
   "Creative": [
     "Créatif",
     "Creativo",
-    "Ubuhanzi"
+    "Ubuhanzi",
+    "Ubunifu"
   ],
   "Creative Professionals": [
     "Professionnels créatifs",
     "Profesionales creativos",
-    "Abanyamwuga mu buhanzi"
+    "Abanyamwuga mu buhanzi",
+    "Wataalamu wa Ubunifu"
   ],
   "Join as a creator": [
     "Rejoindre comme créateur",
     "Únete como creador",
-    "Injira nk'umuhanzi"
+    "Injira nk'umuhanzi",
+    "Jiunge kama mbunifu"
   ],
   "For Organizers": [
     "Pour les Organisateurs",
     "Para Organizadores",
-    "Ku Bategura Ibirori"
+    "Ku Bategura Ibirori",
+    "Kwa Waandaaji"
   ],
   "Event Organizers": [
     "Organisateurs d'événements",
     "Organizadores de eventos",
-    "Abategura ibirori"
+    "Abategura ibirori",
+    "Waandaaji wa Matukio"
   ],
   "Browse vetted talent": [
     "Parcourir les talents vérifiés",
     "Explorar talentos verificados",
-    "Shakisha abanyamwuga b'inararibonye"
+    "Shakisha abanyamwuga b'inararibonye",
+    "Vinjari wataalamu walioidhinishwa"
   ],
   "One contract, many gigs": [
     "Un contrat, plusieurs missions",
     "Un contrato, múltiples trabajos",
-    "Amasezerano amwe, ibiraka byinshi"
+    "Amasezerano amwe, ibiraka byinshi",
+    "Mkataba mmoja, kazi nyingi"
   ],
   "Plan with us": [
     "Planifiez avec nous",
     "Planifica con nosotros",
-    "Tegurana natwe"
+    "Tegurana natwe",
+    "Panga nasi"
   ],
   "For Memory Keepers": [
     "Pour ceux qui gardent des souvenirs",
     "Para guardianes de recuerdos",
-    "Ku bazigama urwibutso"
+    "Ku bazigama urwibutso",
+    "Kwa Watunza Kumbukumbu"
   ],
   "Individuals": [
     "Particuliers",
     "Particulares",
-    "Abantu ku giti cyabo"
+    "Abantu ku giti cyabo",
+    "Watu Binafsi"
   ],
   "Find local pros in minutes": [
     "Trouvez des pros locaux en quelques minutes",
     "Encuentra profesionales locales en minutos",
-    "Bona abanyamwuga bo hafi yawe mu minota mike"
+    "Bona abanyamwuga bo hafi yawe mu minota mike",
+    "Pata wataalamu wa ndani kwa dakika chache"
   ],
   "Transparent pricing": [
     "Tarification transparente",
     "Precios transparentes",
-    "Ibiciro bisobanutse"
+    "Ibiciro bisobanutse",
+    "Bei wazi na thabiti"
   ],
   "Vault-safe digital memories": [
     "Souvenirs numériques hautement sécurisés",
     "Recuerdos digitales seguros en bóveda",
-    "Ububiko bw'urwibutso rwawe burinzwe cyane"
+    "Ububiko bw'urwibutso rwawe burinzwe cyane",
+    "Kumbukumbu salama za kidijitali"
   ],
   "Find your photographer": [
     "Trouvez votre photographe",
     "Encuentra a tu fotógrafo",
-    "Shaka umufotozi wawe"
+    "Shaka umufotozi wawe",
+    "Pata mpiga picha wako"
   ],
   "Empowering visual storytellers": [
     "Donner du pouvoir aux conteurs visuels",
     "Empoderando a los narradores visuales",
-    "Gushoboza abafotora kubara inkuru mu mashusho"
+    "Gushoboza abafotora kubara inkuru mu mashusho",
+    "Kuwezesha wasimulizi wa picha"
   ],
   "Scroll to turn the page": [
     "Faites défiler pour tourner la page",
     "Desplaza para pasar la página",
-    "Kanda hano uhindure urupapuro"
+    "Kanda hano uhindure urupapuro",
+    "Sogeza ili kugeuza ukurasa"
   ],
   "Find Your Photos": [
     "Retrouvez vos photos",
     "Encuentra tus fotos",
-    "Shaka amafoto yawe"
+    "Shaka amafoto yawe",
+    "Tafuta Picha Zako"
   ],
   "Scan your face or upload a photo to find your event pictures instantly": [
     "Scannez votre visage ou téléversez une photo pour trouver vos photos d'événement instantanément",
     "Escanea tu rostro o sube una foto para encontrar tus fotos del evento al instante",
-    "Fata isura yawe cyangwa shyiraho ifoto kugira ngo ubone amafoto yawe mu birori ako kanya"
+    "Fata isura yawe cyangwa shyiraho ifoto kugira ngo ubone amafoto yawe mu birori ako kanya",
+    "Changanua uso wako au pakia picha ili kupata picha zako za tukio papo hapo"
   ],
   "No photos found": [
     "Aucune photo trouvée",
     "No se encontraron fotos",
-    "Nta mafoto yabonetse"
+    "Nta mafoto yabonetse",
+    "Hakuna picha zilizopatikana"
   ],
   "Unlock Album": [
     "Débloquer l'album",
     "Desbloquear álbum",
-    "Fungura alubumu"
+    "Fungura alubumu",
+    "Fungua Albamu"
   ],
   "Album is Locked": [
     "L'album est verrouillé",
     "El álbum está bloqueado",
-    "Ububiko burafunze"
+    "Ububiko burafunze",
+    "Albamu Imefungwa"
   ],
   "Free Access": [
     "Accès gratuit",
     "Acceso gratuito",
-    "Kwinjira ku buntu"
+    "Kwinjira ku buntu",
+    "Ufikiaji wa Bure"
   ],
   "Request Access": [
     "Demander l'accès",
     "Solicitar acceso",
-    "Saba kwinjira"
+    "Saba kwinjira",
+    "Omba Ufikiaji"
   ],
   "Enter Access Code": [
     "Entrez le code d'accès",
     "Ingresa el código de acceso",
-    "Andika kode yo kwinjira"
+    "Andika kode yo kwinjira",
+    "Weka Nambari ya Siri ya Kuingia"
   ],
   "Invalid Access Code": [
     "Code d'accès invalide",
     "Código de acceso no válido",
-    "Kode ntabwo yemewe"
+    "Kode ntabwo yemewe",
+    "Nambari ya siri si sahihi"
   ],
   "Purchase Album": [
     "Acheter l'album",
     "Comprar álbum",
-    "Gura ububiko bw'amafoto"
+    "Gura ububiko bw'amafoto",
+    "Nunua Albamu"
   ],
   "Price": [
     "Prix",
     "Precio",
-    "Igiciro"
+    "Igiciro",
+    "Bei"
   ],
   "Photos Matched": [
     "Photos correspondantes",
     "Fotos coincidentes",
-    "Amafoto ahuye n'isura yawe"
+    "Amafoto ahuye n'isura yawe",
+    "Picha Zilizolingana"
   ],
   "Matching photos found": [
     "Photos correspondantes trouvées",
     "Fotos coincidentes encontradas",
-    "Amafoto ahuye n'isura yawe yabonetse"
+    "Amafoto ahuye n'isura yawe yabonetse",
+    "Picha zinazolingana zimepatikana"
   ],
   "Searching photos...": [
     "Recherche des photos...",
     "Buscando fotos...",
-    "Turimo gushakisha amafoto..."
+    "Turimo gushakisha amafoto...",
+    "Inatafuta picha..."
   ],
   "Please look at the camera": [
     "Veuillez regarder la caméra",
     "Por favor mira a la cámara",
-    "Reba muri kamera"
+    "Reba muri kamera",
+    "Tafadhali tazama kamera"
   ],
   "By photographer": [
     "Par le photographe",
     "Por el fotógrafo",
-    "Yafashwe n'umufotozi"
+    "Yafashwe n'umufotozi",
+    "Imepigwa na mpiga picha"
   ],
   "Unlock this album to view and download images.": [
     "Débloquez cet album pour voir et télécharger les images.",
     "Desbloquea este álbum para ver y descargar imágenes.",
-    "Fungura ubu bubiko kugira ngo urebe kandi umanure amafoto."
+    "Fungura ubu bubiko kugira ngo urebe kandi umanure amafoto.",
+    "Fungua albamu hii ili kutazama na kupakua picha."
   ],
   "Need Help?": [
     "Besoin d'aide ?",
     "¿Necesitas ayuda?",
-    "Ukeneye ubufasha?"
+    "Ukeneye ubufasha?",
+    "Unahitaji Usaidizi?"
   ],
   "We're here to help": [
     "Nous sommes là pour vous aider",
     "Estamos aquí para ayudarte",
-    "Turi hano kugira ngo tugufashe"
+    "Turi hano kugira ngo tugufashe",
+    "Tuko hapa kukusaidia"
   ],
   "Search help articles...": [
     "Rechercher des articles d'aide...",
     "Buscar artículos de ayuda...",
-    "Shakisha inyandiko z'ubufasha..."
+    "Shakisha inyandiko z'ubufasha...",
+    "Tafuta makala za usaidizi..."
   ],
   "Booking & Scheduling": [
     "Réservation et planification",
     "Reservas y programación",
-    "Gufata umwanya no gutegura"
+    "Gufata umwanya no gutegura",
+    "Kuweka Nafasi na Ratiba"
   ],
   "Payments & Pricing": [
     "Paiements et tarifs",
     "Pagos y precios",
-    "Kwishyura n'ibiciro"
+    "Kwishyura n'ibiciro",
+    "Malipo na Bei"
   ],
   "Account & Security": [
     "Compte et sécurité",
     "Cuenta y seguridad",
-    "Konti n'umutekano"
+    "Konti n'umutekano",
+    "Akaunti na Usalama"
   ],
   "Technical Support": [
     "Support technique",
     "Soporte técnico",
-    "Ubufasha mu by'ikoranabuhanga"
+    "Ubufasha mu by'ikoranabuhanga",
+    "Msaada wa Kiufundi"
   ],
   "Contact Support": [
     "Contacter le support",
     "Contactar a soporte",
-    "Vugana n'abashinzwe ubufasha"
+    "Vugana n'abashinzwe ubufasha",
+    "Wasiliana na Usaidizi"
   ],
   "Send us a message": [
     "Envoyez-nous un message",
     "Envíanos un mensaje",
-    "Twoherereze ubutumwa"
+    "Twoherereze ubutumwa",
+    "Tutumie ujumbe"
   ],
   "Send Message": [
     "Envoyer le message",
     "Enviar mensaje",
-    "Ohereza ubutumwa"
+    "Ohereza ubutumwa",
+    "Tuma Ujumbe"
   ],
   "Message sent successfully": [
     "Message envoyé avec succès",
     "Mensaje enviado con éxito",
-    "Ubutumwa bwoherejwe neza"
+    "Ubutumwa bwoherejwe neza",
+    "Ujumbe umetumwa kwa mafanikio"
   ],
   "Chat with us": [
     "Discutez avec nous",
     "Chatea con nosotros",
-    "Vugana natwe ako kanya"
+    "Vugana natwe ako kanya",
+    "Zungumza nasi papo hapo"
   ],
   "Last Updated": [
     "Dernière mise à jour",
     "Última actualización",
-    "Ibiheruka kuvugururwa"
+    "Ibiheruka kuvugururwa",
+    "Ilisasishwa Mwisho"
   ],
   "User Agreement": [
     "Accord de l'utilisateur",
     "Acuerdo de usuario",
-    "Amasezerano y'umukoresha"
+    "Amasezerano y'umukoresha",
+    "Mkataba wa Mtumiaji"
   ],
   "Data Protection": [
     "Protection des données",
     "Protección de datos",
-    "Umutekano w'amakuru yawe"
+    "Umutekano w'amakuru yawe",
+    "Ulinzi wa Data"
   ],
   "Your Privacy Rights": [
     "Vos droits à la vie privée",
     "Tus derechos de privacidad",
-    "Uburenganzira ku buzima bwawe bwite"
+    "Uburenganzira ku buzima bwawe bwite",
+    "Haki Zako za Faragha"
   ],
   "Acceptable Use Policy": [
     "Politique d'utilisation acceptable",
     "Política de uso aceptable",
-    "Amabwiriza y'imikoreshereze yemewe"
+    "Amabwiriza y'imikoreshereze yemewe",
+    "Sera ya Matumizi Yanayokubalika"
   ],
   "Safety Guidelines": [
     "Consignes de sécurité",
     "Pautas de seguridad",
-    "Amabwiriza y'umutekano"
+    "Amabwiriza y'umutekano",
+    "Miongozo ya Usalama"
   ],
   "Reporting Issues": [
     "Signaler un problème",
     "Informar de un problema",
-    "Kumenyesha ikibazo"
+    "Kumenyesha ikibazo",
+    "Ripoti Tatizo"
   ],
   "Getting Started": [
     "Pour commencer",
     "Primeros pasos",
-    "Gutangira"
+    "Gutangira",
+    "Kuanza"
   ],
   "How to receive bookings": [
     "Comment recevoir des réservations",
     "Cómo recibir reservas",
-    "Uko wakira abakiriya bafatisha umwanya"
+    "Uko wakira abakiriya bafatisha umwanya",
+    "Jinsi ya kupokea maombi ya nafasi"
   ],
   "Managing your schedule": [
     "Gérer votre emploi du temps",
     "Administrar tu horario",
-    "Gucunga ingengabihe yawe"
+    "Gucunga ingengabihe yawe",
+    "Kusimamia ratiba yako"
   ],
   "Setting your rates": [
     "Définir vos tarifs",
     "Establecer tus tarifas",
-    "Gushyiraho ibiciro byawe"
+    "Gushyiraho ibiciro byawe",
+    "Kupanga viwango vyako vya bei"
   ],
   "Payouts and earnings": [
     "Paiements et gains",
     "Pagos y ganancias",
-    "Kwishyurwa n'inyungu yawe"
+    "Kwishyurwa n'inyungu yawe",
+    "Malipo na mapato"
   ],
   "Delivering photos to clients": [
     "Livrer des photos aux clients",
     "Entrega de fotos a clientes",
-    "Koherereza abakiriya amafoto"
+    "Koherereza abakiriya amafoto",
+    "Kutuma picha kwa wateja"
   ],
   "Select a date": [
     "Sélectionner une date",
     "Seleccionar una fecha",
-    "Hitamo itariki"
+    "Hitamo itariki",
+    "Chagua tarehe"
   ],
   "Select time": [
     "Sélectionner l'heure",
     "Seleccionar hora",
-    "Hitamo isaha"
+    "Hitamo isaha",
+    "Chagua saa"
   ],
   "Pick the day of your event": [
     "Choisissez le jour de votre événement",
     "Elige el día de tu evento",
-    "Hitamo umunsi w'ibirori byawe"
+    "Hitamo umunsi w'ibirori byawe",
+    "Chagua siku ya tukio lako"
   ],
   "Type or pick a date above": [
     "Tapez ou choisissez une date ci-dessus",
     "Escribe o elige una fecha arriba",
-    "Andika cyangwa hitamo itariki haruguru"
+    "Andika cyangwa hitamo itariki haruguru",
+    "Type or pick a date above"
   ],
   "The event date must be in the future.": [
     "La date de l'événement doit être future.",
     "La fecha del evento debe ser futura.",
-    "Itariki y'ibirori igomba kuba iri imbere."
+    "Itariki y'ibirori igomba kuba iri imbere.",
+    "The event date must be in the future."
   ],
   "Sign in to complete your booking": [
     "Connectez-vous pour finaliser votre réservation",
     "Inicia sesión para completar tu reserva",
-    "Injira kugira ngo urangize gufata umwanya"
+    "Injira kugira ngo urangize gufata umwanya",
+    "Sign in to complete your booking"
   ],
   "Support Local Talent": [
     "Soutenir les talents locaux",
     "Apoyar el talento local",
-    "Shyigikira abanyamwuga bo mu gihugu"
+    "Shyigikira abanyamwuga bo mu gihugu",
+    "Support Local Talent"
   ],
   "Make a Donation": [
     "Faire un don",
     "Hacer una donación",
-    "Tanga inkunga"
+    "Tanga inkunga",
+    "Make a Donation"
   ],
   "Choose Amount": [
     "Choisir le montant",
     "Elegir monto",
-    "Hitamo umubare w'amafaranga"
+    "Hitamo umubare w'amafaranga",
+    "Choose Amount"
   ],
   "Custom Amount": [
     "Montant personnalisé",
     "Monto personalizado",
-    "Andika andi mafaranga"
+    "Andika andi mafaranga",
+    "Custom Amount"
   ],
   "Donate Now": [
     "Faire un don maintenant",
     "Donar ahora",
-    "Tanga inkunga nonaha"
+    "Tanga inkunga nonaha",
+    "Donate Now"
   ],
   "Thank you for your generosity": [
     "Merci pour votre générosité",
     "Gracias por tu generosidad",
-    "Urakoze cyane ku bw'ubuntu bwawe"
+    "Urakoze cyane ku bw'ubuntu bwawe",
+    "Thank you for your generosity"
   ],
   "Your contribution helps": [
     "Votre contribution aide",
     "Tu contribución ayuda",
-    "Inkunga yawe irafasha cyane"
+    "Inkunga yawe irafasha cyane",
+    "Your contribution helps"
   ],
   "Schedule Deposit": [
     "Planifier l'acompte",
     "Programar depósito",
-    "Teganya ingwate"
+    "Teganya ingwate",
+    "Schedule Deposit"
   ],
   "Deposit Amount": [
     "Montant de l'acompte",
     "Monto del depósito",
-    "Amafaranga y'ingwate"
+    "Amafaranga y'ingwate",
+    "Deposit Amount"
   ],
   "Complete Payment": [
     "Finaliser le paiement",
     "Completar pago",
-    "Uzuza ubwishyu"
+    "Uzuza ubwishyu",
+    "Complete Payment"
   ],
   "Payment Method": [
     "Mode de paiement",
     "Método de pago",
-    "Uburyo bwo kwishyura"
+    "Uburyo bwo kwishyura",
+    "Payment Method"
   ],
   "Mobile Money": [
     "Mobile Money",
     "Dinero Móvil",
+    "Mobile Money",
     "Mobile Money"
   ],
   "Credit Card": [
     "Carte de crédit",
     "Tarjeta de crédito",
-    "Ikarita ya Banki"
+    "Ikarita ya Banki",
+    "Credit Card"
   ],
   "Pay with MTN": [
     "Payer avec MTN",
     "Pagar con MTN",
-    "Ishyura ukoresheje MTN"
+    "Ishyura ukoresheje MTN",
+    "Pay with MTN"
   ],
   "Pay with Airtel": [
     "Payer avec Airtel",
     "Pagar con Airtel",
-    "Ishyura ukoresheje Airtel"
+    "Ishyura ukoresheje Airtel",
+    "Pay with Airtel"
   ],
   "Transaction Status": [
     "Statut de la transaction",
     "Estado de la transacción",
-    "Imiterere y'ihererekanya"
+    "Imiterere y'ihererekanya",
+    "Transaction Status"
   ],
   "Payment Successful": [
     "Paiement réussi",
     "Pago exitoso",
-    "Ubwishyu bwagenze neza"
+    "Ubwishyu bwagenze neza",
+    "Malipo Yamefaulu"
   ],
   "Payment Failed": [
     "Échec du paiement",
     "Pago fallido",
-    "Ubwishyu bwananiranye"
+    "Ubwishyu bwananiranye",
+    "Malipo Yameshindikana"
   ],
   "Total Amount": [
     "Montant total",
     "Monto total",
-    "Amafaranga yose hamwe"
+    "Amafaranga yose hamwe",
+    "Total Amount"
   ],
   "Fast & Secure Checkout": [
     "Paiement rapide et sécurisé",
     "Pago rápido y seguro",
-    "Kwishyura byihuse kandi bizewe"
+    "Kwishyura byihuse kandi bizewe",
+    "Fast & Secure Checkout"
   ],
   "Your TV is connected": [
     "Votre téléviseur est connecté",
     "Tu televisor está conectado",
-    "Televiziyo yawe yamaze guhuzwa"
+    "Televiziyo yawe yamaze guhuzwa",
+    "Your TV is connected"
   ],
   "You can disconnect it any time from Paired TVs.": [
     "Vous pouvez le déconnecter à tout moment depuis Téléviseurs associés.",
     "Puedes desconectarlo en cualquier momento desde Televisores emparejados.",
-    "Ushobora kuyikuraho igihe cyose mu mateleviziyo yahujwe."
+    "Ushobora kuyikuraho igihe cyose mu mateleviziyo yahujwe.",
+    "You can disconnect it any time from Paired TVs."
   ],
   "Manage paired TVs": [
     "Gérer les téléviseurs associés",
     "Administrar televisores emparejados",
-    "Cunga amateleviziyo yahujwe"
+    "Cunga amateleviziyo yahujwe",
+    "Manage paired TVs"
   ],
   "Connect another": [
     "Connecter un autre",
     "Conectar otro",
-    "Huza indi televiziyo"
+    "Huza indi televiziyo",
+    "Connect another"
   ],
   "Smart TV": [
     "Téléviseur connecté",
+    "Smart TV",
     "Smart TV",
     "Smart TV"
   ],
   "Connect a TV": [
     "Connecter un téléviseur",
     "Conectar un televisor",
-    "Huza na Televiziyo"
+    "Huza na Televiziyo",
+    "Connect a TV"
   ],
   "Open Connekyt on your TV and choose": [
     "Ouvrez Connekyt sur votre téléviseur et choisissez",
     "Abre Connekyt en tu televisor y elige",
-    "Fungura Connekyt kuri televiziyo yawe maze uhitemo"
+    "Fungura Connekyt kuri televiziyo yawe maze uhitemo",
+    "Open Connekyt on your TV and choose"
   ],
   "Code from your TV": [
     "Code affiché sur votre téléviseur",
     "Código de tu televisor",
-    "Kode iboneka kuri televiziyo yawe"
+    "Kode iboneka kuri televiziyo yawe",
+    "Code from your TV"
   ],
   "Name this TV": [
     "Nommer ce téléviseur",
     "Nombra este televisor",
-    "Ihe izina iyi televiziyo"
+    "Ihe izina iyi televiziyo",
+    "Name this TV"
   ],
   "Notification": [
     "Notification",
     "Notificación",
-    "Imenyesha"
+    "Imenyesha",
+    "Notification"
   ],
   "Notifications": [
     "Notifications",
     "Notificaciones",
-    "Imenyesha"
+    "Imenyesha",
+    "Arifa"
   ],
   "You're all caught up": [
     "Vous êtes à jour",
     "Estás al día",
-    "Nta makuru mashya ahari"
+    "Nta makuru mashya ahari",
+    "You're all caught up"
   ],
   "View all notifications": [
     "Voir toutes les notifications",
     "Ver todas las notificaciones",
-    "Reba amakuru yose"
+    "Reba amakuru yose",
+    "Tazama Yote (Arifa)"
   ],
   "Mark as read": [
     "Marquer comme lu",
     "Marcar como leído",
-    "Shyira nk'icyasomwe"
+    "Shyira nk'icyasomwe",
+    "Mark as read"
   ],
   "Mark all as read": [
     "Tout marquer comme lu",
     "Marcar todo como leído",
-    "Shyira byose nk'ibyasomwe"
+    "Shyira byose nk'ibyasomwe",
+    "Mark all as read"
   ],
   "Profile Settings": [
     "Paramètres du profil",
     "Configuración de perfil",
-    "Igenamiterere ry'umwirondoro"
+    "Igenamiterere ry'umwirondoro",
+    "Profile Settings"
   ],
   "Personal Information": [
     "Informations personnelles",
     "Información personal",
-    "Amakuru yihariye"
+    "Amakuru yihariye",
+    "Personal Information"
   ],
   "Change Photo": [
     "Changer la photo",
     "Cambiar foto",
-    "Hindura ifoto"
+    "Hindura ifoto",
+    "Change Photo"
   ],
   "Bio": [
     "Biographie",
     "Biografía",
-    "Ibyerekeye wowe"
+    "Ibyerekeye wowe",
+    "Bio"
   ],
   "Save Profile": [
     "Enregistrer le profil",
     "Guardar perfil",
-    "Bika umwirondoro"
+    "Bika umwirondoro",
+    "Save Profile"
   ],
   "Account Details": [
     "Détails du compte",
     "Detalles de la cuenta",
-    "Amakuru arambuye kuri konti"
+    "Amakuru arambuye kuri konti",
+    "Account Details"
   ],
   "Work": [
     "Travail",
     "Trabajo",
-    "Akazi"
+    "Akazi",
+    "Kazi"
   ],
   "Money": [
     "Argent",
     "Dinero",
-    "Amafaranga"
+    "Amafaranga",
+    "Pesa"
   ],
   "Admin": [
     "Admin",
     "Admin",
-    "Ubuyobozi"
+    "Ubuyobozi",
+    "Usimamizi"
   ],
   "Home": [
     "Accueil",
     "Inicio",
-    "Ahabanza"
+    "Ahabanza",
+    "Nyumbani"
   ],
   "Dashboard": [
     "Tableau de bord",
     "Panel",
-    "Imbonerahamwe"
+    "Imbonerahamwe",
+    "Dashibodi"
   ],
   "Inbox": [
     "Messagerie",
     "Mensajes",
-    "Ubutumwa"
+    "Ubutumwa",
+    "Kikasha"
   ],
   "My Events": [
     "Mes événements",
     "Mis eventos",
-    "Ibirori byanjye"
+    "Ibirori byanjye",
+    "Matukio Yangu"
   ],
   "Clients": [
     "Clients",
     "Clientes",
-    "Abakiriya"
+    "Abakiriya",
+    "Wateja"
   ],
   "Wallet": [
     "Portefeuille",
     "Billetera",
-    "Ikofi"
+    "Ikofi",
+    "Pochi"
   ],
   "Wallets": [
     "Portefeuilles",
     "Billeteras",
-    "Amakofi"
+    "Amakofi",
+    "Pochi"
   ],
   "Transactions": [
     "Transactions",
     "Transacciones",
-    "Ihererekanya"
+    "Ihererekanya",
+    "Miamala"
   ],
   "All Transactions": [
     "Toutes les transactions",
     "Todas las transacciones",
-    "Ihererekanya ryose"
+    "Ihererekanya ryose",
+    "Miamala Yote"
   ],
   "Donate": [
     "Faire un don",
     "Donar",
-    "Tanga inkunga"
+    "Tanga inkunga",
+    "Changia"
   ],
   "Collaborate": [
     "Collaborer",
     "Colaborar",
-    "Gufatanya"
+    "Gufatanya",
+    "Shirikiana"
   ],
   "Streams": [
     "Diffusions",
     "Transmisiones",
-    "Imbonankubone"
+    "Imbonankubone",
+    "Matangazo Mubashara"
   ],
   "Live Streams": [
     "Diffusions en direct",
     "Transmisiones en vivo",
-    "Imbonankubone"
+    "Imbonankubone",
+    "Matangazo Mubashara"
   ],
   "Gallery": [
     "Galerie",
     "Galería",
-    "Ububiko bw'amafoto"
+    "Ububiko bw'amafoto",
+    "Matunzio"
   ],
   "Payments": [
     "Paiements",
     "Pagos",
-    "Ubwishyu"
+    "Ubwishyu",
+    "Malipo"
   ],
   "Profile": [
     "Profil",
     "Perfil",
-    "Umwirondoro"
+    "Umwirondoro",
+    "Wasifu"
   ],
   "Preferences": [
     "Préférences",
     "Preferencias",
-    "Ibyo ukunda"
+    "Ibyo ukunda",
+    "Mapendeleo"
   ],
   "SETTINGS": [
     "PARAMÈTRES",
     "CONFIGURACIÓN",
-    "IGENAMITERERE"
+    "IGENAMITERERE",
+    "MIPANGILIO"
   ],
   "Logout": [
     "Déconnexion",
     "Cerrar sesión",
-    "Sohoka"
+    "Sohoka",
+    "Toka"
   ],
   "Sign out": [
     "Se déconnecter",
     "Cerrar sesión",
-    "Sohoka"
+    "Sohoka",
+    "Toka"
   ],
   "Sign Out": [
     "Se déconnecter",
     "Cerrar sesión",
-    "Sohoka"
+    "Sohoka",
+    "Toka"
   ],
   "Sign out of Connekyt?": [
     "Se déconnecter de Connekyt ?",
     "¿Cerrar sesión en Connekyt?",
-    "Gusohoka muri Connekyt?"
+    "Gusohoka muri Connekyt?",
+    "Ungependa kutoka Connekyt?"
   ],
   "You'll need to sign in again to access your dashboard.": [
     "Vous devrez vous reconnecter pour accéder à votre tableau de bord.",
     "Deberás iniciar sesión nuevamente para acceder a tu panel.",
-    "Uzongera kwinjira kugira ngo ubone imbonerahamwe yawe."
+    "Uzongera kwinjira kugira ngo ubone imbonerahamwe yawe.",
+    "Utahitaji kuingia tena ili kufikia dashibodi yako."
   ],
   "Your session will end on this device.": [
     "Votre session prendra fin sur cet appareil.",
     "Tu sesión terminará en este dispositivo.",
-    "Igice cyawe kizarangira kuri iki gikoresho."
+    "Igice cyawe kizarangira kuri iki gikoresho.",
+    "Kipindi chako kitafungwa kwenye kifaa hiki."
   ],
   "Photographer": [
     "Photographe",
     "Fotógrafo",
-    "Umufotozi"
+    "Umufotozi",
+    "Mpiga Picha"
   ],
   "Videographer": [
     "Vidéaste",
     "Videógrafo",
-    "Ufata amashusho"
+    "Ufata amashusho",
+    "Mpiga Video"
   ],
   "Client": [
     "Client",
     "Cliente",
-    "Umukiriya"
+    "Umukiriya",
+    "Mteja"
   ],
   "Event Coordinator": [
     "Coordinateur d'événements",
     "Coordinador de eventos",
-    "Umutegura w'ibirori"
+    "Umutegura w'ibirori",
+    "Mratibu wa Tukio"
   ],
   "Coordinator": [
     "Coordinateur",
     "Coordinador",
-    "Umutegura"
+    "Umutegura",
+    "Mratibu"
   ],
   "Balance": [
     "Solde",
     "Saldo",
-    "Amafaranga asigaye"
+    "Amafaranga asigaye",
+    "Balance"
   ],
   "Tips": [
     "Pourboires",
     "Propinas",
-    "Ishimwe"
+    "Ishimwe",
+    "Tips"
   ],
   "Mark all read": [
     "Tout marquer comme lu",
     "Marcar todo como leído",
-    "Shyira byose nk'ibyasomwe"
+    "Shyira byose nk'ibyasomwe",
+    "Mark all read"
   ],
   "Enable desktop alerts": [
     "Activer les alertes bureau",
     "Activar alertas de escritorio",
-    "Emeza imenyesha kuri mudasobwa"
+    "Emeza imenyesha kuri mudasobwa",
+    "Enable desktop alerts"
   ],
   "View all notifications →": [
     "Voir toutes les notifications →",
     "Ver todas las notificaciones →",
-    "Reba amakuru yose →"
+    "Reba amakuru yose →",
+    "Tazama Yote (notifications →)"
   ],
   "View all": [
     "Voir tout",
     "Ver todo",
-    "Reba byose"
+    "Reba byose",
+    "Tazama all"
   ],
   "Open": [
     "Ouvrir",
     "Abrir",
-    "Fungura"
+    "Fungura",
+    "Open"
   ],
   "Pay now": [
     "Payer maintenant",
     "Pagar ahora",
-    "Ishyura nonaha"
+    "Ishyura nonaha",
+    "Pay now"
   ],
   "Pay Now": [
     "Payer maintenant",
     "Pagar ahora",
-    "Ishyura nonaha"
+    "Ishyura nonaha",
+    "Pay Now"
   ],
   "KYC verification rejected": [
     "Vérification KYC rejetée",
     "Verificación KYC rechazada",
-    "Igenzura rya KYC ryanzwe"
+    "Igenzura rya KYC ryanzwe",
+    "KYC verification rejected"
   ],
   "Your submission needs corrections. Resubmit to continue.": [
     "Votre soumission nécessite des corrections. Soumettez à nouveau pour continuer.",
     "Tu envío necesita correcciones. Vuelve a enviarlo para continuar.",
-    "Ibyo wohereje bikeneye gukosorwa. Ongera wohereze kugira ngo ukomeze."
+    "Ibyo wohereje bikeneye gukosorwa. Ongera wohereze kugira ngo ukomeze.",
+    "Your submission needs corrections. Resubmit to continue."
   ],
   "KYC under review": [
     "KYC en cours d'examen",
     "KYC en revisión",
-    "KYC irimo gusuzumwa"
+    "KYC irimo gusuzumwa",
+    "KYC under review"
   ],
   "We’re verifying your details. This typically takes a few hours.": [
     "Nous vérifions vos informations. Cela prend généralement quelques heures.",
     "Estamos verificando tus datos. Esto suele tardar unas horas.",
-    "Turimo kugenzura amakuru yawe. Ibi bitwara amasaha make."
+    "Turimo kugenzura amakuru yawe. Ibi bitwara amasaha make.",
+    "We’re verifying your details. This typically takes a few hours."
   ],
   "Verify your identity": [
     "Vérifiez votre identité",
     "Verifica tu identidad",
-    "Emeza umwirondoro wawe"
+    "Emeza umwirondoro wawe",
+    "Verify your identity"
   ],
   "Complete KYC to unlock withdrawals and full platform features.": [
     "Complétez le KYC pour débloquer les retraits et toutes les fonctionnalités.",
     "Completa el KYC para desbloquear retiros y todas las funciones.",
-    "Uzuza KYC kugira ngo ufungure kubikuza n'ibindi byose ku rubuga."
+    "Uzuza KYC kugira ngo ufungure kubikuza n'ibindi byose ku rubuga.",
+    "Complete KYC to unlock withdrawals and full platform features."
   ],
   "Resubmit": [
     "Soumettre à nouveau",
     "Reenviar",
-    "Ongera wohereze"
+    "Ongera wohereze",
+    "Resubmit"
   ],
   "Complete KYC": [
     "Compléter le KYC",
     "Completar KYC",
-    "Uzuza KYC"
+    "Uzuza KYC",
+    "Complete KYC"
   ],
   "Switch to light mode": [
     "Passer en mode clair",
     "Cambiar a modo claro",
-    "Hindura mu rumuri"
+    "Hindura mu rumuri",
+    "Switch to light mode"
   ],
   "Switch to dark mode": [
     "Passer en mode sombre",
     "Cambiar a modo oscuro",
-    "Hindura mu mwijima"
+    "Hindura mu mwijima",
+    "Switch to dark mode"
   ],
   "Customize your dashboard experience and manage payment settings.": [
     "Personnalisez votre tableau de bord et gérez vos paramètres de paiement.",
     "Personaliza tu experiencia en el panel y administra la configuración de pagos.",
-    "Gena uko imbonerahamwe yawe igaragara kandi ucunge uburyo bwo kwishyura."
+    "Gena uko imbonerahamwe yawe igaragara kandi ucunge uburyo bwo kwishyura.",
+    "Customize your dashboard experience and manage payment settings."
   ],
   "Appearance": [
     "Apparence",
     "Apariencia",
-    "Imigaragarire"
+    "Imigaragarire",
+    "Appearance"
   ],
   "APPEARANCE": [
     "APPARENCE",
     "APARIENCIA",
-    "IMIGARAGARIRE"
+    "IMIGARAGARIRE",
+    "APPEARANCE"
   ],
   "Payment Accounts": [
     "Comptes de paiement",
     "Cuentas de pago",
-    "Konti zo kwishyura"
+    "Konti zo kwishyura",
+    "Payment Accounts"
   ],
   "PAYMENT ACCOUNTS": [
     "COMPTES DE PAIEMENT",
     "CUENTAS DE PAGO",
-    "KONTI ZO KWISHYURA"
+    "KONTI ZO KWISHYURA",
+    "PAYMENT ACCOUNTS"
   ],
   "NOTIFICATIONS": [
     "NOTIFICATIONS",
     "NOTIFICACIONES",
-    "IMENYESHA"
+    "IMENYESHA",
+    "Arifa"
   ],
   "Security": [
     "Sécurité",
     "Seguridad",
-    "Umutekano"
+    "Umutekano",
+    "Security"
   ],
   "SECURITY": [
     "SÉCURITÉ",
     "SEGURIDAD",
-    "UMUTEKANO"
+    "UMUTEKANO",
+    "SECURITY"
   ],
   "Theme mode": [
     "Mode du thème",
     "Modo de tema",
-    "Uburyo bw'insanganyamatsiko"
+    "Uburyo bw'insanganyamatsiko",
+    "Theme mode"
   ],
   "Choose how the dashboard looks to you. Pick a single theme or sync with your device.": [
     "Choisissez l'apparence du tableau de bord. Sélectionnez un thème ou synchronisez avec votre appareil.",
     "Elige cómo se ve el panel. Selecciona un tema o sincroniza con tu dispositivo.",
-    "Hitamo uko imbonerahamwe yawe igaragara. Hitamo uburyo bumwe cyangwa ihuze n'igikoresho cyawe."
+    "Hitamo uko imbonerahamwe yawe igaragara. Hitamo uburyo bumwe cyangwa ihuze n'igikoresho cyawe.",
+    "Choose how the dashboard looks to you. Pick a single theme or sync with your device."
   ],
   "Light": [
     "Clair",
     "Claro",
-    "Urumuri"
+    "Urumuri",
+    "Light"
   ],
   "Dark": [
     "Sombre",
     "Oscuro",
-    "Umwijima"
+    "Umwijima",
+    "Dark"
   ],
   "System": [
     "Système",
     "Sistema",
-    "Sisitemu"
+    "Sisitemu",
+    "System"
   ],
   "Clean and bright interface": [
     "Interface claire et lumineuse",
     "Interfaz limpia y brillante",
-    "Imigaragarire isukuye kandi yaka"
+    "Imigaragarire isukuye kandi yaka",
+    "Clean and bright interface"
   ],
   "Easy on the eyes in low light": [
     "Doux pour les yeux en faible luminosité",
     "Cómodo para la vista con poca luz",
-    "Byoroshye ku maso mu rumuri ruke"
+    "Byoroshye ku maso mu rumuri ruke",
+    "Easy on the eyes in low light"
   ],
   "Matches your device settings": [
     "Suit les paramètres de votre appareil",
     "Coincide con la configuración de tu dispositivo",
-    "Bihura n'igenamiterere ry'igikoresho cyawe"
+    "Bihura n'igenamiterere ry'igikoresho cyawe",
+    "Matches your device settings"
   ],
   "LANGUAGE": [
     "LANGUE",
     "IDIOMA",
-    "URURIMI"
+    "URURIMI",
+    "Lugha"
   ],
   "App language": [
     "Langue de l'application",
     "Idioma de la aplicación",
-    "Ururimi rw'urubuga"
+    "Ururimi rw'urubuga",
+    "App language"
   ],
   "Choose your preferred language across the web and mobile experience.": [
     "Choisissez votre langue préférée sur le web et l'application mobile.",
     "Elige tu idioma preferido en la experiencia web y móvil.",
-    "Hitamo ururimi ukunda gukoresha ku rubuga no muri telefoni."
+    "Hitamo ururimi ukunda gukoresha ku rubuga no muri telefoni.",
+    "Choose your preferred language across the web and mobile experience."
   ],
   "Notification settings": [
     "Paramètres de notification",
     "Configuración de notificaciones",
-    "Igenamiterere ry'amakuru"
+    "Igenamiterere ry'amakuru",
+    "Notification settings"
   ],
   "Choose which notifications you want to receive and where you want them delivered.": [
     "Choisissez les notifications que vous souhaitez recevoir et comment les recevoir.",
     "Elige qué notificaciones deseas recibir y dónde quieres recibirlas.",
-    "Hitamo amakuru ushaka kwakira n'aho ushaka ko akugeraho."
+    "Hitamo amakuru ushaka kwakira n'aho ushaka ko akugeraho.",
+    "Choose which notifications you want to receive and where you want them delivered."
   ],
   "Email Notifications": [
     "Notifications par e-mail",
     "Notificaciones por correo",
-    "Amakuru kuri Imeyili"
+    "Amakuru kuri Imeyili",
+    "Email Notifications"
   ],
   "Receive email alerts for important notifications": [
     "Recevez des alertes par e-mail pour les notifications importantes",
     "Recibe alertas por correo para notificaciones importantes",
-    "Akira ubutumwa kuri imeyili ku makuru y'ingenzi"
+    "Akira ubutumwa kuri imeyili ku makuru y'ingenzi",
+    "Receive email alerts for important notifications"
   ],
   "Push Notifications": [
     "Notifications push",
     "Notificaciones push",
-    "Amakuru ya Push"
+    "Amakuru ya Push",
+    "Push Notifications"
   ],
   "Get instant push notifications on your device": [
     "Recevez des notifications push instantanées sur votre appareil",
     "Recibe notificaciones push instantáneas en tu dispositivo",
-    "Akira amakuru ako kanya ku gikoresho cyawe"
+    "Akira amakuru ako kanya ku gikoresho cyawe",
+    "Get instant push notifications on your device"
   ],
   "Notification categories": [
     "Catégories de notifications",
     "Categorías de notificaciones",
-    "Ibyiciro by'amakuru"
+    "Ibyiciro by'amakuru",
+    "Notification categories"
   ],
   "Payment Notifications": [
     "Notifications de paiement",
     "Notificaciones de pago",
-    "Amakuru yo kwishyurwa"
+    "Amakuru yo kwishyurwa",
+    "Payment Notifications"
   ],
   "Notify me when I receive payments": [
     "M'avertir lorsque je reçois des paiements",
     "Notificarme cuando reciba pagos",
-    "Ntumira igihe nakiriye ubwishyu"
+    "Ntumira igihe nakiriye ubwishyu",
+    "Notify me when I receive payments"
   ],
   "Tips & Bonuses": [
     "Pourboires et bonus",
     "Propinas y bonos",
-    "Ishimwe n'inyongera"
+    "Ishimwe n'inyongera",
+    "Tips & Bonuses"
   ],
   "Notify me when I receive tips or bonuses": [
     "M'avertir lorsque je reçois des pourboires ou des bonus",
     "Notificarme cuando reciba propinas o bonos",
-    "Ntumira igihe nakiriye ishimwe cyangwa inyongera"
+    "Ntumira igihe nakiriye ishimwe cyangwa inyongera",
+    "Notify me when I receive tips or bonuses"
   ],
   "Album Notifications": [
     "Notifications d'albums",
     "Notificaciones de álbumes",
-    "Amakuru ya Alubumu"
+    "Amakuru ya Alubumu",
+    "Album Notifications"
   ],
   "Notify me when new albums are shared or updated": [
     "M'avertir lorsque de nouveaux albums sont partagés ou mis à jour",
     "Notificarme cuando se compartan o actualicen nuevos álbumes",
-    "Ntumira igihe alubumu nshya zisangiwe cyangwa zivuguruwe"
+    "Ntumira igihe alubumu nshya zisangiwe cyangwa zivuguruwe",
+    "Notify me when new albums are shared or updated"
   ],
   "Booking Notifications": [
     "Notifications de réservation",
     "Notificaciones de reservas",
-    "Amakuru yo gufata igihe"
+    "Amakuru yo gufata igihe",
+    "Booking Notifications"
   ],
   "Gift Notifications": [
     "Notifications de cadeaux",
     "Notificaciones de regalos",
-    "Amakuru y'impano"
+    "Amakuru y'impano",
+    "Gift Notifications"
   ],
   "Stream Fee Notifications": [
     "Notifications de frais de diffusion",
     "Notificaciones de tarifas de transmisión",
-    "Amakuru y'ikiguzi cy'imbonankubone"
+    "Amakuru y'ikiguzi cy'imbonankubone",
+    "Stream Fee Notifications"
   ],
   "Security Alerts": [
     "Alertes de sécurité",
     "Alertas de seguridad",
-    "Impuruza z'umutekano"
+    "Impuruza z'umutekano",
+    "Security Alerts"
   ],
   "Two-Factor Authentication": [
     "Authentification à deux facteurs",
     "Autenticación de dos factores",
-    "Kwemeza mu buryo bubiri (2FA)"
+    "Kwemeza mu buryo bubiri (2FA)",
+    "Two-Factor Authentication"
   ],
   "Add Payment Method": [
     "Ajouter un moyen de paiement",
     "Agregar método de pago",
-    "Ongeraho uburyo bwo kwishyura"
+    "Ongeraho uburyo bwo kwishyura",
+    "Add Payment Method"
   ],
   "Add Account": [
     "Ajouter un compte",
     "Agregar cuenta",
-    "Ongeraho konti"
+    "Ongeraho konti",
+    "Add Account"
   ],
   "Withdrawal Verification": [
     "Vérification des retraits",
     "Verificación de retiros",
-    "Kwemeza kubikuza"
+    "Kwemeza kubikuza",
+    "Withdrawal Verification"
   ],
   "Default": [
     "Par défaut",
     "Predeterminado",
-    "Bisanzwe"
+    "Bisanzwe",
+    "Default"
   ],
   "Set as Default": [
     "Définir par défaut",
     "Establecer como predeterminado",
-    "Gira ibisanzwe"
+    "Gira ibisanzwe",
+    "Set as Default"
   ],
   "Save Changes": [
     "Enregistrer les modifications",
     "Guardar cambios",
-    "Bika impinduka"
+    "Bika impinduka",
+    "Hifadhi mabadiliko"
   ],
   "Saving...": [
     "Enregistrement...",
     "Guardando...",
-    "Kubika..."
+    "Kubika...",
+    "Saving..."
   ],
   "Update": [
     "Mettre à jour",
     "Actualizar",
-    "Vugurura"
+    "Vugurura",
+    "Update"
   ],
   "Refresh": [
     "Actualiser",
     "Actualizar",
-    "Ongera utangize"
+    "Ongera utangize",
+    "Refresh"
   ],
   "Retry": [
     "Réessayer",
     "Reintentar",
-    "Ongera ugerageze"
+    "Ongera ugerageze",
+    "Retry"
   ],
   "View": [
     "Voir",
     "Ver",
-    "Reba"
+    "Reba",
+    "View"
   ],
   "View All": [
     "Voir tout",
     "Ver todo",
-    "Reba byose"
+    "Reba byose",
+    "Tazama All"
   ],
   "See all": [
     "Voir tout",
     "Ver todo",
-    "Reba byose"
+    "Reba byose",
+    "See all"
   ],
   "See All": [
     "Voir tout",
     "Ver todo",
-    "Reba byose"
+    "Reba byose",
+    "See All"
   ],
   "Copied": [
     "Copié",
     "Copiado",
-    "Byakoporowe"
+    "Byakoporowe",
+    "Copied"
   ],
   "Approve": [
     "Approuver",
     "Aprobar",
-    "Emeza"
+    "Emeza",
+    "Approve"
   ],
   "Reject": [
     "Rejeter",
     "Rechazar",
-    "Anga"
+    "Anga",
+    "Reject"
   ],
   "Withdraw": [
     "Retirer",
     "Retirar",
-    "Bikuza"
+    "Bikuza",
+    "Withdraw"
   ],
   "Request Withdrawal": [
     "Demander un retrait",
     "Solicitar retiro",
-    "Saba kubikuza"
+    "Saba kubikuza",
+    "Request Withdrawal"
   ],
   "Create Event": [
     "Créer un événement",
     "Crear evento",
-    "Tegura ibirori"
+    "Tegura ibirori",
+    "Create Event"
   ],
   "New Event": [
     "Nouvel événement",
     "Nuevo evento",
-    "Ibirori bishya"
+    "Ibirori bishya",
+    "New Event"
   ],
   "Create Album": [
     "Créer un album",
     "Crear álbum",
-    "Kora alubumu"
+    "Kora alubumu",
+    "Create Album"
   ],
   "New Album": [
     "Nouvel album",
     "Nuevo álbum",
-    "Alubumu nshya"
+    "Alubumu nshya",
+    "New Album"
   ],
   "Browse Photos": [
     "Parcourir les photos",
     "Explorar fotos",
-    "Shakisha amafoto"
+    "Shakisha amafoto",
+    "Vinjari Picha"
   ],
   "ACTIVE": [
     "ACTIF",
     "ACTIVO",
-    "BIRAKORA"
+    "BIRAKORA",
+    "Inafanya Kazi"
   ],
   "PENDING": [
     "EN ATTENTE",
     "PENDIENTE",
-    "GUTEGEREZA"
+    "GUTEGEREZA",
+    "Inasubiri"
   ],
   "CONFIRMED": [
     "CONFIRMÉ",
     "CONFIRMADO",
-    "BYEMEJWE"
+    "BYEMEJWE",
+    "Imethibitishwa"
   ],
   "Accepted": [
     "Accepté",
     "Aceptado",
-    "Byemewe"
+    "Byemewe",
+    "Accepted"
   ],
   "ACCEPTED": [
     "ACCEPTÉ",
     "ACEPTADO",
-    "BYEMEWE"
+    "BYEMEWE",
+    "ACCEPTED"
   ],
   "Rejected": [
     "Rejeté",
     "Rechazado",
-    "Byanzwe"
+    "Byanzwe",
+    "Rejected"
   ],
   "REJECTED": [
     "REJETÉ",
     "RECHAZADO",
-    "BYANZWE"
+    "BYANZWE",
+    "REJECTED"
   ],
   "Approved": [
     "Approuvé",
     "Aprobado",
-    "Byemejwe"
+    "Byemejwe",
+    "Approved"
   ],
   "APPROVED": [
     "APPROUVÉ",
     "APROBADO",
-    "BYEMEJWE"
+    "BYEMEJWE",
+    "APPROVED"
   ],
   "Upcoming": [
     "À venir",
     "Próximo",
-    "Biteganyijwe"
+    "Biteganyijwe",
+    "Upcoming"
   ],
   "Ongoing": [
     "En cours",
     "En curso",
-    "Birimo kuba"
+    "Birimo kuba",
+    "Ongoing"
   ],
   "ONGOING": [
     "EN COURS",
     "EN CURSO",
-    "BIRIMO KUBA"
+    "BIRIMO KUBA",
+    "ONGOING"
   ],
   "Live": [
     "En direct",
     "En vivo",
-    "Imbonankubone"
+    "Imbonankubone",
+    "Live"
   ],
   "Ended": [
     "Terminé",
     "Finalizado",
-    "Byarangiye"
+    "Byarangiye",
+    "Ended"
   ],
   "Paid": [
     "Payé",
     "Pagado",
-    "Byishyuwe"
+    "Byishyuwe",
+    "Paid"
   ],
   "PAID": [
     "PAYÉ",
     "PAGADO",
-    "BYISHYUWE"
+    "BYISHYUWE",
+    "PAID"
   ],
   "Unpaid": [
     "Non payé",
     "No pagado",
-    "Ntibyishyuwe"
+    "Ntibyishyuwe",
+    "Unpaid"
   ],
   "UNPAID": [
     "NON PAYÉ",
     "NO PAGADO",
-    "NTIBYISHYUWE"
+    "NTIBYISHYUWE",
+    "UNPAID"
   ],
   "FAILED": [
     "ÉCHOUÉ",
     "FALLIDO",
-    "BYANZE"
+    "BYANZE",
+    "FAILED"
   ],
   "Suspended": [
     "Suspendu",
     "Suspendido",
-    "Byahagaritswe"
+    "Byahagaritswe",
+    "Suspended"
   ],
   "SUSPENDED": [
     "SUSPENDU",
     "SUSPENDIDO",
-    "BYAHAGARITSWE"
+    "BYAHAGARITSWE",
+    "SUSPENDED"
   ],
   "Published": [
     "Publié",
     "Publicado",
-    "Byatangajwe"
+    "Byatangajwe",
+    "Imechapishwa"
   ],
   "Unpublished": [
     "Non publié",
     "No publicado",
-    "Ntibyatangajwe"
+    "Ntibyatangajwe",
+    "Haijachapishwa"
   ],
   "Draft": [
     "Brouillon",
     "Borrador",
-    "Inyandiko y'agateganyo"
+    "Inyandiko y'agateganyo",
+    "Rasimu"
   ],
   "Welcome back": [
     "Bon retour",
     "Bienvenido de nuevo",
-    "Murakaza neza nanone"
+    "Murakaza neza nanone",
+    "Karibu tena"
   ],
   "Good morning": [
     "Bonjour",
     "Buenos días",
-    "Mwaramutse"
+    "Mwaramutse",
+    "Habari za asubuhi"
   ],
   "Good afternoon": [
     "Bon après-midi",
     "Buenas tardes",
-    "Mwiriwe"
+    "Mwiriwe",
+    "Habari za mchana"
   ],
   "Good evening": [
     "Bonsoir",
     "Buenas noches",
-    "Mwiriwe"
+    "Mwiriwe",
+    "Habari za jioni"
   ],
   "Total Earnings": [
     "Revenus totaux",
     "Ingresos totales",
-    "Inyungu zose"
+    "Inyungu zose",
+    "Mapato Yote"
   ],
   "Available Balance": [
     "Solde disponible",
     "Saldo disponible",
-    "Amafaranga aboneka"
+    "Amafaranga aboneka",
+    "Salio Lililopo"
   ],
   "Pending Balance": [
     "Solde en attente",
     "Saldo pendiente",
-    "Amafaranga ategerejwe"
+    "Amafaranga ategerejwe",
+    "Salio Linalosubiri"
   ],
   "Pending Clearance": [
     "En attente de compensation",
     "Pendiente de liberación",
-    "Ategereje kwemezwa"
+    "Ategereje kwemezwa",
+    "Inasubiri Uidhinishaji"
   ],
   "Total Spent": [
     "Total dépensé",
     "Total gastado",
-    "Ayakoreshejwe yose"
+    "Ayakoreshejwe yose",
+    "Jumla Iliyotumika"
   ],
   "Recent Activity": [
     "Activité récente",
     "Actividad reciente",
-    "Ibikorwa biheruka"
+    "Ibikorwa biheruka",
+    "Shughuli za Hivi Karibuni"
   ],
   "Recent Transactions": [
     "Transactions récentes",
     "Transacciones recientes",
-    "Ihererekanya riheruka"
+    "Ihererekanya riheruka",
+    "Miamala ya Hivi Karibuni"
   ],
   "Quick Actions": [
     "Actions rapides",
     "Acciones rápidas",
-    "Ibikorwa byihuse"
+    "Ibikorwa byihuse",
+    "Hatua za Haraka"
   ],
   "Bookings": [
     "Réservations",
     "Reservas",
-    "Gufata igihe"
+    "Gufata igihe",
+    "Nafasi Zilizowekwa"
   ],
   "My Bookings": [
     "Mes réservations",
     "Mis reservas",
-    "Igihe cyanjye nafafashe"
+    "Igihe cyanjye nafafashe",
+    "Nafasi Zangu"
   ],
   "Incoming Requests": [
     "Demandes entrantes",
     "Solicitudes entrantes",
-    "Ubusabe bushya"
+    "Ubusabe bushya",
+    "Maombi Yanayoingia"
   ],
   "Booking Requests": [
     "Demandes de réservation",
     "Solicitudes de reserva",
-    "Ubusabe bwo gufata igihe"
+    "Ubusabe bwo gufata igihe",
+    "Maombi ya Nafasi"
   ],
   "Albums": [
     "Albums",
     "Álbumes",
-    "Alubumu"
+    "Alubumu",
+    "Albamu"
   ],
   "Photo Albums": [
     "Albums photo",
     "Álbumes de fotos",
-    "Alubumu z'amafoto"
+    "Alubumu z'amafoto",
+    "Albamu za Picha"
   ],
   "Content Albums": [
     "Albums de contenu",
     "Álbumes de contenido",
-    "Alubumu z'ibikubiyemo"
+    "Alubumu z'ibikubiyemo",
+    "Albamu za Maudhui"
   ],
   "Photobooks": [
     "Livres photo",
     "Fotolibros",
-    "Ibitabo by'amafoto"
+    "Ibitabo by'amafoto",
+    "Vitabu vya Picha"
   ],
   "Packages": [
     "Forfaits",
     "Paquetes",
-    "Amapaki"
+    "Amapaki",
+    "Vifurushi"
   ],
   "Date": [
     "Date",
     "Fecha",
-    "Itariki"
+    "Itariki",
+    "Tarehe"
   ],
   "Time": [
     "Heure",
     "Hora",
-    "Isaha"
+    "Isaha",
+    "Saa"
   ],
   "Amount": [
     "Montant",
     "Monto",
-    "Umubare w'amafaranga"
+    "Umubare w'amafaranga",
+    "Kiasi"
   ],
   "Status": [
     "Statut",
     "Estado",
-    "Imiterere"
+    "Imiterere",
+    "Hali"
   ],
   "Type": [
     "Type",
     "Tipo",
-    "Ubwoko"
+    "Ubwoko",
+    "Aina"
   ],
   "Actions": [
     "Actions",
     "Acciones",
-    "Ibikorwa"
+    "Ibikorwa",
+    "Hatua"
   ],
   "Description": [
     "Description",
     "Descripción",
-    "Ibisobanuro"
+    "Ibisobanuro",
+    "Maelezo"
   ],
   "Category": [
     "Catégorie",
     "Categoría",
-    "Icyiciro"
+    "Icyiciro",
+    "Kitengo"
   ],
   "No transactions yet": [
     "Aucune transaction pour le moment",
     "Aún no hay transacciones",
-    "Nta hererekanya rirahari"
+    "Nta hererekanya rirahari",
+    "Bado hakuna miamala"
   ],
   "No notifications yet": [
     "Aucune notification pour le moment",
     "Aún no hay notificaciones",
-    "Nta makuru arahari"
+    "Nta makuru arahari",
+    "Bado hakuna arifa"
   ],
   "No messages yet": [
     "Aucun message pour le moment",
     "Aún no hay mensajes",
-    "Nta butumwa burahari"
+    "Nta butumwa burahari",
+    "Bado hakuna ujumbe"
   ],
   "Search messages...": [
     "Rechercher des messages...",
     "Buscar mensajes...",
-    "Shakisha ubutumwa..."
+    "Shakisha ubutumwa...",
+    "Tafuta ujumbe..."
   ],
   "Save changes": [
     "Enregistrer les modifications",
     "Guardar cambios",
-    "Bika ibyahinduwe"
+    "Bika ibyahinduwe",
+    "Hifadhi mabadiliko"
   ],
   "Total Balance": [
     "Solde total",
     "Saldo total",
-    "Amafaranga yose hamwe"
+    "Amafaranga yose hamwe",
+    "Jumla ya Salio"
   ],
   "Withdraw Funds": [
     "Retirer des fonds",
     "Retirar fondos",
-    "Bikuza amafaranga"
+    "Bikuza amafaranga",
+    "Toa Pesa"
   ],
   "Deposit": [
     "Déposer",
     "Depositar",
-    "Shyiraho amafaranga"
+    "Shyiraho amafaranga",
+    "Weka Pesa"
   ],
   "Deposit Funds": [
     "Déposer des fonds",
     "Depositar fondos",
-    "Shyiraho amafaranga"
+    "Shyiraho amafaranga",
+    "Weka Pesa"
   ],
   "Wallet snapshot": [
     "Aperçu du portefeuille",
     "Instantánea de billetera",
-    "Incamake y'ikofi"
+    "Incamake y'ikofi",
+    "Muhtasari wa pochi"
   ],
   "Recent movements": [
     "Mouvements récents",
     "Movimientos recientes",
-    "Ibyahindutse biheruka"
+    "Ibyahindutse biheruka",
+    "Miamala ya hivi karibuni"
   ],
   "Reconcile": [
     "Rapprocher",
     "Conciliar",
-    "Kugenzura imibare"
+    "Kugenzura imibare",
+    "Sawazisha"
   ],
   "Suspend": [
     "Suspendre",
     "Suspender",
-    "Guhagarika by'agateganyo"
+    "Guhagarika by'agateganyo",
+    "Simamisha"
   ],
   "Reactivate": [
     "Réactiver",
     "Reactivar",
-    "Kongera gukora"
+    "Kongera gukora",
+    "Washa Tena"
   ],
   "Adjust": [
     "Ajuster",
     "Ajustar",
-    "Guhindura / Kuringaniza"
+    "Guhindura / Kuringaniza",
+    "Rekebisha"
   ],
   "Delete Event?": [
     "Supprimer l'événement ?",
     "¿Eliminar evento?",
-    "Gusiba ibirori?"
+    "Gusiba ibirori?",
+    "Futa Tukio?"
   ],
   "Pause Event?": [
     "Mettre en pause l'événement ?",
     "¿Pausar evento?",
-    "Guhagarika ibirori by'agateganyo?"
+    "Guhagarika ibirori by'agateganyo?",
+    "Sitisha Tukio?"
   ],
   "Thank you for your feedback!": [
     "Merci pour vos commentaires !",
     "¡Gracias por tus comentarios!",
-    "Urakoze ku bitekerezo byawe!"
+    "Urakoze ku bitekerezo byawe!",
+    "Asante kwa maoni yako!"
   ],
   "Service Confirmation": [
     "Confirmation de service",
     "Confirmación de servicio",
-    "Kwemezwa kwa serivisi"
+    "Kwemezwa kwa serivisi",
+    "Uthibitisho wa Huduma"
   ],
   "Processing Payment": [
     "Traitement du paiement",
     "Procesando pago",
-    "Gutegura ubwishyu"
+    "Gutegura ubwishyu",
+    "Inachakata Malipo"
   ],
   "Payment Not Confirmed Yet": [
     "Paiement pas encore confirmé",
     "Pago no confirmado aún",
-    "Ubwishyu ntiburaremezwa"
+    "Ubwishyu ntiburaremezwa",
+    "Malipo Bado Hayajathibitishwa"
   ],
   "Payment Summary": [
     "Résumé du paiement",
     "Resumen de pago",
-    "Incamake y'ubwishyu"
+    "Incamake y'ubwishyu",
+    "Muhtasari wa Malipo"
   ],
   "My earnings": [
     "Mes revenus",
     "Mis ganancias",
-    "Inyungu zanjye"
+    "Inyungu zanjye",
+    "Mapato yangu"
   ],
   "My wallet": [
     "Mon portefeuille",
     "Mi billetera",
-    "Ikofi yanjye"
+    "Ikofi yanjye",
+    "Pochi yangu"
   ],
   "Join an album": [
     "Rejoindre un album",
     "Unirse a un álbum",
-    "Kwinjira muri alubumu"
+    "Kwinjira muri alubumu",
+    "Jiunge na albamu"
   ],
   "View details": [
     "Voir les détails",
     "Ver detalles",
-    "Reba ibisobanuro"
+    "Reba ibisobanuro",
+    "Tazama maelezo"
   ],
   "Mark days you're booked / unavailable": [
     "Marquer les jours où vous êtes réservé / indisponible",
     "Marcar días ocupados / no disponibles",
-    "Shyiraho iminsi udafite umwanya"
+    "Shyiraho iminsi udafite umwanya",
+    "Weka alama siku ambazo una shughuli / haupatikani"
   ],
   "Opportunities": [
     "Opportunités",
     "Oportunidades",
-    "Amahirwe y'akazi"
+    "Amahirwe y'akazi",
+    "Fursa"
   ],
   "Payroll Report": [
     "Rapport de paie",
     "Informe de nómina",
-    "Raporo y'imishahara"
+    "Raporo y'imishahara",
+    "Ripoti ya Mishahara"
   ],
   "Collaborate Hub": [
     "Centre de collaboration",
     "Centro de collaboration",
-    "Ihuriro ryo gufatanya"
+    "Ihuriro ryo gufatanya",
+    "Kituo cha Ushirikiano"
   ],
   "Owner Album": [
     "Album propriétaire",
     "Álbum del propietario",
-    "Alubumu ya nyirayo"
+    "Alubumu ya nyirayo",
+    "Albamu ya Mmiliki"
   ],
   "Join Invite": [
     "Invitation à rejoindre",
     "Invitación a unirse",
-    "Ubutumire bwo kwinjira"
+    "Ubutumire bwo kwinjira",
+    "Mwaliko wa Kujiunga"
   ],
   "Joined Album": [
     "Album rejoint",
     "Álbum unido",
-    "Alubumu winjiyemo"
+    "Alubumu winjiyemo",
+    "Albamu Uliyojiunga Nayo"
   ],
   "Photobook Detail": [
     "Détail du livre photo",
     "Detalle del fotolibro",
-    "Ibisobanuro by'igitabo cy'amafoto"
+    "Ibisobanuro by'igitabo cy'amafoto",
+    "Maelezo ya Kitabu cha Picha"
   ],
   "Album Detail": [
     "Détail de l'album",
     "Detalle del álbum",
-    "Ibisobanuro by'alubumu"
+    "Ibisobanuro by'alubumu",
+    "Maelezo ya Albamu"
   ],
   "Event Detail": [
     "Détail de l'événement",
     "Detalle del evento",
-    "Ibisobanuro by'ibirori"
+    "Ibisobanuro by'ibirori",
+    "Maelezo ya Tukio"
   ],
   "Payment Detail": [
     "Détail du paiement",
     "Detalle del pago",
-    "Ibisobanuro by'ubwishyu"
+    "Ibisobanuro by'ubwishyu",
+    "Maelezo ya Malipo"
   ],
   "Audit Log": [
     "Journal d'audit",
     "Registro de auditoría",
-    "Raporo y'ibyakozwe (Audit Log)"
+    "Raporo y'ibyakozwe (Audit Log)",
+    "Kumbukumbu ya Ukaguzi"
   ],
   "Ledger balance": [
     "Solde du grand livre",
     "Saldo del libro mayor",
-    "Amafaranga yose ari mu gitabo"
+    "Amafaranga yose ari mu gitabo",
+    "Salio la kitabu kikuu"
   ],
   "Available to withdraw": [
     "Disponible pour retrait",
     "Disponible para retirar",
-    "Amafaranga ashobora kubikuzwa"
+    "Amafaranga ashobora kubikuzwa",
+    "Inapatikana kutoa"
   ],
   "Pending clearance": [
     "En attente de compensation",
     "Pendiente de liberación",
-    "Amafaranga agitegerejwe kwemezwa"
+    "Amafaranga agitegerejwe kwemezwa",
+    "Inasubiri uidhinishaji"
   ],
   "Lock Album": [
     "Verrouiller l'album",
     "Bloquear álbum",
-    "Funga alubumu"
+    "Funga alubumu",
+    "Funga Albamu"
   ],
   "Delete Album": [
     "Supprimer l'album",
     "Eliminar álbum",
-    "Siba alubumu"
+    "Siba alubumu",
+    "Futa Albamu"
   ],
   "Edit Album": [
     "Modifier l'album",
     "Editar álbum",
-    "Hindura alubumu"
+    "Hindura alubumu",
+    "Hariri Albamu"
   ],
   "Share Album": [
     "Partager l'album",
     "Compartir álbum",
-    "Sangiza abandi alubumu"
+    "Sangiza abandi alubumu",
+    "Shiriki Albamu"
   ],
   "Select All": [
     "Tout sélectionner",
     "Seleccionar todo",
-    "Hitamo byose"
+    "Hitamo byose",
+    "Chagua Zote"
   ],
   "Deselect All": [
     "Tout désélectionner",
     "Deseleccionar todo",
-    "Reka guhitamo byose"
+    "Reka guhitamo byose",
+    "Acha Kuchagua Zote"
   ],
   "Uploaded": [
     "Téléversé",
     "Subido",
-    "Byashyizweho"
+    "Byashyizweho",
+    "Imepakiwa"
   ],
   "Downloaded": [
     "Téléchargé",
     "Descargado",
-    "Byamanuwe"
+    "Byamanuwe",
+    "Imepakuliwa"
   ],
   "Create photobook": [
     "Créer un livre photo",
     "Crear fotolibro",
-    "Kora igitabo cy'amafoto"
+    "Kora igitabo cy'amafoto",
+    "Unda kitabu cha picha"
   ]
 }
