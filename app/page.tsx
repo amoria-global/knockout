@@ -13,6 +13,10 @@ import { getStreamVideo } from '@/lib/APIs/streams/route';
 import { getPhotographers } from '@/lib/APIs/photographers/get-photographers/route';
 import TextType from './components/TextType';
 import Lenis from 'lenis';
+import { useLanguage } from './providers/LanguageProvider';
+import domTranslationsData from '@/lib/domTranslations.json';
+
+const domTranslations = domTranslationsData as unknown as Record<string, [string, string, string, string]>;
 
 // Register GSAP plugins
 if (typeof window !== 'undefined') {
@@ -21,6 +25,31 @@ if (typeof window !== 'undefined') {
 
 export default function Home() {
   const t = useTranslations();
+  const { locale } = useLanguage();
+
+  const getLangIdx = (l: string | null | undefined): 0 | 1 | 2 | 3 | null => {
+    if (l === 'fr') return 0;
+    if (l === 'es') return 1;
+    if (l === 'rw') return 2;
+    if (l === 'sw') return 3;
+    return null;
+  };
+
+  const tl = (text: string): string => {
+    if (!text || !locale || locale === 'en') return text;
+    const idx = getLangIdx(locale);
+    if (idx === null) return text;
+    const direct = domTranslations[text]?.[idx];
+    if (direct) return direct;
+    const lower = text.toLowerCase().trim();
+    for (const [k, v] of Object.entries(domTranslations)) {
+      if (k.toLowerCase().trim() === lower && v[idx]) {
+        return v[idx];
+      }
+    }
+    return text;
+  };
+
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
   // Real platform stats fetched from public APIs - feed the hero trust strip
   // and the "Joined by N photographers" pill. null while loading; numbers
@@ -1600,13 +1629,13 @@ export default function Home() {
                     <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <i className="bi bi-camera-video-fill" style={{ fontSize: '14px', color: hasLiveEvents ? '#ef4444' : '#fff' }}></i>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Events</span>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{tl('Events')}</span>
                         {hasLiveEvents && (
                           <span style={{ fontSize: '9px', fontWeight: 700, color: '#fca5a5', background: 'rgba(220,38,38,0.20)', padding: '2px 6px', borderRadius: '8px', border: '1px solid rgba(220,38,38,0.45)' }}>LIVE</span>
                         )}
                       </div>
                       <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.3 }}>
-                        {hasLiveEvents ? 'Live streams happening now' : 'Upcoming events & streams'}
+                        {hasLiveEvents ? tl('Live streams happening now') : tl('Upcoming events & streams')}
                       </p>
                     </div>
                   </div>
@@ -1649,9 +1678,9 @@ export default function Home() {
                     <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <i className="bi bi-person-bounding-box" style={{ fontSize: '14px', color: '#60a5fa' }}></i>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>AI Scan</span>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{tl('AI Scan')}</span>
                       </div>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.3 }}>Find your photos with facial recognition</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.3 }}>{tl('Find your photos with facial recognition')}</p>
                     </div>
                   </div>
                 </div>
@@ -1705,7 +1734,7 @@ export default function Home() {
                     }}
                   >
                     <i className={hasLiveEvents ? 'bi bi-broadcast' : 'bi bi-compass'} style={{ fontSize: '13px' }}></i>
-                    {hasLiveEvents ? 'Go Streaming' : 'Explore all'}
+                    {hasLiveEvents ? tl('Go Streaming') : tl('Explore all')}
                   </button>
                   <button
                     onClick={() => window.location.href = '/user/find-my-photos'}
@@ -2183,7 +2212,7 @@ export default function Home() {
                 <div className="hiw-title-group">
                   <div className="hiw-eyebrow" aria-hidden="true">
                     <span className="hiw-eyebrow-dot" />
-                    <span>OUR PROCESS · 3 SIMPLE STEPS</span>
+                    <span>{tl('OUR PROCESS · 3 SIMPLE STEPS')}</span>
                     <span className="hiw-eyebrow-sparkle">✦</span>
                   </div>
                   <h2 className="how-it-works-title hiw-title" style={{
@@ -2227,7 +2256,7 @@ export default function Home() {
                     <span />
                   </div>
                   <p className="hiw-subtitle">
-                    From discovery to your first live moment, a clear path designed to feel effortless.
+                    {tl('From discovery to your first live moment, a clear path designed to feel effortless.')}
                   </p>
                 </div>
 
@@ -2830,7 +2859,7 @@ export default function Home() {
               <div className="hiw-pro-left">
                 <div className="hiw-pro-eyebrow">
                   <span className="hiw-pro-eyebrow-dot" />
-                  <span>FOR CREATORS</span>
+                  <span>{tl('FOR CREATORS')}</span>
                   <span className="hiw-pro-eyebrow-spark">✦</span>
                 </div>
                 <h2 className="photographer-title hiw-pro-title">
@@ -2859,7 +2888,7 @@ export default function Home() {
                     <span /><span /><span />
                   </span>
                   <span className="hiw-pro-trust-text">
-                    Joined by <strong>{fmtCount(stats.photographers)}</strong> photographers
+                    {tl('Joined by')} <strong>{fmtCount(stats.photographers)}</strong> {tl('photographers')}
                   </span>
                 </div>
               </div>
@@ -2870,7 +2899,7 @@ export default function Home() {
                   {/* Top-left LIVE-style indicator on the bezel */}
                   <span className="hiw-pro-video-indicator" aria-hidden="true">
                     <span className="hiw-pro-video-indicator-dot" />
-                    LIVE WORK
+                    {tl('LIVE WORK')}
                   </span>
                   <video
                     autoPlay
@@ -4534,7 +4563,7 @@ export default function Home() {
                         <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
                         <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
                       </svg>
-                      AI Scan
+                      {tl('AI Scan')}
                     </div>
                   </div>
                   <h3 style={{
@@ -4544,7 +4573,7 @@ export default function Home() {
                     marginTop: '10px',
                     marginBottom: '4px'
                   }}>
-                    Facial Recognition
+                    {tl('Facial Recognition')}
                   </h3>
                   <p style={{
                     fontSize: '13px',
@@ -4552,7 +4581,7 @@ export default function Home() {
                     lineHeight: '1.4',
                     margin: 0
                   }}>
-                    Instantly find photos of you captured by event photographers.
+                    {tl('Instantly find photos of you captured by event photographers.')}
                   </p>
                 </div>
               </div>
@@ -4584,7 +4613,7 @@ export default function Home() {
                 ]).map((p, i) => (
                   <span key={i} className="wa-marquee-item">
                     <i className={`bi ${p.i}`} aria-hidden="true" />
-                    {p.t}
+                    {tl(p.t)}
                   </span>
                 ))}
               </div>
