@@ -48,7 +48,18 @@
       "other": "Ibindi",
       "browseTitle": "Shakisha Ibirori",
       "browseSubtitle": "Vumbura ibirori bidasanzwe bibera hafi yawe"
-    }
+    },
+    "hallOfFame": "Icyiciro cy'icyubahiro",
+    "donate": "Tanga inkunga",
+    "findMyPhotos": "Shaka Amafoto Yanjye",
+    "getYourPhotos": "Bona Amafoto Yawe",
+    "aiFaceScan": "Gusuzuma isura na AI mu birori",
+    "browsePhotos": "Shakisha Amafoto",
+    "stockPhotosSubtitle": "Amafoto ku cyiciro, yishyurwa kuri buri foto",
+    "app": "Porogaramu",
+    "free": "Ubuntu",
+    "scanWithPhoneCamera": "Kanda n'ifoto ya telefoni",
+    "viewAppFeatures": "Reba ibiranga porogaramu & ibisobanuro"
   },
   "hero": {
     "twitter": "@AmoriaConnekyt",

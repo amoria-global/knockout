@@ -48,7 +48,18 @@
       "other": "Nyinginezo",
       "browseTitle": "Vinjari Matukio",
       "browseSubtitle": "Gundua matukio ya kupendeza yanayotokea karibu nawe"
-    }
+    },
+    "hallOfFame": "Ukumbi wa Umaarufu",
+    "donate": "Changia",
+    "findMyPhotos": "Tafuta Picha Zangu",
+    "getYourPhotos": "Pata Picha Zako",
+    "aiFaceScan": "Uchanganuzi wa uso wa AI kutoka matukioni",
+    "browsePhotos": "Vinjari Picha",
+    "stockPhotosSubtitle": "Picha za hisa kulingana na kategoria, zinalipwa kwa picha",
+    "app": "Programu",
+    "free": "Bure",
+    "scanWithPhoneCamera": "Changanua kwa kamera ya simu",
+    "viewAppFeatures": "Tazama vipengele na maelezo ya programu"
   },
   "hero": {
     "twitter": "@AmoriaConnekyt",
