@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { IntlProvider } from 'next-intl';
-import { defaultLocale, type Locale } from '../../i18n';
+import { defaultLocale, locales, type Locale } from '../../i18n';
 import domTranslationsData from '../../lib/domTranslations.json';
 
 // Import all message files
@@ -22,7 +22,7 @@ const messages: Record<string, typeof enMessages> = {
 
 const domTranslations: Record<string, [string, string, string, string]> = domTranslationsData as unknown as Record<string, [string, string, string, string]>;
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'NOSCRIPT', 'SVG']);
-const LANG_IDX: Record<Exclude<Locale, 'en'>, 0 | 1 | 2 | 3> = {
+const LANG_IDX: Record<string, 0 | 1 | 2 | 3> = {
   fr: 0,
   es: 1,
   rw: 2,
@@ -92,7 +92,7 @@ function readCookieLocale(): Locale | null {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(/(?:^|;\s*)connekt_locale=([^;]+)/);
   const val = match?.[1]?.trim().toLowerCase() as Locale | undefined;
-  return val && messages[val] ? val : null;
+  return val && (locales as readonly string[]).includes(val) ? val : null;
 }
 
 function writeCookieLocale(locale: Locale) {
@@ -116,29 +116,27 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // 1. Check URL query param (?lang=rw or ?locale=rw) for mobile/cross-app handoff
+    // 1. Check URL query param (?lang=es or ?locale=fr) for mobile/cross-app handoff
     let resolved: Locale | null = null;
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlLang = (params.get('lang') || params.get('locale'))?.trim().toLowerCase() as Locale | undefined;
-      if (urlLang && messages[urlLang]) {
+      if (urlLang && (locales as readonly string[]).includes(urlLang)) {
         resolved = urlLang;
       }
     }
     // 2. Fall back to localStorage or shared cookie
     if (!resolved) {
       const savedLocale = localStorage.getItem('locale') as Locale;
-      if (savedLocale && messages[savedLocale]) {
+      if (savedLocale && (locales as readonly string[]).includes(savedLocale)) {
         resolved = savedLocale;
       } else {
-        resolved = readCookieLocale();
+        resolved = readCookieLocale() || defaultLocale;
       }
     }
-    if (resolved && messages[resolved]) {
-      setLocaleState(resolved);
-      localStorage.setItem('locale', resolved);
-      writeCookieLocale(resolved);
-    }
+    setLocaleState(resolved);
+    localStorage.setItem('locale', resolved);
+    writeCookieLocale(resolved);
     setMounted(true);
   }, []);
 
