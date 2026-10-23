@@ -48,4 +48,9 @@ export default defineConfig({
       exclude: ['node_modules/', '.next/', '**/*.config.*', '**/*.d.ts'],
     },
   },
+  css: {
+    postcss: {
+      plugins: [],
+    },
+  },
 });

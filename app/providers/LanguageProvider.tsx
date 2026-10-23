@@ -45,44 +45,42 @@ for (const [enKey, trans] of Object.entries(domTranslations)) {
   }
 }
 
-function translateText(raw: string, targetLang: Locale): string {
-  if (!raw) return raw;
-  const leading = raw.match(/^\s*/)?.[0] ?? '';
-  const trailing = raw.match(/\s*$/)?.[0] ?? '';
+function getCanonical(raw: string): { canonical: string; leading: string; suffix: string; trailing: string } | null {
+  if (!raw) return null;
+  const leading = raw.match(/^\s*/)?.[0] ?? "";
+  const trailing = raw.match(/\s*$/)?.[0] ?? "";
   const trimmed = raw.trim();
-  if (!trimmed) return raw;
+  if (!trimmed) return null;
 
-  // Check for trailing punctuation
   const punctMatch = trimmed.match(/^([^:!?.]+)([:!?.]+)$/);
   const baseTrimmed = punctMatch ? punctMatch[1].trim() : trimmed;
-  const suffix = punctMatch ? punctMatch[2] : '';
+  const suffix = punctMatch ? punctMatch[2] : "";
 
-  // Find canonical English representation
-  let enCanonical: string | null = null;
   if (domTranslations[baseTrimmed]) {
-    enCanonical = baseTrimmed;
-  } else {
-    const lower = baseTrimmed.toLowerCase();
-    for (const key of Object.keys(domTranslations)) {
-      if (key.toLowerCase() === lower) {
-        enCanonical = key;
-        break;
-      }
-    }
-    if (!enCanonical) {
-      enCanonical = reverseDict.get(lower) ?? null;
+    return { canonical: baseTrimmed, leading, suffix, trailing };
+  }
+  const lower = baseTrimmed.toLowerCase();
+  for (const key of Object.keys(domTranslations)) {
+    if (key.toLowerCase() === lower) {
+      return { canonical: key, leading, suffix, trailing };
     }
   }
-
-  if (!enCanonical) return raw;
-
-  if (targetLang === 'en') {
-    return `${leading}${enCanonical}${suffix}${trailing}`;
+  const rev = reverseDict.get(lower);
+  if (rev) {
+    return { canonical: rev, leading, suffix, trailing };
   }
+  return null;
+}
 
-  const match = domTranslations[enCanonical] || normalizedDict.get(enCanonical.toLowerCase());
+function translateText(raw: string, targetLang: Locale): string {
+  const info = getCanonical(raw);
+  if (!info) return raw;
+  const { canonical, leading, suffix, trailing } = info;
+  if (targetLang === "en") {
+    return `${leading}${canonical}${suffix}${trailing}`;
+  }
+  const match = domTranslations[canonical] || normalizedDict.get(canonical.toLowerCase());
   if (!match) return raw;
-
   const translated = match[LANG_IDX[targetLang]];
   return `${leading}${translated}${suffix}${trailing}`;
 }
@@ -166,16 +164,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     const processTextNode = (node: Text) => {
       const parent = node.parentElement;
-      if (!parent || SKIP_TAGS.has(parent.tagName) || parent.closest('[data-no-translate]')) return;
-      const current = node.nodeValue ?? '';
+      if (!parent || SKIP_TAGS.has(parent.tagName) || parent.closest("[data-no-translate]")) return;
+      const current = node.nodeValue ?? "";
       if (!current.trim()) return;
 
       let orig = origTextMap.get(node);
       if (orig === undefined) {
-        const candidate = translateText(current, 'rw');
-        if (candidate !== current) {
-          const enForm = translateText(current, 'en');
-          orig = enForm;
+        const info = getCanonical(current);
+        if (info) {
+          orig = `${info.leading}${info.canonical}${info.suffix}${info.trailing}`;
           origTextMap.set(node, orig);
           trackedNodes.add(node);
         } else {
@@ -190,21 +187,22 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     };
 
     const processElementAttrs = (el: Element) => {
-      if (SKIP_TAGS.has(el.tagName) || el.closest('[data-no-translate]')) return;
-      const ph = el.getAttribute('placeholder');
+      if (SKIP_TAGS.has(el.tagName) || el.closest("[data-no-translate]")) return;
+      const ph = el.getAttribute("placeholder");
       if (ph && ph.trim()) {
         let orig = origPlaceholderMap.get(el);
         if (orig === undefined) {
-          if (translateText(ph, 'rw') !== ph) {
-            orig = translateText(ph, 'en');
+          const info = getCanonical(ph);
+          if (info) {
+            orig = `${info.leading}${info.canonical}${info.suffix}${info.trailing}`;
             origPlaceholderMap.set(el, orig);
             trackedEls.add(el);
           }
         }
         if (orig !== undefined) {
           const nextPh = translateText(orig, locale);
-          if (el.getAttribute('placeholder') !== nextPh) {
-            el.setAttribute('placeholder', nextPh);
+          if (el.getAttribute("placeholder") !== nextPh) {
+            el.setAttribute("placeholder", nextPh);
           }
         }
       }
