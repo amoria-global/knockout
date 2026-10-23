@@ -1448,7 +1448,7 @@
   "Verified": [
     "Vérifié",
     "Verificado",
-    "Yemejwe",
+    "Byemejwe",
     "Imethibitishwa"
   ],
   "Rating": [
@@ -2443,9 +2443,9 @@
   ],
   "Email Address": [
     "Adresse e-mail",
-    "Dirección de correo electrónico",
-    "Aderesi ya imeri",
-    "Barua Pepe"
+    "Correo electrónico",
+    "Imeri",
+    "Barua pepe"
   ],
   "Email address": [
     "Adresse e-mail",
@@ -3188,8 +3188,8 @@
   "Payment Failed": [
     "Échec du paiement",
     "Pago fallido",
-    "Ubwishyu bwananiranye",
-    "Malipo Yameshindikana"
+    "Ubwishyu bwanzwe",
+    "Malipo yameshindikana"
   ],
   "Total Amount": [
     "Montant total",
@@ -4434,10 +4434,10 @@
     "Uthibitisho wa Huduma"
   ],
   "Processing Payment": [
-    "Traitement du paiement",
+    "Traitement du paiement en cours",
     "Procesando pago",
-    "Gutegura ubwishyu",
-    "Inachakata Malipo"
+    "Ubwishyu buri gutunganywa",
+    "Inashughulikia malipo"
   ],
   "Payment Not Confirmed Yet": [
     "Paiement pas encore confirmé",
@@ -6216,10 +6216,10 @@
     "Choose Malipo Option"
   ],
   "Choose Where Your": [
-    "Choisissez où votre",
-    "Elige dónde tu",
-    "Hitamo aho",
-    "Chagua mahali ambapo"
+    "Choisissez où va votre",
+    "Elija dónde va su",
+    "Hitamo aho impano yawe",
+    "Chagua mahali mchango wako"
   ],
   "Choose a bank...": [
     "Choose a bank...",
@@ -6534,10 +6534,10 @@
     "Complete Tip Malipo"
   ],
   "Complete Your Donation": [
-    "Complete Your Don",
-    "Complete Your Donación",
-    "Complete Your Inkunga",
-    "Complete Your Mchango"
+    "Finalisez votre don",
+    "Complete su donación",
+    "Uzuza impano yawe",
+    "Kamilisha mchango wako"
   ],
   "Complete Your Profile": [
     "Complétez votre profil",
@@ -6998,8 +6998,8 @@
   "Custom amount": [
     "Montant personnalisé",
     "Monto personalizado",
-    "Andika andi mafaranga",
-    "Kiasi Kingine"
+    "Andika umubare wihariye",
+    "Kiasi maalum"
   ],
   "Customer": [
     "Customer",
@@ -7314,10 +7314,10 @@
     "Doe"
   ],
   "Donate · Empower · Inspire": [
-    "Faire un don · Empower · Inspire",
-    "Donar · Empower · Inspire",
-    "Tanga inkunga · Empower · Inspire",
-    "Changia · Empower · Inspire"
+    "Donner · Autonomiser · Inspirer",
+    "Donar · Empoderar · Inspirar",
+    "Tanga · Fasha Guhesha Ubushobozi · Tera Inkunga",
+    "Changia · Wezesha · Vuvia Moyo"
   ],
   "Donation": [
     "Don",
@@ -7326,10 +7326,10 @@
     "Mchango"
   ],
   "Donation Goes": [
-    "Don Goes",
-    "Donación Goes",
-    "Inkunga Goes",
-    "Mchango Goes"
+    "Don est destiné",
+    "Donación se destina",
+    "Ijyana",
+    "Unapoelekezwa"
   ],
   "Done": [
     "Terminé",
@@ -7902,10 +7902,10 @@
     "Matukio remaining"
   ],
   "Every Child": [
-    "Every Child",
-    "Every Child",
-    "Every Child",
-    "Every Child"
+    "Chaque enfant",
+    "Cada niño",
+    "Buri mwana",
+    "Kila mtoto"
   ],
   "Everything looks good": [
     "Everything looks Bon",
@@ -8076,10 +8076,10 @@
     "Family Picha"
   ],
   "Family Support": [
-    "Family Support",
-    "Family Soporte",
-    "Family Ubufasha",
-    "Family Msaada"
+    "Soutien aux familles",
+    "Apoyo familiar",
+    "Ubufasha bw'umuryango",
+    "Msaada wa familia"
   ],
   "Family receiving healthcare support": [
     "Family receiving healthcare Support",
@@ -8204,8 +8204,8 @@
   "First Name": [
     "Prénom",
     "Nombre",
-    "Izina ribanza",
-    "Jina la Kwanza"
+    "Izina ry'irihimbano",
+    "Jina la kwanza"
   ],
   "First payment": [
     "Premier paiement",
@@ -8766,10 +8766,10 @@
     "Important Malipo Notes"
   ],
   "In Times of Need": [
-    "In Times sur Need",
-    "In Times de Need",
-    "In Times kuri Need",
-    "In Times kati ya Need"
+    "En temps de besoin",
+    "En momentos de necesidad",
+    "Mu bihe byo gukenera ubufasha",
+    "Wakati wa uhitaji"
   ],
   "In the": [
     "In the",
@@ -9111,7 +9111,7 @@
     "Nom de famille",
     "Apellido",
     "Izina ry'umuryango",
-    "Jina la Mwisho"
+    "Jina la ukoo"
   ],
   "Last Updated: 01 February 2026": [
     "Last Updated: 01 February 2026",
@@ -9138,10 +9138,10 @@
     "Last reconciled"
   ],
   "Lasting Change": [
-    "Lasting Change",
-    "Lasting Change",
-    "Lasting Change",
-    "Lasting Change"
+    "Changement durable",
+    "Cambio duradero",
+    "Impinduka irambye",
+    "Mabadiliko ya kudumu"
   ],
   "Latency": [
     "Latency",
@@ -9504,16 +9504,16 @@
     "Pesa"
   ],
   "Make Your": [
-    "Make Your",
-    "Make Your",
-    "Make Your",
-    "Make Your"
+    "Faites votre",
+    "Haga su",
+    "Tanga",
+    "Fanya"
   ],
   "Making Real Difference": [
-    "Making Real Difference",
-    "Making Real Difference",
-    "Making Real Difference",
-    "Making Real Difference"
+    "Faire une réelle différence",
+    "Marcando una diferencia real",
+    "Gukora itandukaniro nyaryo",
+    "Kuleta mabadiliko halisi"
   ],
   "Male": [
     "Male",
@@ -10458,10 +10458,10 @@
     "Our Fraud Protection Guarantee"
   ],
   "Our Impact": [
-    "Our Impact",
-    "Our Impact",
-    "Our Impact",
-    "Our Impact"
+    "Notre impact",
+    "Nuestro impacto",
+    "Ibyo twagezeho",
+    "Athari yetu"
   ],
   "Our Journey · Mission · Vision": [
     "Our Journey · Mission · Vision",
@@ -11148,10 +11148,10 @@
     "Pro Tip"
   ],
   "Proceed to Payment": [
-    "Proceed Au Paiement",
-    "Proceed Hasta Pago",
-    "Proceed Kugeza Kwishyura",
-    "Proceed Hadi Malipo"
+    "Passer au paiement",
+    "Proceder al pago",
+    "Komeza ku kwishyura",
+    "Endelea na malipo"
   ],
   "Processing Withdrawal": [
     "Processing Retrait",
@@ -12090,10 +12090,10 @@
     "Sector"
   ],
   "Secure": [
-    "Secure",
-    "Secure",
-    "Secure",
-    "Secure"
+    "Sécurisé",
+    "Seguro",
+    "Bitekanye",
+    "Salama"
   ],
   "Secure payment": [
     "Secure paiement",
@@ -12120,9 +12120,9 @@
     "USALAMA Incident Hotline"
   ],
   "Select Amount": [
-    "Sélectionner montant",
-    "Seleccionar cantidad",
-    "Hitamo amafaranga",
+    "Sélectionnez le montant",
+    "Seleccione el monto",
+    "Hitamo umubare w'amafaranga",
     "Chagua kiasi"
   ],
   "Select Client *": [
@@ -12912,10 +12912,10 @@
     "Target:"
   ],
   "Tax Deductible": [
-    "Tax Deductible",
-    "Tax Deductible",
-    "Tax Deductible",
-    "Tax Deductible"
+    "Déductible d'impôt",
+    "Deducible de impuestos",
+    "Yemerewe gukurwaho umusoro",
+    "Inayokatwa kodi"
   ],
   "Tax ID / TIN": [
     "Tax ID / TIN",
@@ -13170,10 +13170,10 @@
     "Hadi Year"
   ],
   "Together, We Can Create": [
-    "Together, We Can Créer",
-    "Together, We Can Crear",
-    "Together, We Can Rema",
-    "Together, We Can Unda"
+    "Ensemble, nous pouvons créer un",
+    "Juntos, podemos crear un",
+    "Twese hamwe, dushobora kuzana",
+    "Pamoja, tunaweza kuleta"
   ],
   "Toggle details": [
     "Toggle détails",
@@ -14286,10 +14286,10 @@
     "Your Indoor Vifurushi"
   ],
   "Your Information": [
-    "Your Information",
-    "Your Information",
-    "Your Information",
-    "Your Information"
+    "Vos coordonnées",
+    "Su información",
+    "Amakuru yawe",
+    "Taarifa zako"
   ],
   "Your Invite Code": [
     "Your Invite Code",
@@ -14796,10 +14796,10 @@
     "in"
   ],
   "in Numbers": [
-    "in Numbers",
-    "in Numbers",
-    "in Numbers",
-    "in Numbers"
+    "en chiffres",
+    "en números",
+    "mu mibare",
+    "kwa nambari"
   ],
   "in the": [
     "in the",
@@ -15162,10 +15162,10 @@
     "you@example.com"
   ],
   "your generosity": [
-    "your generosity",
-    "your generosity",
-    "your generosity",
-    "your generosity"
+    "votre générosité",
+    "su generosidad",
+    "ubugwaneza bwawe",
+    "ukarimu wako"
   ],
   "your.email@example.com": [
     "votre.email@exemple.com",
@@ -15568,5 +15568,467 @@
     "Reserva instantánea",
     "Gutumiza ako kanya",
     "Uhifadhi wa papo hapo"
+  ],
+  "Transform lives through": [
+    "Transformez des vies grâce à",
+    "Transforma vidas a través de",
+    "Hindura ubuzima binyuze mu",
+    "Badilisha maisha kupitia"
+  ],
+  "We believe in the power of community. Every contribution supports vulnerable families,\n            educates children, feeds the hungry, and empowers those with disabilities.": [
+    "Nous croyons au pouvoir de la communauté. Chaque contribution soutient les familles vulnérables, éduque les enfants, nourrit les affamés et responsabilise les personnes handicapées.",
+    "Creemos en el poder de la comunidad. Cada contribución apoya a familias vulnerables, educa a niños, alimenta a los necesitados y empodera a personas con discapacidad.",
+    "Twizera imbaraga z'umuryango. Buri musanzu ufasha imiryango itishoboye, urera abana, ugaburira abashonje, kandi ugahesha ubushobozi abafite ubumuga.",
+    "Tunaamini katika nguvu ya jamii. Kila mchango unasaidia familia zilizo hatarini, unaelimisha watoto, unalisha wenye njaa na kuwawezesha wenye ulemavu."
+  ],
+  "We believe in the power of community. Every contribution supports vulnerable families, educates children, feeds the hungry, and empowers those with disabilities.": [
+    "Nous croyons au pouvoir de la communauté. Chaque contribution soutient les familles vulnérables, éduque les enfants, nourrit les affamés et responsabilise les personnes handicapées.",
+    "Creemos en el poder de la comunidad. Cada contribución apoya a familias vulnerables, educa a niños, alimenta a los necesitados y empodera a personas con discapacidad.",
+    "Twizera imbaraga z'umuryango. Buri musanzu ufasha imiryango itishoboye, urera abana, ugaburira abashonje, kandi ugahesha ubushobozi abafite ubumuga.",
+    "Tunaamini katika nguvu ya jamii. Kila mchango unasaidia familia zilizo hatarini, unaelimisha watoto, unalisha wenye njaa na kuwawezesha wenye ulemavu."
+  ],
+  "Live · 3 donations in the last hour": [
+    "En direct · 3 dons au cours de la dernière heure",
+    "En vivo · 3 donaciones en la última hora",
+    "Ako kanya · Impano 3 zikozwe mu isaha ishize",
+    "Moja kwa moja · Michango 3 katika saa iliyopita"
+  ],
+  "See Our Impact": [
+    "Découvrir notre impact",
+    "Ver nuestro impacto",
+    "Reba ibyo twagezeho",
+    "Ona athari yetu"
+  ],
+  "Children Educated": [
+    "Enfants scolarisés",
+    "Niños educados",
+    "Abana bafashijwe kwiga",
+    "Watoto waliosomeshwa"
+  ],
+  "Families Supported": [
+    "Familles soutenues",
+    "Familias apoyadas",
+    "Imiryango yafashijwe",
+    "Familia zilizosaidiwa"
+  ],
+  "Meals Provided": [
+    "Repas fournis",
+    "Comidas provistas",
+    "Ifunguro ryatanzwe",
+    "Milo iliyotolewa"
+  ],
+  "Lives Empowered": [
+    "Vies autonomisées",
+    "Vidas empoderadas",
+    "Ubuzima bwahindutse",
+    "Maisha yaliyowezeshwa"
+  ],
+  "Disabilities Aided": [
+    "Personnes handicapées aidées",
+    "Personas con discapacidad asistidas",
+    "Abafite ubumuga bafashijwe",
+    "Walemavu waliosaidiwa"
+  ],
+  "Every contribution creates ripples of change. Here's how your generosity has transformed lives in our community.": [
+    "Chaque contribution génère une vague de changement. Voici comment votre générosité a transformé des vies au sein de notre communauté.",
+    "Cada contribución crea ondas de cambio. Así es como su generosidad ha transformado vidas en nuestra comunidad.",
+    "Buri musanzu uzana impinduka nziza. Uku niko ubugwaneza bwawe bwahinduye ubuzima mu muryango wacu.",
+    "Kila mchango huleta mabadiliko chanya. Hivi ndivyo ukarimu wako ulivyobadilisha maisha katika jamii yetu."
+  ],
+  "Education for": [
+    "L'éducation pour",
+    "Educación para",
+    "Uburezi kuri",
+    "Elimu kwa"
+  ],
+  "Through donations collected on Amoria Connekyt, we provide essential educational resources to underprivileged children. Books, school supplies, and learning materials open doors to brighter futures.": [
+    "Grâce aux dons collectés sur Amoria Connekyt, nous fournissons des ressources éducatives essentielles aux enfants défavorisés. Les livres, les fournitures scolaires et le matériel d'apprentissage ouvrent les portes d'un avenir meilleur.",
+    "A través de las donaciones recopiladas en Amoria Connekyt, proporcionamos recursos educativos esenciales a niños desfavorecidos. Libros, útiles escolares y materiales de aprendizaje abren puertas a futuros más brillantes.",
+    "Binyuze mu mfashanyo yakusanyijwe kuri Amoria Connekyt, duha ibikoresho by'ingenzi by'amashuri abana bakeneye ubufasha. Ibitabo, amakaye n'ibikoresho byo kwiga bibafungurira amarembo y'ejo heza.",
+    "Kupitia michango inayokusanywa kwenye Amoria Connekyt, tunatoa vifaa muhimu vya kielimu kwa watoto wasiojiweza. Vitabu, vifaa vya shule na vya kusomea hufungua milango ya mustakabali mzuri zaidi."
+  ],
+  "Your contribution directly impacts a child's ability to learn, grow, and dream. Together, we're building a foundation for the next generation of leaders, thinkers, and changemakers.": [
+    "Votre contribution a un impact direct sur la capacité d'un enfant à apprendre, grandir et rêver. Ensemble, nous bâtissons les bases de la prochaine génération de leaders et de bâtisseurs d'avenir.",
+    "Su contribución impacta directamente en la capacidad de un niño para aprender, crecer y soñar. Juntos, estamos construyendo las bases para la próxima generación de líderes y agentes de cambio.",
+    "Umusanzu wawe ugira ingaruka nziza ku bushobozi bw'umwana bwo kwiga, gukura no kurota ejo heza. Twese hamwe, turi kubaka umusingi w'abayobozi n'abazana impinduka b'ejo hazaza.",
+    "Mchango wako unaathiri moja kwa moja uwezo wa mtoto kujifunza, kukua na kuota ndoto kuu. Pamoja, tunajenga msingi wa kizazi kijacho cha viongozi na waleta mabadiliko."
+  ],
+  "Support Education": [
+    "Soutenir l'éducation",
+    "Apoyar la educación",
+    "Shyigikira uburezi",
+    "Unga mkono elimu"
+  ],
+  "Supporting Families": [
+    "Soutenir les familles",
+    "Apoyando a las familias",
+    "Gushyigikira imiryango",
+    "Kusaidia familia"
+  ],
+  "Healthcare costs shouldn't force families to choose between medicine and meals. Amoria Connekyt channels your donations to provide medical bill assistance, insurance support, and essential healthcare access.": [
+    "Les frais de santé ne devraient pas contraindre les familles à choisir entre médicaments et nourriture. Amoria Connekyt canalise vos dons pour offrir une aide au paiement des factures médicales, une assurance santé et un accès aux soins essentiels.",
+    "Los costos de atención médica no deberían obligar a las familias a elegir entre medicinas y alimentos. Amoria Connekyt canaliza sus donaciones para brindar asistencia con facturas médicas, apoyo de seguros y acceso a la salud esencial.",
+    "Ibiciro by'ubuvuzi ntibikwiye gutuma imiryango ihitamo hagati y'imiti n'ifunguro. Amoria Connekyt iyobora impano zawe mu gufasha kwishyura fagitire z'ubuvuzi, ubwishingizi bw'ubuzima, no kubona ubuvuzi bw'ibanze.",
+    "Gharama za matibabu hazipaswi kulazimisha familia kuchagua kati ya dawa na chakula. Amoria Connekyt inaelekeza michango yako kutoa msaada wa bili za matibabu, bima ya afya na upatikanaji wa huduma muhimu za afya."
+  ],
+  "From emergency medical needs to ongoing care, your generosity ensures no family faces health challenges alone. Together, we create a safety net of compassion and support.": [
+    "Des urgences médicales aux soins de longue durée, votre générosité garantit qu'aucune famille n'affronte seule les épreuves de santé. Ensemble, nous tissons un réseau de solidarité et de bienveillance.",
+    "Desde necesidades médicas de emergencia hasta atención continua, su generosidad asegura que ninguna familia enfrente los desafíos de salud sola. Juntos, creamos una red de compasión y apoyo.",
+    "Kuva ku buvuzi bw'ingoboka kugeza ku kwitabwaho igihe kirekire, ubugwaneza bwawe bwizeza ko nta muryango uhangana n'ibibazo by'ubuzima wenyine. Twese hamwe, dushyiraho urusobe rw'impuhwe n'ubufasha.",
+    "Kuanzia dharura za matibabu hadi huduma endelevu, ukarimu wako unahakikisha hakuna familia inayokabili changamoto za afya peke yake. Pamoja, tunajenga ngao ya huruma na msaada."
+  ],
+  "Medical Bills Assistance": [
+    "Aide aux factures médicales",
+    "Asistencia para facturas médicas",
+    "Ubufasha bwo kwishyura imiti n'ubuvuzi",
+    "Msaada wa bili za matibabu"
+  ],
+  "Health Insurance Support": [
+    "Soutien à l'assurance santé",
+    "Apoyo con seguro médico",
+    "Gufasha kubona ubwishingizi bw'ubuzima (Mutuelle)",
+    "Msaada wa bima ya afya"
+  ],
+  "Emergency Care Fund": [
+    "Fonds de soins d'urgence",
+    "Fondo de atención de emergencias",
+    "Ikigega cy'ubutabazi bwihuse",
+    "Mfuko wa huduma za dharura"
+  ],
+  "Direct your contribution to the cause closest to your heart. Every category represents lives waiting to be transformed.": [
+    "Orientez votre contribution vers la cause qui vous tient à cœur. Chaque catégorie représente des vies qui attendent d'être transformées.",
+    "Dirija su contribución a la causa más cercana a su corazón. Cada categoría representa vidas esperando ser transformadas.",
+    "Ekeza umusanzu wawe ku kintu kigukoza ku mutima. Buri cyiciro kigizwe n'ubuzima butegereje guhinduka bwiza.",
+    "Elekeza mchango wako kwenye suala lililo karibu zaidi na moyo wako. Kila kitengo kinawakilisha maisha yanayosubiri kubadilishwa."
+  ],
+  "Help families access healthcare, housing assistance, and essential living needs.": [
+    "Aidez les familles à accéder aux soins de santé, à une aide au logement et aux produits de première nécessité.",
+    "Ayude a las familias a acceder a atención médica, asistencia para vivienda y necesidades esenciales de vida.",
+    "Fasha imiryango kubona ubuvuzi, icumbi, n'ibindi bikenerwa by'ibanze mu buzima.",
+    "Saidia familia kupata huduma za afya, msaada wa makazi na mahitaji muhimu ya kimsingi."
+  ],
+  "Help families access healthcare, housing, and essential needs.": [
+    "Aidez les familles à accéder aux soins, au logement et aux besoins vitaux.",
+    "Ayude a las familias a acceder a atención médica, vivienda y necesidades básicas.",
+    "Fasha imiryango kubona ubuvuzi, icumbi, n'ibikenewe by'ibanze.",
+    "Saidia familia kupata huduma za afya, makazi na mahitaji muhimu."
+  ],
+  "Provide books, school supplies, and educational resources to children in need.": [
+    "Fournissez des livres, des fournitures scolaires et des ressources pédagogiques aux enfants dans le besoin.",
+    "Proporcione libros, útiles escolares y recursos educativos a niños necesitados.",
+    "Tanga ibitabo, amakaye n'ibikoresho byo kwiga ku bana bakeneye ubufasha.",
+    "Toa vitabu, vifaa vya shule na rasilimali za kielimu kwa watoto wenye uhitaji."
+  ],
+  "Provide books, supplies, and resources to children in need.": [
+    "Fournissez des livres, des fournitures et des ressources aux enfants nécessiteux.",
+    "Proporcione libros, suministros y recursos a niños necesitados.",
+    "Tanga ibitabo, ibikoresho n'imfashanyo ku bana babikeneye.",
+    "Toa vitabu, vifaa na rasilimali kwa watoto wenye uhitaji."
+  ],
+  "Food Programs": [
+    "Programmes alimentaires",
+    "Programas de alimentación",
+    "Gahunda zo kugaburira abatishoboye",
+    "Mipango ya chakula"
+  ],
+  "Ensure nutritious meals reach those facing food insecurity in our communities.": [
+    "Veillez à ce que des repas nutritifs parviennent à ceux qui font face à l'insécurité alimentaire dans nos communautés.",
+    "Asegure que comidas nutritivas lleguen a quienes enfrentan inseguridad alimentaria en nuestras comunidades.",
+    "Fasha kugeza amafunguro yujuje intungamubiri ku bababaye mu miryango yacu.",
+    "Hakikisha milo yenye lishe inawafikia wale wanaokabiliwa na uhaba wa chakula katika jamii zetu."
+  ],
+  "Ensure nutritious meals reach those facing food insecurity.": [
+    "Veillez à ce que des repas nutritifs parviennent à ceux confrontés à l'insécurité alimentaire.",
+    "Asegure que comidas nutritivas lleguen a quienes enfrentan inseguridad alimentaria.",
+    "Kugeza amafunguro yujuje intungamubiri ku batishoboye.",
+    "Hakikisha milo yenye lishe inawafikia wale wanaokabiliwa na uhaba wa chakula."
+  ],
+  "Disability Support": [
+    "Aide aux personnes handicapées",
+    "Apoyo a la discapacidad",
+    "Gushyigikira abafite ubumuga",
+    "Msaada kwa wenye ulemavu"
+  ],
+  "Provide assistive devices and care for individuals with disabilities.": [
+    "Fournissez des appareils d'assistance et des soins aux personnes en situation de handicap.",
+    "Proporcione dispositivos de asistencia y cuidados para personas con discapacidad.",
+    "Tanga ibikoresho by'ubufasha no kwitabwaho ku bantu bafite ubumuga.",
+    "Toa vifaa vya usaidizi na huduma kwa watu wenye ulemavu."
+  ],
+  "Join thousands of donors who have already made a difference. Your contribution, no matter the size, helps us continue our mission of supporting those in need.": [
+    "Rejoignez des milliers de donateurs qui ont déjà fait une différence. Votre contribution, quelle que soit sa taille, nous aide à poursuivre notre mission auprès des plus démunis.",
+    "Únase a miles de donantes que ya han marcado una diferencia. Su contribución, sin importar el tamaño, nos ayuda a continuar nuestra misión de apoyar a los necesitados.",
+    "Fatanya n'abaterankunga ibihumbi bamaze kuzana impinduka. Umusanzu wawe, uko ungana kose, udufasha gukomeza ubutumwa bwo gushyigikira abababaye.",
+    "Ungana na maelfu ya wafadhili ambao tayari wameleta mabadiliko. Mchango wako, hata uwe wa ukubwa gani, unatusaidia kuendeleza dhamira yetu ya kusaidia wenye uhitaji."
+  ],
+  "Start Donating": [
+    "Commencer à donner",
+    "Comenzar a donar",
+    "Tangira gutanga impano",
+    "Anza kuchangia"
+  ],
+  "Donation Category": [
+    "Catégorie de don",
+    "Categoría de donación",
+    "Icyiciro cy'impano",
+    "Kitengo cha mchango"
+  ],
+  "Donation amount": [
+    "Montant du don",
+    "Monto de la donación",
+    "Umubare w'impano",
+    "Kiasi cha mchango"
+  ],
+  "One-time": [
+    "Ponctuel",
+    "Única vez",
+    "Rimwe gusa",
+    "Mara moja"
+  ],
+  "Monthly": [
+    "Mensuel",
+    "Mensual",
+    "Buri kwezi",
+    "Kila mwezi"
+  ],
+  "First Name *": [
+    "Prénom *",
+    "Nombre *",
+    "Izina ry'irihimbano *",
+    "Jina la kwanza *"
+  ],
+  "Last Name *": [
+    "Nom de famille *",
+    "Apellido *",
+    "Izina ry'umuryango *",
+    "Jina la ukoo *"
+  ],
+  "Email Address *": [
+    "Adresse e-mail *",
+    "Correo electrónico *",
+    "Imeri *",
+    "Barua pepe *"
+  ],
+  "Message (optional)": [
+    "Message (optionnel)",
+    "Mensaje (opcional)",
+    "Ubutumwa (niba ubishaka)",
+    "Ujumbe (si lazima)"
+  ],
+  "Add a message (optional)": [
+    "Ajouter un message (optionnel)",
+    "Agregar un mensaje (opcional)",
+    "Ongeraho ubutumwa (niba ubishaka)",
+    "Ongeza ujumbe (si lazima)"
+  ],
+  "Donate anonymously": [
+    "Faire un don anonyme",
+    "Donar de forma anónima",
+    "Tanga impano utagaragaje izina",
+    "Changia bila kutaja jina"
+  ],
+  "Make Anonymous": [
+    "Rendre anonyme",
+    "Hacer anónimo",
+    "Kugira ibanga",
+    "Fanya bila jina"
+  ],
+  "Anonymous": [
+    "Anonyme",
+    "Anónimo",
+    "Bitaragajwe izina",
+    "Bila jina"
+  ],
+  "You're donating": [
+    "Vous donnez",
+    "Está donando",
+    "Ugiye gutanga",
+    "Unachangia"
+  ],
+  "Contributing to": [
+    "En contribuant à",
+    "Contribuyendo a",
+    "Gutanga umusanzu kuri",
+    "Kuchangia kwenye"
+  ],
+  "Support a cause": [
+    "Soutenir une cause",
+    "Apoyar una causa",
+    "Shyigikira igikorwa",
+    "Unga mkono mradi"
+  ],
+  "GIVE BACK": [
+    "REDONNER",
+    "RETRIBUIR",
+    "GUFASHA ABANDI",
+    "RUDISHA KWA JAMII"
+  ],
+  "Your payment is secure and encrypted": [
+    "Votre paiement est sécurisé et chiffré",
+    "Su pago es seguro y está encriptado",
+    "Ubwishyu bwawe buratekanye kandi burarinzwe",
+    "Malipo yako ni salama na yamelindwa"
+  ],
+  "Donation successful! Thank you for your generosity.": [
+    "Don effectué avec succès ! Merci infiniment pour votre générosité.",
+    "¡Donación exitosa! Muchas gracias por su generosidad.",
+    "Impano yishyuwe neza! Urakoze cyane ku buntu bwawe.",
+    "Mchango umekamilika! Asante sana kwa ukarimu wako."
+  ],
+  "Donation could not be processed": [
+    "Le don n'a pas pu être traité",
+    "No se pudo procesar la donación",
+    "Impano ntiyashoboye gutunganywa",
+    "Mchango haukuweza kukamilika"
+  ],
+  "No charge was made. You can try again with the same or a different payment method.": [
+    "Aucun montant n'a été prélevé. Vous pouvez réessayer avec le même moyen de paiement ou un autre.",
+    "No se realizó ningún cobro. Puede intentarlo de nuevo con el mismo o un método de pago diferente.",
+    "Nta mafaranga yaciwe. Ushobora kongera kugerageza ukoresheje uburyo bumwe cyangwa ubundi bwo kwishyura.",
+    "Hakuna kiasi kilichokatwa. Unaweza kujaribu tena kwa njia hiyo hiyo au njia nyingine ya malipo."
+  ],
+  "Donation:": [
+    "Don :",
+    "Donación:",
+    "Impano:",
+    "Mchango:"
+  ],
+  "Total Donation:": [
+    "Don total :",
+    "Donación total:",
+    "Igiteranyo cy'impano:",
+    "Jumla ya mchango:"
+  ],
+  "Thank You!": [
+    "Merci !",
+    "¡Muchas gracias!",
+    "Urakoze cyane!",
+    "Asante sana!"
+  ],
+  "Your donation has been received. You are making a real difference in someone's life.": [
+    "Votre don a bien été reçu. Vous faites une réelle différence dans la vie de quelqu'un.",
+    "Su donación ha sido recibida. Está marcando una diferencia real en la vida de alguien.",
+    "Impano yawe yakiriwe neza. Uri kuzana impinduka nyazo mu buzima bw'umuntu.",
+    "Mchango wako umepokelewa. Unaleta mabadiliko ya kweli katika maisha ya mtu."
+  ],
+  "Your donation helps support vulnerable families, educate children, and empower those in need.": [
+    "Votre don aide à soutenir les familles vulnérables, à éduquer les enfants et à autonomiser les personnes dans le besoin.",
+    "Su donación ayuda a apoyar a familias vulnerables, educar a niños y empoderar a los necesitados.",
+    "Impano yawe ifasha gushyigikira imiryango itishoboye, kurera abana, no guha ubushobozi ababikeneye.",
+    "Mchango wako unasaidia familia zilizo hatarini, kuelimisha watoto na kuwawezesha wenye uhitaji."
+  ],
+  "Make Another Donation": [
+    "Faire un autre don",
+    "Hacer otra donación",
+    "Tanga indi mpano",
+    "Changia tena"
+  ],
+  "The payment could not be completed. Please try again.": [
+    "Le paiement n'a pas pu aboutir. Veuillez réessayer.",
+    "No se pudo completar el pago. Por favor, inténtelo de nuevo.",
+    "Ubwishyu ntibwashoboye kurangira. Nyamuneka gerageza nanone.",
+    "Malipo hayajaweza kukamilika. Tafadhali jaribu tena."
+  ],
+  "Open payment page again": [
+    "Rouvrir la page de paiement",
+    "Abrir la página de pago de nuevo",
+    "Fungura nanone urupapuro rwo kwishyura",
+    "Fungua tena ukurasa wa malipo"
+  ],
+  "Complete the payment in the new tab. This page will update automatically.": [
+    "Complétez le paiement dans le nouvel onglet. Cette page s'actualisera automatiquement.",
+    "Complete el pago en la nueva pestaña. Esta página se actualizará automáticamente.",
+    "Rangiza kwishyura mu idirishya rishya. Uru rupapuro rurihindura mu buryo bwikora.",
+    "Kamilisha malipo kwenye kichupo kipya. Ukurasa huu utasasishwa kiotomatiki."
+  ],
+  "Please check your phone and approve the payment prompt. This page will update automatically.": [
+    "Veuillez vérifier votre téléphone et approuver l'avis de paiement. Cette page s'actualisera automatiquement.",
+    "Por favor revise su teléfono y apruebe la solicitud de pago. Esta página se actualizará automáticamente.",
+    "Nyamuneka reba telefoni yawe wemeze ubwishyu. Uru rupapuro rurihindura mu buryo bwikora.",
+    "Tafadhali kagua simu yako na uidhinishe ombi la malipo. Ukurasa huu utasasishwa kiotomatiki."
+  ],
+  "Transform lives with your generosity!": [
+    "Transformez des vies grâce à votre générosité !",
+    "¡Transforma vidas con tu generosidad!",
+    "Hindura ubuzima hamwe n'ubugwaneza bwawe!",
+    "Badilisha maisha kwa ukarimu wako!"
+  ],
+  "Rwandan Franc": [
+    "Franc rwandais",
+    "Franco ruandés",
+    "Amafaranga y'u Rwanda",
+    "Faranga ya Rwanda"
+  ],
+  "US Dollar": [
+    "Dollar américain",
+    "Dólar estadounidense",
+    "Idolari ry'Amerika",
+    "Dola ya Marekani"
+  ],
+  "Please select a donation amount before proceeding.": [
+    "Veuillez sélectionner un montant de don avant de continuer.",
+    "Por favor, seleccione un monto de donación antes de continuar.",
+    "Nyamuneka hitamo umubare w'impano mbere yo gukomeza.",
+    "Tafadhali chagua kiasi cha mchango kabla ya kuendelea."
+  ],
+  "Please enter your first name.": [
+    "Veuillez entrer votre prénom.",
+    "Por favor, ingrese su nombre.",
+    "Nyamuneka andika izina ryawe ry'irihimbano.",
+    "Tafadhali weka jina lako la kwanza."
+  ],
+  "Please enter your last name.": [
+    "Veuillez entrer votre nom de famille.",
+    "Por favor, ingrese su apellido.",
+    "Nyamuneka andika izina ry'umuryango.",
+    "Tafadhali weka jina lako la ukoo."
+  ],
+  "Please enter your email address.": [
+    "Veuillez entrer votre adresse e-mail.",
+    "Por favor, ingrese su dirección de correo electrónico.",
+    "Nyamuneka andika aderesi ya imeri yawe.",
+    "Tafadhali weka barua pepe yako."
+  ],
+  "Unable to process your donation. Please check your connection and try again.": [
+    "Impossible de traiter votre don. Veuillez vérifier votre connexion et réessayer.",
+    "No se pudo procesar su donación. Por favor, verifique su conexión e intente nuevamente.",
+    "Ntibishobotse gutunganya impano yawe. Nyamuneka reba interineti yawe wongere ugerageze.",
+    "Haikuweza kushughulikia mchango wako. Tafadhali thibitisha muunganisho wako na ujaribu tena."
+  ],
+  "Failed to create donation": [
+    "Échec de la création du don",
+    "Error al crear la donación",
+    "Ntibyashobotse gutegura impano",
+    "Imeshindikana kuunda mchango"
+  ],
+  "Failed to initiate payment": [
+    "Échec de l'initialisation du paiement",
+    "Error al iniciar el pago",
+    "Ntibyashobotse gutangiza ubwishyu",
+    "Imeshindikana kuanzisha malipo"
+  ],
+  "Please select a payment method": [
+    "Veuillez sélectionner un moyen de paiement",
+    "Por favor, seleccione un método de pago",
+    "Nyamuneka hitamo uburyo bwo kwishyura",
+    "Tafadhali chagua njia ya malipo"
+  ],
+  "Please enter a valid phone number for the selected country": [
+    "Veuillez entrer un numéro de téléphone valide pour le pays sélectionné",
+    "Por favor, ingrese un número de teléfono válido para el país seleccionado",
+    "Nyamuneka andika nimero ya telefoni yemewe ku gihugu wahisemo",
+    "Tafadhali weka nambari sahihi ya simu ya nchi uliyochagua"
+  ],
+  "Mobile money phone number": [
+    "Numéro de téléphone mobile money",
+    "Número de teléfono de dinero móvil",
+    "Nimero ya telefoni ya mobile money",
+    "Nambari ya simu ya mobile money"
+  ],
+  "Now": [
+    "Maintenant",
+    "Ahora",
+    "Ubu",
+    "Sasa"
   ]
 }

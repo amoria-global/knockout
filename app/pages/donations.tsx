@@ -10,6 +10,18 @@ import PaymentCurrencyPreview, { type CurrencyCode } from "../components/Payment
 import { getCurrencies, createPublicDonation, getDonationTiers, getCurrencyRates, type Currency as APICurrency, type ExchangeRate } from '@/lib/APIs/public';
 import XentriPayModal from '../components/XentriPayModal';
 import RotatingGlobe from '../components/RotatingGlobe';
+import { useLanguage } from '../providers/LanguageProvider';
+import domTranslationsData from '@/lib/domTranslations.json';
+
+const domTranslations = domTranslationsData as unknown as Record<string, [string, string, string, string]>;
+
+const getLangIdx = (l: string | null | undefined): 0 | 1 | 2 | 3 | null => {
+  if (l === 'fr') return 0;
+  if (l === 'es') return 1;
+  if (l === 'rw') return 2;
+  if (l === 'sw') return 3;
+  return null;
+};
 
 // Hook for counting animation
 const useCountUp = (end: number, duration: number = 2000, startCounting: boolean = false) => {
@@ -274,6 +286,23 @@ const AmountButton = ({
 
 
 const DonationsContent = () => {
+  const { locale } = useLanguage();
+
+  const tl = useCallback((text: string): string => {
+    if (!text || !locale || locale === 'en') return text;
+    const idx = getLangIdx(locale);
+    if (idx === null) return text;
+    const direct = domTranslations[text]?.[idx];
+    if (direct) return direct;
+    const lower = text.toLowerCase().trim();
+    for (const [k, v] of Object.entries(domTranslations)) {
+      if (k.toLowerCase().trim() === lower && v[idx]) {
+        return v[idx];
+      }
+    }
+    return text;
+  }, [locale]);
+
   // Optional ?eventId= ties the donation to a specific event (deep links
   // from event pages / the mobile app). Forwarded to createPublicDonation.
   const searchParams = useSearchParams();
@@ -413,11 +442,11 @@ const DonationsContent = () => {
       setErrorPopup({
         open: true,
         severity: 'error',
-        title: 'Donation could not be processed',
+        title: tl('Donation could not be processed'),
         message,
-        hint: 'No charge was made. You can try again with the same or a different payment method.',
+        hint: tl('No charge was made. You can try again with the same or a different payment method.'),
         primaryAction: {
-          label: 'Try again',
+          label: tl('Try again'),
           icon: 'bi-arrow-clockwise',
           onClick: () => { closeErrorPopup(); handleDonation(); },
         },
@@ -574,23 +603,23 @@ const DonationsContent = () => {
   const categories = [
     {
       icon: "bi bi-people-fill",
-      title: "Family Support",
-      description: "Help families access healthcare, housing assistance, and essential living needs."
+      title: tl("Family Support"),
+      description: tl("Help families access healthcare, housing assistance, and essential living needs.")
     },
     {
       icon: "bi bi-book-fill",
-      title: "Education",
-      description: "Provide books, school supplies, and educational resources to children in need."
+      title: tl("Education"),
+      description: tl("Provide books, school supplies, and educational resources to children in need.")
     },
     {
       icon: "bi bi-basket3-fill",
-      title: "Food Programs",
-      description: "Ensure nutritious meals reach those facing food insecurity in our communities."
+      title: tl("Food Programs"),
+      description: tl("Ensure nutritious meals reach those facing food insecurity in our communities.")
     },
     {
       icon: "bi bi-heart-pulse-fill",
-      title: "Disability Support",
-      description: "Provide assistive devices and care for individuals with disabilities."
+      title: tl("Disability Support"),
+      description: tl("Provide assistive devices and care for individuals with disabilities.")
     },
   ];
 
@@ -946,7 +975,7 @@ const DonationsContent = () => {
               boxShadow: '0 0 10px rgba(236,72,153,0.7)',
               animation: 'donDotPulse 1.6s ease-in-out infinite',
             }} />
-            <span style={{ color: '#F5EBFF', fontSize: '11px', fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase' }}>Donate · Empower · Inspire</span>
+            <span style={{ color: '#F5EBFF', fontSize: '11px', fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase' }}>{tl("Donate · Empower · Inspire")}</span>
             <span style={{ color: '#EC4899', fontSize: '12px' }}>✦</span>
           </div>
 
@@ -960,7 +989,7 @@ const DonationsContent = () => {
             fontFamily: "'Georgia', 'Times New Roman', serif",
             textShadow: '0 4px 30px rgba(0,0,0,0.45), 0 0 50px rgba(168,85,247,0.20)',
           }}>
-            Transform lives through{' '}
+            {tl("Transform lives through")}{' '}
             <span style={{
               fontWeight: 600,
               fontStyle: 'italic',
@@ -969,7 +998,7 @@ const DonationsContent = () => {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
               paddingRight: '0.12em',
-            }}>your generosity</span>
+            }}>{tl("your generosity")}</span>
           </h1>
 
           <p style={{
@@ -979,8 +1008,7 @@ const DonationsContent = () => {
             maxWidth: '640px',
             margin: '0 auto 28px',
           }}>
-            We believe in the power of community. Every contribution supports vulnerable families,
-            educates children, feeds the hungry, and empowers those with disabilities.
+            {tl("We believe in the power of community. Every contribution supports vulnerable families, educates children, feeds the hungry, and empowers those with disabilities.")}
           </p>
 
           {/* Live impact counter mini-strip - directly under the lede */}
@@ -997,7 +1025,7 @@ const DonationsContent = () => {
           }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', boxShadow: '0 0 10px #34D399', animation: 'donDotPulse 1.4s ease-in-out infinite' }} />
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#86EFAC' }}>
-              Live · 3 donations in the last hour
+              {tl("Live · 3 donations in the last hour")}
             </span>
           </div>
 
@@ -1024,7 +1052,7 @@ const DonationsContent = () => {
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 14px 32px -10px rgba(236,72,153,0.55), 0 4px 10px -2px rgba(168,85,247,0.35)'; }}
             >
               <i className="bi bi-heart-fill" style={{ fontSize: 14 }} />
-              Donate Now
+              {tl("Donate Now")}
             </button>
             <button
               onClick={() => document.getElementById('impact-section')?.scrollIntoView({ behavior: 'smooth' })}
@@ -1044,7 +1072,7 @@ const DonationsContent = () => {
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.55)'; e.currentTarget.style.background = 'rgba(255,255,255,0.10)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
             >
-              See Our Impact <span aria-hidden="true">↓</span>
+              {tl("See Our Impact")} <span aria-hidden="true">↓</span>
             </button>
           </div>
 
@@ -1062,10 +1090,10 @@ const DonationsContent = () => {
             maxWidth: 760,
           }}>
             {[
-              { num: '120', sup: '+', label: 'Children Educated', icon: 'bi-mortarboard-fill', tint: '#C084FC' },
-              { num: '50',  sup: '+', label: 'Families Supported', icon: 'bi-people-fill',     tint: '#93C5FD' },
-              { num: '300', sup: '+', label: 'Meals Provided',     icon: 'bi-basket3-fill',    tint: '#86EFAC' },
-              { num: '15',  sup: '+', label: 'Lives Empowered',    icon: 'bi-heart-pulse-fill', tint: '#F472B6' },
+              { num: '120', sup: '+', label: tl('Children Educated'), icon: 'bi-mortarboard-fill', tint: '#C084FC' },
+              { num: '50',  sup: '+', label: tl('Families Supported'), icon: 'bi-people-fill',     tint: '#93C5FD' },
+              { num: '300', sup: '+', label: tl('Meals Provided'),     icon: 'bi-basket3-fill',    tint: '#86EFAC' },
+              { num: '15',  sup: '+', label: tl('Lives Empowered'),    icon: 'bi-heart-pulse-fill', tint: '#F472B6' },
             ].map((s, i) => (
               <div key={i} className="don-hero-stat" style={{
                 display: 'flex', alignItems: 'center', gap: 10,
@@ -1142,7 +1170,7 @@ const DonationsContent = () => {
               marginBottom: '18px',
             }}>
               <i className="bi bi-bar-chart-fill" style={{ fontSize: '14px', color: '#083A85' }} />
-              <span style={{ color: '#083A85', fontSize: '14px', fontWeight: 600 }}>Making Real Difference</span>
+              <span style={{ color: '#083A85', fontSize: '14px', fontWeight: 600 }}>{tl("Making Real Difference")}</span>
             </div>
 
             <h2 className="section-title" style={{
@@ -1151,8 +1179,8 @@ const DonationsContent = () => {
               marginBottom: '14px',
               lineHeight: 1.1,
             }}>
-              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Our Impact</span>{' '}
-              <span style={{ color: '#1a1a2e' }}>in Numbers</span>
+              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{tl("Our Impact")}</span>{' '}
+              <span style={{ color: '#1a1a2e' }}>{tl("in Numbers")}</span>
             </h2>
             <p className="section-subtitle" style={{
               fontSize: '17px',
@@ -1161,7 +1189,7 @@ const DonationsContent = () => {
               margin: '0 auto',
               lineHeight: 1.7,
             }}>
-              Every contribution creates ripples of change. Here's how your generosity has transformed lives in our community.
+              {tl("Every contribution creates ripples of change. Here's how your generosity has transformed lives in our community.")}
             </p>
           </div>
 
@@ -1172,7 +1200,7 @@ const DonationsContent = () => {
           }}>
             <ImpactCounter
               targetNumber={120}
-              label="Children Educated"
+              label={tl("Children Educated")}
               suffix="+"
               icon="bi bi-mortarboard-fill"
               color="#8B5CF6"
@@ -1180,7 +1208,7 @@ const DonationsContent = () => {
             />
             <ImpactCounter
               targetNumber={50}
-              label="Families Supported"
+              label={tl("Families Supported")}
               suffix="+"
               icon="bi bi-people-fill"
               color="#083A85"
@@ -1188,7 +1216,7 @@ const DonationsContent = () => {
             />
             <ImpactCounter
               targetNumber={300}
-              label="Meals Provided"
+              label={tl("Meals Provided")}
               suffix="+"
               icon="bi bi-basket3-fill"
               color="#10b981"
@@ -1196,7 +1224,7 @@ const DonationsContent = () => {
             />
             <ImpactCounter
               targetNumber={15}
-              label="Disabilities Aided"
+              label={tl("Disabilities Aided")}
               suffix="+"
               icon="bi bi-heart-pulse-fill"
               color="#FF6B6B"
@@ -1232,7 +1260,7 @@ const DonationsContent = () => {
               marginBottom: '18px',
             }}>
               <i className="bi bi-mortarboard-fill" style={{ fontSize: '13px', color: '#083A85' }} />
-              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>Education</span>
+              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>{tl("Education")}</span>
             </div>
 
             <h2 style={{
@@ -1242,8 +1270,8 @@ const DonationsContent = () => {
               marginBottom: '20px',
               lineHeight: 1.2,
             }}>
-              Education for{' '}
-              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Every Child</span>
+              {tl("Education for")}{' '}
+              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{tl("Every Child")}</span>
             </h2>
             <p style={{
               fontSize: '16px',
@@ -1251,7 +1279,7 @@ const DonationsContent = () => {
               lineHeight: 1.8,
               marginBottom: '16px',
             }}>
-              Through donations collected on Amoria Connekyt, we provide essential educational resources to underprivileged children. Books, school supplies, and learning materials open doors to brighter futures.
+              {tl("Through donations collected on Amoria Connekyt, we provide essential educational resources to underprivileged children. Books, school supplies, and learning materials open doors to brighter futures.")}
             </p>
             <p style={{
               fontSize: '16px',
@@ -1259,7 +1287,7 @@ const DonationsContent = () => {
               lineHeight: 1.8,
               marginBottom: '28px',
             }}>
-              Your contribution directly impacts a child's ability to learn, grow, and dream. Together, we're building a foundation for the next generation of leaders, thinkers, and changemakers.
+              {tl("Your contribution directly impacts a child's ability to learn, grow, and dream. Together, we're building a foundation for the next generation of leaders, thinkers, and changemakers.")}
             </p>
             <button
               onClick={() => setShowDonationModal(true)}
@@ -1278,7 +1306,7 @@ const DonationsContent = () => {
               onMouseEnter={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, #052559 0%, #083A85 100%)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(8,58,133,0.4)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(8,58,133,0.3)'; }}
             >
-              Support Education
+              {tl("Support Education")}
             </button>
           </div>
 
@@ -1339,7 +1367,7 @@ const DonationsContent = () => {
               marginBottom: '18px',
             }}>
               <i className="bi bi-people-fill" style={{ fontSize: '13px', color: '#083A85' }} />
-              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>Family Support</span>
+              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>{tl("Family Support")}</span>
             </div>
 
             <h2 style={{
@@ -1349,8 +1377,8 @@ const DonationsContent = () => {
               marginBottom: '20px',
               lineHeight: 1.2,
             }}>
-              Supporting Families{' '}
-              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>In Times of Need</span>
+              {tl("Supporting Families")}{' '}
+              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{tl("In Times of Need")}</span>
             </h2>
             <p style={{
               fontSize: '16px',
@@ -1358,7 +1386,7 @@ const DonationsContent = () => {
               lineHeight: 1.8,
               marginBottom: '16px',
             }}>
-              Healthcare costs shouldn't force families to choose between medicine and meals. Amoria Connekyt channels your donations to provide medical bill assistance, insurance support, and essential healthcare access.
+              {tl("Healthcare costs shouldn't force families to choose between medicine and meals. Amoria Connekyt channels your donations to provide medical bill assistance, insurance support, and essential healthcare access.")}
             </p>
             <p style={{
               fontSize: '16px',
@@ -1366,12 +1394,12 @@ const DonationsContent = () => {
               lineHeight: 1.8,
               marginBottom: '28px',
             }}>
-              From emergency medical needs to ongoing care, your generosity ensures no family faces health challenges alone. Together, we create a safety net of compassion and support.
+              {tl("From emergency medical needs to ongoing care, your generosity ensures no family faces health challenges alone. Together, we create a safety net of compassion and support.")}
             </p>
 
             {/* Feature list */}
             <div className="feature-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {['Medical Bills Assistance', 'Health Insurance Support', 'Emergency Care Fund'].map((item, i) => (
+              {[tl('Medical Bills Assistance'), tl('Health Insurance Support'), tl('Emergency Care Fund')].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <i className="bi bi-check-circle-fill" style={{ fontSize: '16px', color: '#083A85' }} />
                   <span style={{ fontSize: '16px', color: '#1a1a2e', fontWeight: 500 }}>{item}</span>
@@ -1431,7 +1459,7 @@ const DonationsContent = () => {
               marginBottom: '18px',
             }}>
               <i className="bi bi-grid-fill" style={{ fontSize: '13px', color: '#083A85' }} />
-              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>Categories</span>
+              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>{tl("Categories")}</span>
             </div>
 
             <h2 className="categories-title" style={{
@@ -1440,8 +1468,8 @@ const DonationsContent = () => {
               marginBottom: '14px',
               lineHeight: 1.1,
             }}>
-              <span style={{ color: '#1a1a2e' }}>Choose Where Your</span>{' '}
-              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Donation Goes</span>
+              <span style={{ color: '#1a1a2e' }}>{tl("Choose Where Your")}</span>{' '}
+              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{tl("Donation Goes")}</span>
             </h2>
             <p className="section-subtitle" style={{
               fontSize: '17px',
@@ -1450,7 +1478,7 @@ const DonationsContent = () => {
               margin: '0 auto',
               lineHeight: 1.6,
             }}>
-              Direct your contribution to the cause closest to your heart. Every category represents lives waiting to be transformed.
+              {tl("Direct your contribution to the cause closest to your heart. Every category represents lives waiting to be transformed.")}
             </p>
           </div>
 
@@ -1498,11 +1526,11 @@ const DonationsContent = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 28px 0' }}>
             <div>
               <h2 style={{ fontSize: '22px', fontWeight: 700, margin: 0, lineHeight: 1.2 }}>
-                <span style={{ color: '#1a1a2e' }}>Make Your </span>
-                <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Donation</span>
+                <span style={{ color: '#1a1a2e' }}>{tl("Make Your")}{' '}</span>
+                <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{tl("Donation")}</span>
               </h2>
               <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>
-                Contributing to <strong style={{ color: '#083A85' }}>{categories[activeCategory]?.title}</strong>
+                {tl("Contributing to")} <strong style={{ color: '#083A85' }}>{categories[activeCategory]?.title}</strong>
               </p>
             </div>
             <button onClick={() => setShowDonationModal(false)} style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: '#f3f4f6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '16px', flexShrink: 0 }}>
@@ -1524,7 +1552,7 @@ const DonationsContent = () => {
 
             {/* Amount + Currency row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1a1a2e', margin: 0 }}>Select Amount</h3>
+              <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1a1a2e', margin: 0 }}>{tl("Select Amount")}</h3>
               <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f3f4f6', padding: '3px', borderRadius: '8px' }}>
                 {currencyToggleList.map((curr) => (
                   <button key={curr} onClick={() => { setCurrency(curr); setCustomAmount(''); }}
@@ -1550,7 +1578,7 @@ const DonationsContent = () => {
                 {currency === 'RWF' ? '' : getCurrencyConfig(currency).symbol}
               </span>
               <input type="number" value={customAmount} onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(0); }}
-                placeholder="Custom amount" style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 8px', fontSize: '15px', fontWeight: 500 }} />
+                placeholder={tl("Custom amount")} style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 8px', fontSize: '15px', fontWeight: 500 }} />
               {currency === 'RWF' && <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>RWF</span>}
             </div>
 
@@ -1566,7 +1594,7 @@ const DonationsContent = () => {
                 defaultCurrency={currency as CurrencyCode}
                 onCurrencyChange={(code) => { setCurrency(code as typeof currency); setCustomAmount(''); }}
                 amounts={[{
-                  label: 'Donation amount',
+                  label: tl("Donation amount"),
                   amount: customAmount
                     ? (parseFloat(customAmount) || 0)
                     : convertFromRWF(selectedAmount, currency),
@@ -1579,7 +1607,7 @@ const DonationsContent = () => {
               {(['one-time', 'monthly'] as const).map((freq) => (
                 <button key={freq} onClick={() => setDonationFrequency(freq)}
                   style={{ flex: 1, padding: '9px', borderRadius: '8px', border: donationFrequency === freq ? '1.5px solid #083A85' : '1.5px solid #e2e8f0', backgroundColor: donationFrequency === freq ? '#083A85' : '#fff', color: donationFrequency === freq ? '#fff' : '#64748b', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
-                  {freq === 'one-time' ? 'One-time' : 'Monthly'}
+                  {freq === 'one-time' ? tl("One-time") : tl("Monthly")}
                 </button>
               ))}
             </div>
@@ -1588,21 +1616,21 @@ const DonationsContent = () => {
             <div style={{ borderTop: '1px solid #e2e8f0', margin: '0 0 14px' }} />
 
             {/* Donor info */}
-            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1a1a2e', margin: '0 0 10px' }}>Your Information</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1a1a2e', margin: '0 0 10px' }}>{tl("Your Information")}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <input type="text" placeholder={isAnonymous ? 'First Name' : 'First Name *'} value={donorFirstName} onChange={(e) => setDonorFirstName(e.target.value)}
+                <input type="text" placeholder={isAnonymous ? tl('First Name') : `${tl('First Name')} *`} value={donorFirstName} onChange={(e) => setDonorFirstName(e.target.value)}
                   style={{ flex: 1, padding: '11px 12px', borderRadius: '10px', border: `1.5px solid ${!isAnonymous && !donorFirstName.trim() ? '#f0a0a0' : '#e2e8f0'}`, fontSize: '14px', outline: 'none' }} />
-                <input type="text" placeholder={isAnonymous ? 'Last Name' : 'Last Name *'} value={donorLastName} onChange={(e) => setDonorLastName(e.target.value)}
+                <input type="text" placeholder={isAnonymous ? tl('Last Name') : `${tl('Last Name')} *`} value={donorLastName} onChange={(e) => setDonorLastName(e.target.value)}
                   style={{ flex: 1, padding: '11px 12px', borderRadius: '10px', border: `1.5px solid ${!isAnonymous && !donorLastName.trim() ? '#f0a0a0' : '#e2e8f0'}`, fontSize: '14px', outline: 'none' }} />
               </div>
-              <input type="email" placeholder={isAnonymous ? 'Email Address' : 'Email Address *'} value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)}
+              <input type="email" placeholder={isAnonymous ? tl('Email Address') : `${tl('Email Address')} *`} value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)}
                 style={{ padding: '11px 12px', borderRadius: '10px', border: `1.5px solid ${!isAnonymous && !donorEmail.trim() ? '#f0a0a0' : '#e2e8f0'}`, fontSize: '14px', outline: 'none' }} />
-              <textarea placeholder="Message (optional)" rows={2} value={donorMessage} onChange={(e) => setDonorMessage(e.target.value)}
+              <textarea placeholder={tl("Message (optional)")} rows={2} value={donorMessage} onChange={(e) => setDonorMessage(e.target.value)}
                 style={{ padding: '11px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none', resize: 'none', fontFamily: 'inherit' }} />
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
                 <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} style={{ width: '16px', height: '16px' }} />
-                Donate anonymously
+                {tl("Donate anonymously")}
               </label>
             </div>
 
@@ -1611,14 +1639,14 @@ const DonationsContent = () => {
               style={{ width: '100%', marginTop: '16px', background: isDonationFormValid() ? 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)' : '#b0b0b0', color: '#fff', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: 600, cursor: isDonationFormValid() ? 'pointer' : 'not-allowed', transition: 'all 0.3s', boxShadow: isDonationFormValid() ? '0 4px 14px rgba(8,58,133,0.3)' : 'none', opacity: isDonationFormValid() ? 1 : 0.7 }}
               onMouseEnter={(e) => { if (isDonationFormValid()) { e.currentTarget.style.background = 'linear-gradient(90deg, #052559 0%, #083A85 100%)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
               onMouseLeave={(e) => { if (isDonationFormValid()) { e.currentTarget.style.background = 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)'; e.currentTarget.style.transform = 'translateY(0)'; } }}>
-              Donate {formatCurrency(getDisplayAmount(), currency)} Now
+              {tl("Donate")} {formatCurrency(getDisplayAmount(), currency)} {tl("Now")}
             </button>
 
             {/* Trust badges */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-lock-fill" style={{ fontSize: '12px' }} />Secure</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-shield-check" style={{ fontSize: '12px' }} />Tax Deductible</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-check-circle-fill" style={{ fontSize: '12px' }} />Verified</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-lock-fill" style={{ fontSize: '12px' }} />{tl("Secure")}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-shield-check" style={{ fontSize: '12px' }} />{tl("Tax Deductible")}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-check-circle-fill" style={{ fontSize: '12px' }} />{tl("Verified")}</div>
             </div>
           </div>
         </div>
@@ -1642,9 +1670,9 @@ const DonationsContent = () => {
             marginBottom: '18px',
             lineHeight: 1.1,
           }}>
-            <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Together, We Can Create</span>
+            <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{tl("Together, We Can Create")}</span>
             <br />
-            <span style={{ color: '#1a1a2e' }}>Lasting Change</span>
+            <span style={{ color: '#1a1a2e' }}>{tl("Lasting Change")}</span>
           </h2>
 
           <p style={{
@@ -1654,7 +1682,7 @@ const DonationsContent = () => {
             maxWidth: '600px',
             margin: '0 auto 35px',
           }}>
-            Join thousands of donors who have already made a difference. Your contribution, no matter the size, helps us continue our mission of supporting those in need.
+            {tl("Join thousands of donors who have already made a difference. Your contribution, no matter the size, helps us continue our mission of supporting those in need.")}
           </p>
 
           <div style={{
@@ -1680,7 +1708,7 @@ const DonationsContent = () => {
               onMouseEnter={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, #052559 0%, #083A85 100%)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(8,58,133,0.4)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(8,58,133,0.3)'; }}
             >
-              Start Donating
+              {tl("Start Donating")}
             </button>
           </div>
         </div>
@@ -1775,14 +1803,14 @@ const DonationsContent = () => {
                 gap: '12px',
               }}>
                 <i className="bi bi-heart-fill" style={{ fontSize: '24px', color: '#083A85' }} />
-                Complete Your Donation
+                {tl("Complete Your Donation")}
               </h2>
               <p style={{
                 fontSize: '14px',
                 color: '#64748b',
                 margin: 0,
               }}>
-                You're donating <strong style={{ color: '#083A85' }}>{formatCurrency(getDisplayAmount(), currency)}</strong> to <strong>{categories[activeCategory].title}</strong>
+                {tl("You're donating")} <strong style={{ color: '#083A85' }}>{formatCurrency(getDisplayAmount(), currency)}</strong> {tl("to")} <strong>{categories[activeCategory].title}</strong>
               </p>
             </div>
 
@@ -1828,7 +1856,7 @@ const DonationsContent = () => {
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               <i className="bi bi-heart-fill" style={{ fontSize: '16px' }} />
-              {donationLoading ? 'Processing...' : `Proceed to Payment ${formatCurrency(getDisplayAmount(), currency)}`}
+              {donationLoading ? tl('Processing...') : `${tl('Proceed to Payment')} ${formatCurrency(getDisplayAmount(), currency)}`}
             </button>
 
             {/* Security Note */}
@@ -1842,7 +1870,7 @@ const DonationsContent = () => {
               fontSize: '13px',
             }}>
               <i className="bi bi-lock-fill" style={{ fontSize: '12px' }} />
-              Your payment is secure and encrypted
+              {tl("Your payment is secure and encrypted")}
             </div>
           </div>
         </div>
@@ -1882,7 +1910,7 @@ const DonationsContent = () => {
           gap: '10px',
         }}>
           <i className="bi bi-check-circle-fill" style={{ fontSize: '18px' }} />
-          Donation successful! Thank you for your generosity.
+          {tl("Donation successful! Thank you for your generosity.")}
         </div>
       )}
 
