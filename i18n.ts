@@ -2,7 +2,7 @@ import { getRequestConfig } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 
 // List of supported locales
-export const locales = ['en', 'fr', 'es', 'rw'] as const;
+export const locales = ['en', 'fr', 'es', 'rw', 'sw'] as const;
 export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = 'en';
@@ -13,6 +13,7 @@ export const languageNames: Record<Locale, string> = {
   fr: 'French',
   es: 'Español',
   rw: 'Kinyarwanda',
+  sw: 'Kiswahili',
 };
 
 export default getRequestConfig(async ({ locale }) => {
