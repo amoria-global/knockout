@@ -14,6 +14,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { getEffectivePrice, type EffectivePrice } from '@/lib/geoPricing';
 import { isAuthenticated } from '@/lib/api/client';
+import { classifyEventLoadError } from './loadError';
 import { clearEventReminder, getEventReminder, setEventReminder } from '@/lib/APIs/events/reminder/route';
 import { registerAnonymousViewer } from '@/lib/APIs/streams/anonymous-viewer';
 import { getDeviceId } from '@/lib/fingerprint';
@@ -195,6 +196,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   }, [eventId]);
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadOffline, setLoadOffline] = useState(false);
   const [msUntilStart, setMsUntilStart] = useState<number | null>(null);
 
   // Geo-restriction check
@@ -919,10 +921,11 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         if (response.success && response.data) {
           setSelectedEvent(response.data);
         } else {
-          setLoadError(response.error || 'This event could not be found. It may have been removed.');
+          setLoadError(response.error || 'Event not found');
         }
       } catch {
-        setLoadError('Unable to load event details. Please check your internet connection and try again.');
+        setLoadOffline(true);
+        setLoadError('Unable to load event details.');
       } finally {
         setIsLoading(false);
       }
@@ -963,6 +966,8 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
 
   // Error state
   if (loadError || !selectedEvent) {
+    const failure = classifyEventLoadError(loadError, loadOffline);
+    const calm = failure.kind !== 'not-found';
     return (
       <>
         <AmoriaKNavbar />
@@ -978,15 +983,23 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
           }}
         >
           <div style={{ textAlign: 'center', maxWidth: 420 }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.45)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: '#fca5a5', fontSize: 28 }}>
-              <i className="bi bi-exclamation-triangle"></i>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: calm ? 'rgba(242,12,143,0.10)' : 'rgba(239,68,68,0.12)', border: calm ? '1px solid rgba(242,12,143,0.40)' : '1px solid rgba(239,68,68,0.45)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: calm ? '#f9a8d4' : '#fca5a5', fontSize: 28 }}>
+              <i className={`bi ${failure.icon}`}></i>
             </div>
             <h1 style={{ fontSize: 24, fontWeight: 800, color: '#f4f6fb', margin: '0 0 6px', letterSpacing: '-0.01em' }}>
-              {loadError || 'Event not found'}
+              {failure.title}
             </h1>
             <p style={{ fontSize: 14, color: '#9ca3af', margin: '0 0 20px', lineHeight: 1.5 }}>
-              The event may have been removed, or the link may be incorrect.
+              {failure.body}
             </p>
+            {failure.canRetry && (
+              <button
+                onClick={() => window.location.reload()}
+                style={{ padding: '12px 28px', background: '#F20C8F', color: '#fff', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 8, marginRight: 10 }}
+              >
+                <i className="bi bi-arrow-clockwise"></i> Try again
+              </button>
+            )}
             <button
               onClick={() => window.history.back()}
               style={{ padding: '12px 28px', background: '#083A85', color: '#fff', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 36px -10px rgba(8,58,133,0.55)', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 8 }}
