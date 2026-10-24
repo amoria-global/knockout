@@ -24,6 +24,9 @@ const PhotographerOnboarding = dynamic(() => import('@/app/components/Photograph
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 import { resolvePostAuthDestination, goToPostAuthDestination } from '@/lib/utils/post-auth-destination';
 import { buildVerifyOtpUrl } from '@/lib/utils/otp-handoff';
+import { planForInvite, workspaceInviteIdFromUrl, type WorkspaceInvitePreview } from '@/lib/utils/workspace-invite';
+import { getWorkspaceInvitePreview } from '@/lib/APIs/public/workspace-invitation/route';
+import WorkspaceInviteBanner from '@/app/components/auth/WorkspaceInviteBanner';
 import InternationalPhoneInput, { type PhoneValue } from '@/app/components/phone/InternationalPhoneInput';
 
 // ─── Google Login Button ────────────────────────────────────────────
@@ -85,7 +88,7 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
 
 // ─── Overlay Panel (dark side with icons) ───────────────────────────
-function OverlayPanel({ isLogin, onToggle, userType }: { isLogin: boolean; onToggle: () => void; userType?: string | null }) {
+function OverlayPanel({ isLogin, onToggle, userType, hideToggle = false }: { isLogin: boolean; onToggle: () => void; userType?: string | null; hideToggle?: boolean }) {
   const iconBox: React.CSSProperties = { width: '70px', height: '70px', borderRadius: '14px', background: 'linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(255,107,107,0.15) 100%)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 
   // Role-specific content for signup view
@@ -193,7 +196,7 @@ function OverlayPanel({ isLogin, onToggle, userType }: { isLogin: boolean; onTog
       <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', marginBottom: '10px' }}>
         {isLogin ? "Don't have an account?" : 'Already have an account?'}
       </p>
-      <button onClick={onToggle} style={{
+      {!hideToggle && <button onClick={onToggle} style={{
         padding: '10px 36px', borderRadius: '10px', border: '2px solid rgba(255,255,255,0.6)',
         backgroundColor: 'transparent', color: '#fff', fontSize: '15px', fontWeight: '600',
         cursor: 'pointer', transition: 'all 0.3s', letterSpacing: '0.5px'
@@ -202,7 +205,7 @@ function OverlayPanel({ isLogin, onToggle, userType }: { isLogin: boolean; onTog
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
       >
         {isLogin ? 'Sign Up' : 'Sign In'}
-      </button>
+      </button>}
     </div>
   );
 }
@@ -241,6 +244,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
   // ── Toggle handler ──
   const toggleView = () => {
+    // A workspace invitation to an address with no account: there is nothing to sign in to, so sign-up stays.
+    if (inviteRequiresSignup && !isLogin) return;
     const next = !isLogin;
     setIsLogin(next);
     if (next) {
@@ -269,6 +274,21 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const returnUrlParam = searchParams.get('returnUrl');
   const [dashboardReturn, setDashboardReturn] = useState<string | null>(null);
   useEffect(() => { setDashboardReturn(resolvePostAuthDestination(returnUrlParam)); }, [returnUrlParam]);
+
+  // A workspace invitation link ("...collaborate?tab=workspace&invite=<id>"). Asked once what the invitation says, so a
+  // person with no account lands on sign-up, as a photographer, with the invited address fixed, and the rest of the
+  // journey (one-time code, two-factor, sign-in) already carries the link to the dashboard on its own.
+  const inviteId = workspaceInviteIdFromUrl(dashboardReturn);
+  const [invitePreview, setInvitePreview] = useState<WorkspaceInvitePreview | null>(null);
+  useEffect(() => {
+    if (!inviteId) { setInvitePreview(null); return; }
+    let live = true;
+    getWorkspaceInvitePreview(inviteId).then((p) => { if (live) setInvitePreview(p); });
+    return () => { live = false; };
+  }, [inviteId]);
+  const invitePlan = inviteId ? planForInvite(invitePreview, inviteId) : null;
+  const inviteRequiresSignup = !!invitePlan?.requireSignup;
+  const inviteLocksEmail = !!invitePlan?.lockEmail;
   // When a native app launches sign-in in the browser it passes its callback
   // as `redirect`: either a custom-scheme deep link (connekt://auth-callback,
   // connektstudio://…, exp://…) or a loopback HTTP listener
@@ -575,6 +595,23 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const [googleSignupLoading, setGoogleSignupLoading] = useState(false);
   const [appleSignupLoading, setAppleSignupLoading] = useState(false);
   const [isGooglePreFilled, setIsGooglePreFilled] = useState(false);
+
+  // Open the right door for the invitation, once per outcome.
+  const invitePlanKey = invitePlan?.key;
+  useEffect(() => {
+    if (!invitePlan) return;
+    if (invitePlan.view === 'signup') {
+      setIsLogin(false);
+      setSelectedUserType('Photographer');
+      setShowUserTypeModal(false);
+      if (invitePlan.email) setSignupEmail(invitePlan.email);
+      window.history.replaceState(null, '', '/user/auth/signup');
+    } else if (invitePlan.view === 'login') {
+      setIsLogin(true);
+      if (invitePlan.email) setLoginEmail(invitePlan.email);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invitePlanKey]);
   const [signupErrors, setSignupErrors] = useState<{ [key: string]: string }>({});
   // Photographer onboarding state - shown after signup, before OTP
   const [showPhotographerOnboarding, setShowPhotographerOnboarding] = useState(false);
@@ -1074,7 +1111,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
               />
             ))}
 
-            <OverlayPanel isLogin={isLogin} onToggle={toggleView} userType={selectedUserType} />
+            <OverlayPanel isLogin={isLogin} onToggle={toggleView} userType={selectedUserType} hideToggle={inviteRequiresSignup && !isLogin} />
           </div>
 
         </div>
@@ -1177,6 +1214,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         <h1 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: '700', textAlign: 'center', marginBottom: '2px', background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{t('title')}</h1>
         <div style={{ marginBottom: isMobile ? '14px' : '16px' }} />
 
+        {invitePlan && <WorkspaceInviteBanner tone={invitePlan.notice.tone} text={invitePlan.notice.text} />}
+
         <form onSubmit={handleLoginSubmit}>
           {loginError && <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 12px', marginBottom: '10px' }}><p style={{ fontSize: '12px', color: '#991b1b', margin: 0 }}>{loginError}</p></div>}
 
@@ -1259,6 +1298,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         <h1 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: '700', textAlign: 'center', marginBottom: '2px', background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{tSignup('title')}</h1>
         <p style={{ fontSize: isMobile ? '13px' : '14px', color: '#64748b', textAlign: 'center', marginBottom: isMobile ? '14px' : '16px', marginTop: 0 }}>Create your account to get started</p>
 
+        {invitePlan && <WorkspaceInviteBanner tone={invitePlan.notice.tone} text={invitePlan.notice.text} />}
+
         {isGooglePreFilled && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe', marginBottom: '10px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
@@ -1285,7 +1326,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             {/* Email */}
             <div>
               <label htmlFor="signupEmail" style={labelStyle}>{tSignup('yourEmail')} {isGooglePreFilled && <span style={{ fontSize: '12px', color: '#10b981' }}>(from Google)</span>}</label>
-              <input className="auth-input" type="email" id="signupEmail" autoComplete="email" required value={signupEmail} onChange={e => !isGooglePreFilled && setSignupEmail(e.target.value)} placeholder={tSignup('emailPlaceholder')} readOnly={isGooglePreFilled} style={{ ...inputStyle, backgroundColor: isGooglePreFilled ? '#f1f5f9' : '#eef2f9', cursor: isGooglePreFilled ? 'not-allowed' : 'text' }} />
+              <input className="auth-input" type="email" id="signupEmail" autoComplete="email" required value={signupEmail} onChange={e => !(isGooglePreFilled || inviteLocksEmail) && setSignupEmail(e.target.value)} placeholder={tSignup('emailPlaceholder')} readOnly={isGooglePreFilled || inviteLocksEmail} aria-describedby={inviteLocksEmail ? 'invite-email-note' : undefined} style={{ ...inputStyle, backgroundColor: (isGooglePreFilled || inviteLocksEmail) ? '#f1f5f9' : '#eef2f9', cursor: (isGooglePreFilled || inviteLocksEmail) ? 'not-allowed' : 'text' }} />
+              {inviteLocksEmail && <p id="invite-email-note" style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>The invitation was sent to this address, so your account must use it.</p>}
               {signupErrors.email && <p style={errorStyle}>{signupErrors.email}</p>}
             </div>
 
@@ -1425,8 +1467,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           </>
         )}
 
-        {/* Mobile only: show login link */}
-        {isMobile && (
+        {/* Mobile only: show login link (not for an invitation that needs a new account) */}
+        {isMobile && !inviteRequiresSignup && (
           <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginTop: '14px', marginBottom: 0 }}>
             {tSignup('alreadyHaveAccountText')}{' '}
             <button onClick={toggleView} style={{ color: '#083A85', fontWeight: '700', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', paddingTop: '12px', paddingBottom: '12px', paddingLeft: '4px', paddingRight: '4px', display: 'inline-block' }}>{tSignup('loginLink')}</button>
