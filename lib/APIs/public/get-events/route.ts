@@ -51,6 +51,8 @@ export interface PublicEvent {
   endTime?: string;
   location?: string;
   eventOrganizer?: string;
+  /** Present on servers that support photographer-hosted events: the creator is a photographer streaming their own event. */
+  hostedByPhotographer?: boolean;
   eventTags?: string;
   eventPhoto?: string;
   eventCategory?: EventCategory | null;

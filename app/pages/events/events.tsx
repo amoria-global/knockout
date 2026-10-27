@@ -2439,7 +2439,7 @@ const Events: React.FC = () => {
                       )}
                       <h3 className="ev-card-title">{event.title}</h3>
                       <div className="ev-card-footer">
-                        <span className="ev-card-chip-org" title={organizerLabel}>
+                        <span className="ev-card-chip-org" title={event.hostedByPhotographer ? `Hosted by ${organizerLabel}` : organizerLabel}>
                           <span className="ev-card-chip-org-avatar" aria-hidden="true">
                             {organizerImg ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -2448,7 +2448,7 @@ const Events: React.FC = () => {
                               <span>{orgInitial}</span>
                             )}
                           </span>
-                          <span className="ev-card-chip-org-name">{organizerLabel}</span>
+                          <span className="ev-card-chip-org-name">{event.hostedByPhotographer ? `Hosted by ${organizerLabel}` : organizerLabel}</span>
                         </span>
                         <span className="ev-card-price">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
