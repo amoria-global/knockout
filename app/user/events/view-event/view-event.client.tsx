@@ -195,6 +195,11 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
     };
   }, [eventId]);
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
+  // The wish link (and its QR) opens this page with tab=wishes: bring the wish card into view once the event has loaded.
+  useEffect(() => {
+    if (searchParams.get('tab') !== 'wishes' || !selectedEvent) return;
+    document.getElementById('wishes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [searchParams, selectedEvent]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadOffline, setLoadOffline] = useState(false);
   const [msUntilStart, setMsUntilStart] = useState<number | null>(null);
@@ -622,7 +627,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         setTimeout(() => setWishSuccess(null), 5000);
       } else {
         const msg = data.message || '';
-        if (msg.includes('only allowed before')) setWishError('The event is now live. Please join the stream to send messages.');
+        if (msg.includes('closed for this event') || msg.includes('only allowed before')) setWishError('Wishes are closed for this event.');
         else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
         else if (msg.includes('restricted') || msg.includes('blocked')) setWishError('Your message contains restricted content (emails, phone numbers, or links).');
         else setWishError(msg || 'Could not send your wish. Please try again.');
@@ -667,7 +672,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         setTimeout(() => setWishSuccess(null), 5000);
       } else {
         const msg = data.message || '';
-        if (msg.includes('only allowed before')) setWishError('The event is now live. Please join the stream to send messages.');
+        if (msg.includes('closed for this event') || msg.includes('only allowed before')) setWishError('Wishes are closed for this event.');
         else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
         else if (msg.includes('size') || msg.includes('large')) setWishError('Video upload failed. Please try a shorter clip.');
         else setWishError(msg || 'Could not send your video wish. Please try again.');
