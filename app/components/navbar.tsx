@@ -20,6 +20,7 @@ import { StoreBadges } from './StoreBadges';
 import LangFlag from './LangFlag';
 import domTranslationsData from '@/lib/domTranslations.json';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import { getEventStatus } from '@/lib/events/eventStatus';
 
 const domTranslations = domTranslationsData as unknown as Record<string, [string, string, string, string]>;
 
@@ -278,7 +279,7 @@ const AmoriaKNavbar = () => {
           // Filter out completed/stream-ended events older than 2 days (match events page)
           const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
           const events = allEvents.filter(ev => {
-            const isEnded = (ev.eventStatus || '').toUpperCase() === 'COMPLETED' || (ev as Record<string, unknown>).streamStatus === 'ended';
+            const isEnded = getEventStatus(ev) === 'ENDED';
             if (!isEnded) return true;
             const dateStr = ev.updatedAt || ev.eventDate;
             if (!dateStr) return true;

@@ -10,6 +10,7 @@ import {
   type LocationData,
 } from '../../utils/locationUtils';
 import { getPublicEvents, type PublicEvent } from '@/lib/APIs/public';
+import { getEventStatus } from '@/lib/events/eventStatus';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
 import { getEffectivePrices, type EffectivePrice } from '@/lib/geoPricing';
 
@@ -331,20 +332,38 @@ const Events: React.FC = () => {
         selectedStatus !== 'all'
           ? selectedStatus
           : tabToStatus[activeTab];
-      const response = await getPublicEvents({
-        page: currentPage - 1,
-        size: itemsPerPage,
+      // A tab is a state (live, upcoming, ended), and the state is decided once, by getEventStatus, from the stream and
+      // the event's date-times. The backend's status column and the stream disagree (an event can still be PUBLISHED
+      // after its stream ended), so asking it to filter by status put ended events under Soon. For a state tab the whole
+      // matching pool is loaded and sorted into tabs here, so tabs, counts and badges always agree.
+      const stateTab = activeTab !== 'all' && selectedStatus === 'all';
+      const params = {
         sortColumn: 'eventDate',
-        sortDirection: activeTab === 'completed' ? 'desc' : 'asc',
+        sortDirection: (activeTab === 'completed' ? 'desc' : 'asc') as 'asc' | 'desc',
         category:  selectedCategory  !== 'all' ? selectedCategory  : undefined,
         location:  selectedLocation  !== 'all' ? selectedLocation  : undefined,
-        status:    effectiveStatus,
         dateRange: selectedDate      !== 'all' ? selectedDate      : undefined,
         search:    debouncedSearch || undefined,
+      };
+      const response = await getPublicEvents({
+        ...params,
+        page: stateTab ? 0 : currentPage - 1,
+        size: stateTab ? 100 : itemsPerPage,
+        status: stateTab ? undefined : effectiveStatus,
       });
       if (seq !== fetchSeqRef.current) return; // superseded by a newer fetch
+      let stateTabPages = 0;
+      if (stateTab && response.success && response.data) {
+        const pool = [...response.data.content];
+        for (let p = 1; p < Math.min(response.data.totalPages || 1, 6); p++) {
+          const more = await getPublicEvents({ ...params, page: p, size: 100 });
+          if (seq !== fetchSeqRef.current) return;
+          if (more.success && more.data) pool.push(...more.data.content);
+        }
+        response.data.content = pool;
+      }
       if (response.success && response.data) {
-        const events = response.data.content;
+        let events = response.data.content;
         // Verify which "ongoing" events have an active Cloudflare stream
         const ongoingEvents = events.filter(e => (e.eventStatus || '').toLowerCase() === 'ongoing');
         const trulyLiveIds = new Set<string>();
@@ -367,6 +386,13 @@ const Events: React.FC = () => {
         // filter contradicted that - it stripped out events the admin had
         // explicitly flagged for display. Backend's response is the source of
         // truth: if it returned the event, render it.
+        if (stateTab) {
+          const want = activeTab === 'live' ? 'LIVE' : activeTab === 'upcoming' ? 'UPCOMING' : 'ENDED';
+          const now = Date.now();
+          const inTab = events.filter((e) => getEventStatus(e, now, trulyLiveIds) === want);
+          stateTabPages = Math.max(1, Math.ceil(inTab.length / itemsPerPage));
+          events = inTab.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+        }
         setEventsData(events);
         // Localize each card's price to the visitor's country (falls back to
         // the event default when there's no geo rule or the lookup fails).
@@ -374,7 +400,7 @@ const Events: React.FC = () => {
           .then((map) => setGeoPrices((prev) => ({ ...prev, ...map })))
           .catch(() => {});
         setLiveStreamIds(trulyLiveIds);
-        setApiTotalPages(response.data.totalPages);
+        setApiTotalPages(stateTab ? stateTabPages : response.data.totalPages);
         let changed = false;
         for (const ev of events) {
           const cat = ev.eventCategory?.name?.trim();
@@ -406,12 +432,9 @@ const Events: React.FC = () => {
   // An ONGOING event that has not ended is live, with or without a stream:
   // free events carry no streaming package, so requiring the stream flag made
   // them read UPCOMING while happening. Drives the banner, tab count and card.
-  const isEventLive = (event: PublicEvent) =>
-    (event.eventStatus || '').toUpperCase() === 'ONGOING' &&
-    event.streamStatus !== 'ended';
+  const isEventLive = (event: PublicEvent) => getEventStatus(event, Date.now(), liveStreamIds) === 'LIVE';
 
-  const isEventEnded = (event: PublicEvent) =>
-    (event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended';
+  const isEventEnded = (event: PublicEvent) => getEventStatus(event, Date.now(), liveStreamIds) === 'ENDED';
 
   // Featured live events - ALL of them. The banner section shows every live
   // event at once: a single full-width 5:1 cinematic banner when there's
