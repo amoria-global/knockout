@@ -15,6 +15,7 @@ import TextType from './components/TextType';
 import Lenis from 'lenis';
 import { useLanguage } from './providers/LanguageProvider';
 import domTranslationsData from '@/lib/domTranslations.json';
+import { getEventStatus } from '@/lib/events/eventStatus';
 
 const domTranslations = domTranslationsData as unknown as Record<string, [string, string, string, string]>;
 
@@ -133,7 +134,7 @@ export default function Home() {
         const allEvents = res.data.content;
         const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
         const visibleEvents = allEvents.filter(ev => {
-          const isEnded = (ev.eventStatus || '').toUpperCase() === 'COMPLETED' || (ev as Record<string, unknown>).streamStatus === 'ended';
+          const isEnded = getEventStatus(ev) === 'ENDED';
           if (!isEnded) return true;
           const dateStr = ev.updatedAt || ev.eventDate;
           if (!dateStr) return true;
