@@ -94,6 +94,11 @@ const nextConfig: NextConfig = {
         source: '/:path*',
         headers: SECURITY_HEADERS,
       },
+      {
+        // iOS reads this extensionless file as JSON for universal links; it must not be served as a download.
+        source: '/.well-known/apple-app-site-association',
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+      },
     ];
   },
 };
