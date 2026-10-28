@@ -26,6 +26,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
 import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, blockUserInStream } from '@/lib/APIs/streams/route';
 import { getDeviceId } from '@/lib/fingerprint';
+import { invitesOn } from '@/lib/wishes/wishInvites';
 import { AccessChip, EventHeader, EventInfo, EventTabs, InviteOthers, LiveSectionsStyles, PrivacyNote, SendWishes, WishesFeed, WishVideoDialog, useWishFeed } from '../../components/live';
 import type { LiveTab, Wish } from '@/lib/live/types';
 import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
@@ -90,6 +91,8 @@ interface EventStream {
   whepUrl?: string;
   hlsManifestUrl?: string;
   eventStatus?: string;
+  /** Whether viewers may invite others to send wishes; refreshed by the existing event status poll. */
+  allowWishInvites?: boolean;
   streamType?: 'entry_fee' | 'invite_token' | null;
   streamFee?: number | null;
   streamFeeCurrencySymbol?: string | null;
@@ -699,6 +702,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             hlsManifestUrl: (ev.hlsManifestUrl as string) || prev[0].hlsManifestUrl || undefined,
             streamId: eventId || (ev.liveInputId as string) || prev[0].streamId,
             eventStatus: (ev.eventStatus as string) || undefined,
+            allowWishInvites: typeof ev.allowWishInvites === 'boolean' ? ev.allowWishInvites : undefined,
             streamType: (ev.streamType as 'entry_fee' | 'invite_token') ?? null,
             streamFee: (ev.streamFee as number) ?? null,
             streamFeeCurrencySymbol: (ev.streamFeeCurrencySymbol as string) ?? null,
@@ -970,10 +974,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             const resolvedHlsUrl = newHlsUrl || current.hlsManifestUrl;
 
             // Only update if something relevant changed
-            if (current.eventStatus === (ev.eventStatus as string) && current.whepUrl === resolvedWhepUrl) return prev;
+            const nextInvites = typeof ev.allowWishInvites === 'boolean' ? ev.allowWishInvites : undefined;
+            if (current.eventStatus === (ev.eventStatus as string) && current.whepUrl === resolvedWhepUrl && current.allowWishInvites === nextInvites) return prev;
             return [{
               ...current,
               eventStatus: (ev.eventStatus as string) || undefined,
+              allowWishInvites: nextInvites,
               whepUrl: resolvedWhepUrl,
               hlsManifestUrl: resolvedHlsUrl,
             }, ...prev.slice(1)];
@@ -9918,7 +9924,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 onSent={lvWishes.reload}
               />
             ) : null}
-            {mainEvent?.id ? <InviteOthers eventId={mainEvent.id} title={mainEvent.title} /> : null}
+            {mainEvent?.id && invitesOn(lvWishes.allowInvites ?? mainEvent.allowWishInvites) ? <InviteOthers eventId={mainEvent.id} title={mainEvent.title} /> : null}
             <PrivacyNote />
             <WishesFeed
               state={lvWishes.state}

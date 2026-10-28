@@ -1,5 +1,8 @@
 'use client';
 
+import { WishInvitesField, focusWishInvitesField } from './wishes/WishInvitesField';
+import { WishStyles } from './wishes/WishStyles';
+import { wishInvitesError } from '@/lib/wishes/wishInvites';
 import React, { useState, useEffect, useReducer, useCallback, useRef } from 'react';
 import PaymentCurrencyPreview, { type CurrencyCode, useLiveRates } from './PaymentCurrencyPreview';
 import { useAuth } from '../providers/AuthProvider';
@@ -64,6 +67,8 @@ interface EventDetails {
   streamFee?: number;
   /** Currency id for the stream fee (must reference a row in currencies). */
   streamFeeCurrencyId?: string;
+  /** Wish invites: chosen by the host in the form, required. */
+  allowWishInvites?: boolean;
 }
 
 interface MilestoneConfig {
@@ -840,6 +845,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [evtEndTime, setEvtEndTime] = useState('');
   const [evtGuests, setEvtGuests] = useState<number | ''>('');
   const [evtNotes, setEvtNotes] = useState('');
+  const [evtWishInvites, setEvtWishInvites] = useState<boolean | null>(null);
+  const [evtWishInvitesErr, setEvtWishInvitesErr] = useState<string | null>(null);
   const [evtError, setEvtError] = useState('');
   // Coordinator-specific fields
   const [evtOrganizer, setEvtOrganizer] = useState('');
@@ -1369,6 +1376,9 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     if (!evtTitle.trim()) { setEvtError('Please enter an event title'); return; }
     if (!evtStartTime) { setEvtError('Please select a start time'); return; }
     if (isCoordinator && !evtOrganizer.trim()) { setEvtError('Please enter the organizer name'); return; }
+    const missingInvites = wishInvitesError(evtWishInvites);
+    setEvtWishInvitesErr(missingInvites ?? null);
+    if (missingInvites) { focusWishInvitesField(); return; }
     setEvtError('');
 
     const details: EventDetails = {
@@ -1381,6 +1391,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       venueName: evtVenueName.trim(),
       streamFee: typeof evtStreamFee === 'number' && evtStreamFee > 0 ? evtStreamFee : undefined,
       streamFeeCurrencyId: evtStreamFeeCurrencyId || undefined,
+      allowWishInvites: evtWishInvites === true,
     };
     dispatch({ type: 'SET_EVENT_DETAILS', data: details });
     await submitBooking(details);
@@ -1447,6 +1458,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
               }
             : {}),
         eventVisibility: 'PUBLIC',
+        allowWishInvites: details.allowWishInvites,
         // Escrow percentage from milestone selection
         ...(state.paymentMilestone ? {
           escrowPercentage: state.paymentMilestone.option === 'full' ? 100
@@ -2909,6 +2921,9 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       </div>
                     </>
                   )}
+
+                  <WishStyles />
+                  <WishInvitesField light value={evtWishInvites} error={evtWishInvitesErr} disabled={state.isSubmitting} onChange={(v) => { setEvtWishInvites(v); setEvtWishInvitesErr(null); }} />
 
                   <button onClick={handleCompleteBooking} disabled={state.isSubmitting} style={{ ...btnPrimary, marginTop: 8, opacity: state.isSubmitting ? 0.6 : 1 }}>
                     {state.isSubmitting ? (
