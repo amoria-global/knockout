@@ -221,3 +221,14 @@ describe('the wish page when the host turned invites off', () => {
     expect(await page()).toContain('Send wish');
   });
 });
+
+import QrCodeSvg from '../QrCodeSvg';
+
+describe('QrCodeSvg carries the Connekyt logo', () => {
+  it('draws the code with the brand mark in a white badge in the middle', () => {
+    const html = renderToStaticMarkup(<QrCodeSvg value="https://connekyt.com/get-app" size={118} />);
+    expect(html).toContain('<image');
+    expect(html).toContain('data:image/jpeg;base64,');
+    expect(html).toContain('aria-label="QR code"');
+  });
+});
