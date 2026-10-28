@@ -69,6 +69,7 @@ export interface SeoEvent {
   eventStatus?: string;
   streamStatus?: string | null;
   hasLiveStream?: boolean | null;
+  allowWishInvites?: boolean;
   updatedAt?: string;
 }
 

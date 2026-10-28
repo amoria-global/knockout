@@ -34,3 +34,18 @@ share a user id), About, stream entry, donation, Get notified.
 Opening the app from the https link needs universal links: Android intent filters and iOS associated domains in the app
 config, `assetlinks.json` and `apple-app-site-association` served from connekyt.com, and a new native build. Until then the
 link opens the web page, and `connekt://wish/<id>` opens the app's wish screen.
+
+## Wish invites setting
+
+Each event carries `allowWishInvites` (set when it is created, required, with no default; editable at any time, including
+while live). On: viewers see "Invite others to send wishes" on the live page (sidebar on web, Wishes tab on mobile) and the
+"Invite loved ones" tab with the heartfelt line on the event page. Off: both are removed with no gap, the Wishes & memories
+card is the send form only, and an old link or QR shows the cover and title with "The host has turned off wish invites for
+this event" and a View event link. The host can always share the event themselves.
+
+- Server: invite submissions carry `via=invite` (only the wish page's form sends it); the server refuses them with 403 when
+  the setting is off. A viewer's own wish never carries it. The wishes feed returns the current value, so a live viewer sees a
+  change on the refresh they already do; the live page's existing event status poll carries it too.
+- An older server returns no value, which every client reads as on.
+- Rollout: the backend flag `feature.wish_invites.required` stays off until every client that creates events ships, because an
+  older app that omits the field would otherwise get a 400. While it is off, an omitted field is stored as on.

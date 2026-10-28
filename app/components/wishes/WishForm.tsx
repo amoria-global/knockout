@@ -63,7 +63,7 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
       const res = await fetch(`${apiBase()}/api/remote/public/events/${eventId}/wishes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, message, deviceFingerprint: fp }),
+        body: JSON.stringify({ name, email, message, deviceFingerprint: fp, ...(variant === 'page' ? { via: 'invite' } : {}) }),
       });
       const data = await res.json();
       if (data.action === 1) {
@@ -73,7 +73,8 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
         setTimeout(() => setWishSuccess(null), 5000);
       } else {
         const msg = data.message || '';
-        if (msg.includes('closed for this event') || msg.includes('only allowed before')) setWishError('Wishes are closed for this event.');
+        if (msg.includes('turned off wish invites')) setWishError(msg);
+        else if (msg.includes('closed for this event') || msg.includes('only allowed before')) setWishError('Wishes are closed for this event.');
         else if (msg.includes('rate') || msg.includes('limit')) setWishError('You’re sending wishes too quickly. Please wait a moment.');
         else if (msg.includes('restricted') || msg.includes('blocked')) setWishError('Your message contains restricted content (emails, phone numbers, or links).');
         else setWishError(msg || 'Could not send your wish. Please try again.');
@@ -102,6 +103,7 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
       formData.append('email', email);
       formData.append('video', videoFile);
       formData.append('deviceFingerprint', fp);
+      if (variant === 'page') formData.append('via', 'invite');
       if (wishMessage.trim()) formData.append('message', wishMessage.trim());
       const res = await fetch(`${apiBase()}/api/remote/public/events/${eventId}/wishes/video`, {
         method: 'POST',
@@ -116,7 +118,8 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
         setTimeout(() => setWishSuccess(null), 5000);
       } else {
         const msg = data.message || '';
-        if (msg.includes('closed for this event') || msg.includes('only allowed before')) setWishError('Wishes are closed for this event.');
+        if (msg.includes('turned off wish invites')) setWishError(msg);
+        else if (msg.includes('closed for this event') || msg.includes('only allowed before')) setWishError('Wishes are closed for this event.');
         else if (msg.includes('rate') || msg.includes('limit')) setWishError('You’re sending wishes too quickly. Please wait a moment.');
         else if (msg.includes('size') || msg.includes('large')) setWishError('Video upload failed. Please try a shorter clip.');
         else setWishError(msg || 'Could not send your video wish. Please try again.');

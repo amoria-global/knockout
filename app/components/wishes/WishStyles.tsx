@@ -78,6 +78,25 @@ export const WISH_CSS = `
 .wp-links a { color:#7fa8ff; font-weight:700; }
 .wp-links button { color:#9aa3b2; }
 .wp :focus-visible { outline:2px solid #fff; outline-offset:2px; box-shadow:0 0 0 4px rgba(77,141,255,0.6); }
+/* The Wish invites form field */
+.wf-card { margin:0; min-width:0; border:1px solid var(--wf-line,rgba(255,255,255,0.12)); border-radius:16px; padding:14px; background:var(--wf-card,rgba(255,255,255,0.045)); color:var(--wf-text,#f4f5f7); }
+.wf-inner { display:flex; flex-direction:column; gap:10px; }
+.wf-card.has-error { border-color:#ff6b81; }
+.wf-legend { padding:0 4px; font-size:16px; font-weight:800; }
+.wf-req { color:#F20C8F; }
+.wf-question { margin:0; font-size:14px; line-height:1.45; color:var(--wf-soft,#c9ced8); }
+.wf-well { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; border-radius:12px; background:rgba(0,0,0,0.28); border:1px solid var(--wf-line,rgba(255,255,255,0.12)); }
+.has-error .wf-well { border-color:#ff6b81; }
+.wf-opt { position:relative; min-height:44px; border-radius:9px; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:700; font-size:14px; cursor:pointer; color:var(--wf-soft,#c9ced8); }
+.wf-opt input { position:absolute; inset:0; opacity:0; margin:0; cursor:pointer; }
+.wf-opt.is-on { background:linear-gradient(180deg,#46d6ea,#1fb6cf); color:#04202a; }
+.wf-opt.is-off { background:#2f6df0; color:#fff; }
+.wf-opt:focus-within { outline:2px solid #fff; outline-offset:2px; box-shadow:0 0 0 4px rgba(77,141,255,0.6); }
+.wf-helper { margin:0; font-size:12.5px; line-height:1.45; color:var(--wf-mute,#9aa3b2); }
+.wf-err { margin:0; font-size:13px; font-weight:700; color:#ff8a9b; }
+.wf-light { --wf-line:rgba(15,23,42,0.18); --wf-card:#fff; --wf-text:#0f172a; --wf-soft:#334155; --wf-mute:#566176; }
+.wf-light .wf-well { background:#eef1f7; }
+.wf-light .wf-err { color:#c81e3a; }
 `;
 
 export function WishStyles() {

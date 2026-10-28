@@ -13,6 +13,7 @@ import { WishesMemoriesCard } from '../../../components/wishes/WishesMemoriesCar
 import { EventWhenCard, HostedByCard } from '../../../components/wishes/EventCards';
 import { WishStyles } from '../../../components/wishes/WishStyles';
 import { hostRows } from '@/lib/events/hostRows';
+import { invitesOn } from '@/lib/wishes/wishInvites';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { getEffectivePrice, type EffectivePrice } from '@/lib/geoPricing';
@@ -1735,7 +1736,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                       ) : null}
                     </EventWhenCard>
 
-                    {isUpcoming && <WishesMemoriesCard eventId={selectedEvent.id} title={selectedEvent.title} />}
+                    {isUpcoming && <WishesMemoriesCard eventId={selectedEvent.id} title={selectedEvent.title} invites={invitesOn(selectedEvent.allowWishInvites)} />}
 
                     <HostedByCard
                       rows={hostRows({

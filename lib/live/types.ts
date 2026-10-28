@@ -22,7 +22,7 @@ export type Wish = {
   mine: boolean;
 };
 
-export type WishPage = { items: Wish[]; page: number; totalPages: number; total: number };
+export type WishPage = { items: Wish[]; page: number; totalPages: number; total: number; allowWishInvites?: boolean };
 
 export type FeedState = 'loading' | 'error' | 'ready';
 export type LiveTab = 'live' | 'wishes';

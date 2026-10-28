@@ -96,3 +96,12 @@ describe('wish link', () => {
     expect(wishLink('ev 1')).toBe('https://connekyt.com/wish/ev%201');
   });
 });
+
+describe('the wishes feed and Wish invites', () => {
+  it('carries the current setting so a live viewer sees a change on the refresh they already do', async () => {
+    const f = async () => json({ action: 1, data: { items: [], page: 0, totalPages: 0, total: 0, allowWishInvites: false } });
+    expect((await listWishes('e1', 'fp', 0, 20, f as unknown as typeof fetch)).allowWishInvites).toBe(false);
+    const older = async () => json({ action: 1, data: { items: [], page: 0, totalPages: 0, total: 0 } });
+    expect((await listWishes('e1', 'fp', 0, 20, older as unknown as typeof fetch)).allowWishInvites).toBeUndefined();
+  });
+});

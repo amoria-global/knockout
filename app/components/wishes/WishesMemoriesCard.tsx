@@ -12,7 +12,7 @@ type Tab = 'send' | 'invite';
  * the wish page with Share link (the Web Share API, else it copies), Copy and Save QR. The heartfelt line sits under the card.
  * Same structure on mobile, where Share link opens the native share sheet.
  */
-export function WishesMemoriesCard({ eventId, title }: { eventId: string; title: string }) {
+export function WishesMemoriesCard({ eventId, title, invites = true }: { eventId: string; title: string; invites?: boolean }) {
   const [tab, setTab] = useState<Tab>('send');
   const [firstName, setFirstName] = useState('');
   useEffect(() => {
@@ -28,15 +28,17 @@ export function WishesMemoriesCard({ eventId, title }: { eventId: string; title:
             <p className="wm-sub">Shown on screen during the event</p>
           </div>
         </div>
-        <div className="wm-seg" role="tablist" aria-label="Wishes and memories">
-          <button type="button" role="tab" id="wm-tab-send" aria-selected={tab === 'send'} aria-controls="wm-panel" onClick={() => setTab('send')}>Send my wish</button>
-          <button type="button" role="tab" id="wm-tab-invite" aria-selected={tab === 'invite'} aria-controls="wm-panel" onClick={() => setTab('invite')}>Invite loved ones</button>
-        </div>
-        <div id="wm-panel" role="tabpanel" aria-labelledby={tab === 'send' ? 'wm-tab-send' : 'wm-tab-invite'}>
-          {tab === 'send' ? <WishForm eventId={eventId} variant="card" onIdentity={(n) => setFirstName(n.split(' ')[0])} /> : <InviteTab eventId={eventId} title={title} from={firstName} />}
+        {invites ? (
+          <div className="wm-seg" role="tablist" aria-label="Wishes and memories">
+            <button type="button" role="tab" id="wm-tab-send" aria-selected={tab === 'send'} aria-controls="wm-panel" onClick={() => setTab('send')}>Send my wish</button>
+            <button type="button" role="tab" id="wm-tab-invite" aria-selected={tab === 'invite'} aria-controls="wm-panel" onClick={() => setTab('invite')}>Invite loved ones</button>
+          </div>
+        ) : null}
+        <div id="wm-panel" {...(invites ? { role: 'tabpanel', 'aria-labelledby': tab === 'send' ? 'wm-tab-send' : 'wm-tab-invite' } : {})}>
+          {tab === 'send' || !invites ? <WishForm eventId={eventId} variant="card" onIdentity={(n) => setFirstName(n.split(' ')[0])} /> : <InviteTab eventId={eventId} title={title} from={firstName} />}
         </div>
       </section>
-      <p className="wm wm-heart"><i className="bi bi-heart" aria-hidden="true" /><span>{HEARTFELT_LINE}</span></p>
+      {invites ? <p className="wm wm-heart"><i className="bi bi-heart" aria-hidden="true" /><span>{HEARTFELT_LINE}</span></p> : null}
     </>
   );
 }

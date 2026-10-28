@@ -54,6 +54,8 @@ export interface PublicEvent {
   eventOrganizer?: string;
   /** Present on servers that support photographer-hosted events: the creator is a photographer streaming their own event. */
   hostedByPhotographer?: boolean;
+  /** Whether viewers may invite others to send wishes. Absent on a server that predates the setting (treated as on). */
+  allowWishInvites?: boolean;
   eventTags?: string;
   eventPhoto?: string;
   eventCategory?: EventCategory | null;
