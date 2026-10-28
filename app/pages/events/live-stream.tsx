@@ -26,6 +26,8 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
 import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, blockUserInStream } from '@/lib/APIs/streams/route';
 import { getDeviceId } from '@/lib/fingerprint';
+import { AccessChip, EventHeader, EventInfo, EventTabs, InviteOthers, LiveSectionsStyles, PrivacyNote, SendWishes, WishesFeed, WishVideoDialog, useWishFeed } from '../../components/live';
+import type { LiveTab, Wish } from '@/lib/live/types';
 import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
 import ViewerInfoModal from '../../components/ViewerInfoModal';
 import type { ViewerInfoData } from '../../components/ViewerInfoModal';
@@ -96,6 +98,8 @@ interface EventStream {
   hasPurchasedAccess?: boolean;
   eventDate?: string;
   eventStartTime?: string;
+  description?: string;
+  location?: string;
 }
 
 interface Message {
@@ -118,6 +122,36 @@ interface Message {
 }
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
+/**
+ * Where the live-page sections meet this page's older layout rules. The old two-column shell (a scrolling stage next to a
+ * fixed chat column) becomes the sections grid: the stage keeps its own parts, ordered player, info, then the rest, and the
+ * chat sits under the tabs on wide screens. Up to 1024 the page's own chat bottom sheet stays, as before.
+ */
+const LV_LANDING_OVERRIDES = `
+body .main-container { height:auto !important; max-height:none !important; min-height:100vh !important; max-width:100% !important; overflow:visible !important; }
+.lv-main .video-section { display:flex !important; flex-direction:column !important; height:auto !important; min-height:0 !important; max-height:none !important; max-width:100% !important;
+  overflow:visible !important; padding:0 !important; flex:none !important; width:100% !important; }
+.lv-main .video-section > * { order:3; }
+.lv-main .video-section > #main-video-player { order:1; height:auto !important; min-height:0 !important; max-height:none !important; aspect-ratio:16/9; width:100% !important; }
+.lv-main .video-section > .ls-hero { order:2; margin:12px 0 0 !important; }
+.lv-main .ls-hero .lv-info { padding:0; }
+.lv-main .ls-hero .lv-info h2 { font-size:clamp(18px,2vw,24px); }
+@media (min-width:1025px) {
+  .lv-panel .chat-section { width:100% !important; height:min(640px,72vh) !important; border:1px solid rgba(255,255,255,0.1) !important; border-radius:16px; }
+  .lv-panel--off { display:none !important; }
+}
+@media (max-width:1024px) {
+  .lv-main .video-section > #main-video-player { height:auto !important; min-height:0 !important; max-height:none !important; }
+  .lv-panel--live { display:block; }
+}
+.lv-page { align-items:stretch; }
+@media (max-width:640px) {
+  .lv-main .ls-hero .lv-info-row { flex-direction:column; align-items:flex-start; gap:4px; }
+  .lv-main .ls-hero-row { flex-wrap:wrap; }
+  .lv-main .ls-hero-meta { min-width:0; flex:1 1 60%; }
+}
+`;
 
 function GoogleAuthButton({ onSuccess, onError, loading, label }: {
   onSuccess: (tokenResponse: { access_token: string }) => void;
@@ -673,6 +707,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             hasPurchasedAccess: (ev.hasPurchasedAccess as boolean) ?? undefined,
             eventDate: (ev.eventDate as string) ?? undefined,
             eventStartTime: (ev.startTime as string) ?? undefined,
+            description: (ev.description as string) || undefined,
+            location: (ev.location as string) || undefined,
           }, ...prev.slice(1)]);
         }
       } catch {
@@ -1816,6 +1852,29 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const seenApiMessageIds = useRef<Set<string>>(new Set());
   // Mobile chat visibility state
   const [isChatOpen, setIsChatOpen] = useState(false);
+  // Live-page sections (docs/LIVE_EVENT_STRUCTURE.md): tabs, wishes feed, wish video dialog.
+  const [lvTab, setLvTab] = useState<LiveTab>(() => (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') === 'wishes' ? 'wishes' : 'live'));
+  const [lvPlaying, setLvPlaying] = useState<Wish | null>(null);
+  const lvFingerprint = useCallback(() => getDeviceId(), []);
+  const lvWishes = useWishFeed(mainEvent?.id, lvFingerprint);
+  const lvAccount = user && (user.firstName || user.lastName) && user.email ? { name: `${user.firstName || ''} ${user.lastName || ''}`.trim(), email: user.email } : null;
+  const lvShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    try {
+      if (navigator.share) await navigator.share({ title: mainEvent?.title, url });
+      else await navigator.clipboard.writeText(url);
+    } catch { /* dismissed */ }
+  };
+  const lvReport = async (w: Wish) => {
+    if (!mainEvent?.id || !window.confirm('Report this wish as inappropriate?')) return;
+    try {
+      if (isAuthenticated) {
+        await apiClient.post('/api/remote/customer/moderation/reports', { targetType: 'STREAM_CHAT', targetId: w.id, reason: 'Inappropriate content', description: '' });
+      } else {
+        await apiClient.post(`/api/remote/public/events/${mainEvent.id}/chats/${w.id}/report`, { viewerId: anonymousViewerId, deviceFingerprint: await getDeviceId(), reason: 'Inappropriate content' });
+      }
+    } catch { /* best effort, like the other stream reports */ }
+  };
   // Gift modal state
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [giftTargetEvent, setGiftTargetEvent] = useState<EventStream | null>(null);
@@ -7366,13 +7425,14 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       overflow: 'hidden'
     }} className="main-container">
 
-        {/* Main Layout Wrapper */}
-        <div style={{
-          display: 'flex',
-          width: '100%',
-          height: '100vh',
-          gap: '0'
-        }} className="layout-wrapper">
+        {/* Main Layout Wrapper: header, then the grid of live-page sections (docs/LIVE_EVENT_STRUCTURE.md) */}
+        <div className="lv lv-page">
+          <LiveSectionsStyles />
+          <style>{LV_LANDING_OVERRIDES}</style>
+          <EventHeader title={mainEvent?.title || 'Live event'} onBack={handleLeaveStream} onShare={lvShare} />
+          <div className="lv-grid">
+          <div className="lv-left">
+          <div className="lv-main">
 
           {/* Left Section: Video Player */}
           <div className="video-section" style={{
@@ -7447,17 +7507,14 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   </div>
 
                   <div className="ls-hero-meta">
-                    <h1 className="ls-hero-title">{mainEvent.title}</h1>
-                    <div className="ls-hero-host">
-                      <span className="ls-hero-host-label">Hosted by</span>
-                      <span className="ls-hero-host-name">{mainEvent.photographer || 'Organizer'}</span>
-                      <span className="ls-hero-verified" aria-label="Verified host" title="Verified host">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                          <path d="M12 2l2.39 4.84L20 7.61l-3.85 3.75.91 5.32L12 14.14 6.94 16.68l.91-5.32L4 7.61l5.61-.77L12 2z" opacity="0" />
-                          <path d="M22.5 12c0-1.5-1-2.8-2.4-3.3.4-1.4 0-3-1-4-1-1-2.6-1.4-4-1C14.5 2.5 13.3 1.5 12 1.5s-2.5 1-3 2.4c-1.4-.4-3 0-4 1-1 1-1.4 2.6-1 4C2.5 9.5 1.5 10.7 1.5 12s1 2.5 2.4 3c-.4 1.4 0 3 1 4 1 1 2.6 1.4 4 1 .5 1.4 1.7 2.4 3 2.4s2.5-1 3-2.4c1.4.4 3 0 4-1 1-1 1.4-2.6 1-4 1.5-.5 2.5-1.7 2.5-3z M10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.1-5.1 1.4 1.4z" />
-                        </svg>
-                      </span>
-                    </div>
+                    <EventInfo
+                      title={mainEvent.title}
+                      tagline={mainEvent.description ? (mainEvent.description.replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s/)[0] || '').slice(0, 140) : undefined}
+                      location={mainEvent.location}
+                      hostName={mainEvent.photographer || 'Organizer'}
+                      live={mainEvent.eventStatus === 'ONGOING'}
+                      viewerCount={typeof mainEvent.viewers === 'number' && mainEvent.viewers > 0 ? mainEvent.viewers : null}
+                    />
                   </div>
 
                   {isGiftableEvent && events.length === 1 && (
@@ -7992,6 +8049,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               >
                 <span className="vjs-live-dot vjs-live-dot--on" />
                 LIVE
+              </div>
+              {/* Access chip (Free / Ticket), beside the LIVE badge */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{ position: 'absolute', top: '16px', right: '92px', zIndex: 10, opacity: showControls ? 1 : 0, transition: 'opacity 0.2s' }}
+              >
+                <AccessChip access={mainEvent.streamFee && mainEvent.streamFee > 0 ? 'ticket' : 'free'} />
               </div>
 
               {/* Play Button Overlay */}
@@ -9177,6 +9241,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               </div>
             </div>
           </div>
+          </div>
+
+          <div className="lv-tabs-wrap">
+            <EventTabs value={lvTab} onChange={setLvTab} wishCount={lvWishes.total || undefined} />
+          </div>
+
+          <div className={`lv-panel lv-panel--live${lvTab !== 'live' ? ' lv-panel--off' : ''}`} id="lv-panel-live" role="tabpanel" aria-labelledby="lv-tab-live">
 
           {/* Right Section: Live Chat */}
           <div className={`chat-section ${isChatOpen ? 'chat-open' : ''}`} style={{
@@ -9818,6 +9889,52 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               </button>
             </div>
           </div>
+          </div>
+
+          <div className="lv-panel lv-panel--wishes" id="lv-panel-wishes" role="tabpanel" aria-labelledby="lv-tab-wishes" hidden={lvTab !== 'wishes'}>
+            <WishesFeed
+              state={lvWishes.state}
+              wishes={lvWishes.wishes}
+              variant="full"
+              total={lvWishes.total}
+              hasMore={lvWishes.hasMore}
+              onRetry={lvWishes.reload}
+              onLoadMore={lvWishes.loadMore}
+              onPlay={setLvPlaying}
+              onHideOwn={(w) => { lvWishes.hideOwn(w).catch(() => undefined); }}
+              onReport={lvReport}
+              canReport={isAuthenticated || !!anonymousViewerId}
+            />
+          </div>
+          </div>
+
+          <aside className="lv-side" aria-label="Wishes and invitations">
+            {mainEvent?.id ? (
+              <SendWishes
+                eventId={mainEvent.id}
+                closed={['COMPLETED', 'AWAITING_REVIEW', 'CANCELLED', 'ENDED'].includes(String(mainEvent.eventStatus || '').toUpperCase())}
+                account={lvAccount}
+                getFingerprint={lvFingerprint}
+                onSent={lvWishes.reload}
+              />
+            ) : null}
+            {mainEvent?.id ? <InviteOthers eventId={mainEvent.id} title={mainEvent.title} /> : null}
+            <PrivacyNote />
+            <WishesFeed
+              state={lvWishes.state}
+              wishes={lvWishes.wishes}
+              variant="preview"
+              total={lvWishes.total}
+              onRetry={lvWishes.reload}
+              onSeeAll={() => setLvTab('wishes')}
+              onPlay={setLvPlaying}
+              onHideOwn={(w) => { lvWishes.hideOwn(w).catch(() => undefined); }}
+              onReport={lvReport}
+              canReport={isAuthenticated || !!anonymousViewerId}
+            />
+          </aside>
+          </div>
+          <WishVideoDialog wish={lvPlaying} onClose={() => setLvPlaying(null)} />
         </div>
       </div>
 
