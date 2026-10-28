@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.amoria.connekyt.app",
+      "sha256_cert_fingerprints": [
+        "5E:D2:81:47:48:55:6B:51:43:49:79:06:BE:76:8D:69:CE:80:EE:6F:E8:C3:DD:9B:E8:2A:5D:95:14:B9:20:43"
+      ]
+    }
+  }
+]

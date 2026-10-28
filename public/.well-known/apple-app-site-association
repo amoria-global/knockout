@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "Z34A347245.com.connekyt.app",
+        "appIDs": ["Z34A347245.com.connekyt.app"],
+        "paths": ["/wish/*"],
+        "components": [{ "/": "/wish/*", "comment": "Wish invite links open the app" }]
+      }
+    ]
+  }
+}
