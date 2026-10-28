@@ -4,6 +4,7 @@ import { WishStyles } from '@/app/components/wishes/WishStyles';
 import { absUrl, fetchEventForSeo, SITE_NAME, SITE_URL } from '@/lib/seo/seo';
 import { eventWhen } from '@/lib/events/eventWhen';
 import { HEARTFELT_LINE, invitedByLine, wishesOpen } from '@/lib/wishes/wishPage';
+import { invitesOn, WISH_INVITES_OFF_NOTICE } from '@/lib/wishes/wishInvites';
 import { InviteSomeone } from './InviteSomeone';
 
 /**
@@ -39,7 +40,8 @@ export default async function WishPage({ params, searchParams }: { params: Param
   const { id } = await params;
   const from = first((await searchParams).from);
   const ev = await fetchEventForSeo(id);
-  const open = !!ev && wishesOpen(ev);
+  const invitesAllowed = invitesOn(ev?.allowWishInvites);
+  const open = !!ev && wishesOpen(ev) && invitesAllowed;
   const when = ev ? eventWhen(ev) : { date: '', time: '' };
   const chip = [when.date.toUpperCase(), when.time.split(' · ')[0]].filter(Boolean).join(' · ');
   const invited = invitedByLine(from);
@@ -64,7 +66,7 @@ export default async function WishPage({ params, searchParams }: { params: Param
         ) : (
           <div className="wp-closed" role="status">
             <i className="bi bi-lock" aria-hidden="true" style={{ fontSize: 24, color: '#9aa3b2' }} />
-            <h2>Wishes for this event are closed</h2>
+            <h2>{ev && !invitesAllowed ? WISH_INVITES_OFF_NOTICE : 'Wishes for this event are closed'}</h2>
             {!ev ? <p className="wp-lead">This event is not available right now.</p> : null}
           </div>
         )}
