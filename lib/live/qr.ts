@@ -2,13 +2,13 @@
  * The wish link and the QR for it. The link opens the wish page (/wish/<id>); the same link is
  * encoded by the mobile app (features/wishes/qrPng.ts), so a code saved on either platform scans to the same place.
  */
-import QRCode from 'qrcode';
+import { brandedQrPngDataUrl } from '@/lib/qr/brandedQr';
 
 export { wishLink } from '@/lib/wishes/wishPage';
 
-/** A PNG data URL of the code: navy on white, with a quiet zone. */
+/** A PNG data URL of the code: navy on white, with a quiet zone and the Connekyt logo icon in the middle (see lib/qr/brandedQr). */
 export function qrDataUrl(link: string, width = 480): Promise<string> {
-  return QRCode.toDataURL(link, { errorCorrectionLevel: 'M', margin: 2, width, color: { dark: '#083A85', light: '#FFFFFF' } });
+  return brandedQrPngDataUrl(link, { width });
 }
 
 /** Downloads the QR as a PNG file. */
