@@ -92,7 +92,7 @@ describe('wish API', () => {
 });
 
 describe('wish link', () => {
-  it('opens the public event page on its wishes section, the same link the mobile QR encodes', () => {
-    expect(wishLink('ev 1')).toBe('https://connekyt.com/user/events/view-event?id=ev%201&tab=wishes');
+  it('opens the wish page, the same link the mobile QR encodes', () => {
+    expect(wishLink('ev 1')).toBe('https://connekyt.com/wish/ev%201');
   });
 });

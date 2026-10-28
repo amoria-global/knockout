@@ -1,12 +1,10 @@
 /**
- * The wish link and the QR for it. The link opens the public event page on its wishes section; the same link is
+ * The wish link and the QR for it. The link opens the wish page (/wish/<id>); the same link is
  * encoded by the mobile app (features/wishes/qrPng.ts), so a code saved on either platform scans to the same place.
  */
 import QRCode from 'qrcode';
 
-export function wishLink(eventId: string, origin = 'https://connekyt.com'): string {
-  return `${origin}/user/events/view-event?id=${encodeURIComponent(eventId)}&tab=wishes`;
-}
+export { wishLink } from '@/lib/wishes/wishPage';
 
 /** A PNG data URL of the code: navy on white, with a quiet zone. */
 export function qrDataUrl(link: string, width = 480): Promise<string> {
