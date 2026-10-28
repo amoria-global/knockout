@@ -26,6 +26,7 @@ export interface EventPhotographer {
  * Creator nested object from the API
  */
 export interface EventCreator {
+  id?: string;
   firstName?: string;
   lastName?: string;
   profilePicture?: string;

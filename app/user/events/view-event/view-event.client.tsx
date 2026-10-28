@@ -6,10 +6,13 @@ import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../../components/navbar';
 import QrMobileGate from '../../../components/QrMobileGate';
 
-const VideoMessageRecorder = dynamic(() => import('../../../components/VideoMessageRecorder'), { ssr: false });
 import ErrorPopup, { type PopupSeverity } from '../../../components/ErrorPopup';
 import InternationalPhoneInput, { type PhoneValue } from '../../../components/phone/InternationalPhoneInput';
 import { useTranslations } from 'next-intl';
+import { WishesMemoriesCard } from '../../../components/wishes/WishesMemoriesCard';
+import { EventWhenCard, HostedByCard } from '../../../components/wishes/EventCards';
+import { WishStyles } from '../../../components/wishes/WishStyles';
+import { hostRows } from '@/lib/events/hostRows';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { getEffectivePrice, type EffectivePrice } from '@/lib/geoPricing';
@@ -573,116 +576,6 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
-
-  // Pre-event wishes - text + video reactions before event goes live
-  const [wishName, setWishName] = useState('');
-  const [wishEmail, setWishEmail] = useState('');
-  const [wishMessage, setWishMessage] = useState('');
-  const [wishLoading, setWishLoading] = useState(false);
-  const [wishError, setWishError] = useState<string | null>(null);
-  const [wishSuccess, setWishSuccess] = useState<string | null>(null);
-  const [showWishVideoRecorder, setShowWishVideoRecorder] = useState(false);
-
-  // Restore cached wish identity from localStorage
-  useEffect(() => {
-    try {
-      const cached = localStorage.getItem('eventWishIdentity');
-      if (cached) {
-        const d = JSON.parse(cached);
-        if (d.name) setWishName(d.name);
-        if (d.email) setWishEmail(d.email);
-      }
-    } catch {}
-  }, []);
-
-  const cacheWishIdentity = (name: string, email: string) => {
-    try { localStorage.setItem('eventWishIdentity', JSON.stringify({ name, email })); } catch {}
-  };
-
-  const handleSendTextWish = async () => {
-    const name = wishName.trim();
-    const email = wishEmail.trim();
-    const message = wishMessage.trim();
-    if (!name) { setWishError('Please enter your name.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setWishError('Please enter a valid email.'); return; }
-    if (!message) { setWishError('Please write your message.'); return; }
-    if (!selectedEvent?.id) return;
-    setWishLoading(true);
-    setWishError(null);
-    setWishSuccess(null);
-    try {
-      const fp = await getDeviceId();
-      const base = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
-        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
-      const res = await fetch(`${base}/api/remote/public/events/${selectedEvent.id}/wishes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, message, deviceFingerprint: fp }),
-      });
-      const data = await res.json();
-      if (data.action === 1) {
-        setWishSuccess('Your wish was sent to the event organizer!');
-        setWishMessage('');
-        cacheWishIdentity(name, email);
-        setTimeout(() => setWishSuccess(null), 5000);
-      } else {
-        const msg = data.message || '';
-        if (msg.includes('closed for this event') || msg.includes('only allowed before')) setWishError('Wishes are closed for this event.');
-        else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
-        else if (msg.includes('restricted') || msg.includes('blocked')) setWishError('Your message contains restricted content (emails, phone numbers, or links).');
-        else setWishError(msg || 'Could not send your wish. Please try again.');
-      }
-    } catch {
-      setWishError('Connection error. Please try again.');
-    } finally {
-      setWishLoading(false);
-    }
-  };
-
-  const handleSendVideoWish = async (videoBlob: Blob) => {
-    const name = wishName.trim();
-    const email = wishEmail.trim();
-    if (!name) { setWishError('Please enter your name first.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setWishError('Please enter a valid email first.'); return; }
-    if (!selectedEvent?.id) return;
-    setWishLoading(true);
-    setWishError(null);
-    setWishSuccess(null);
-    try {
-      const fp = await getDeviceId();
-      const base = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
-        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
-      const videoFile = new File([videoBlob], `wish-${Date.now()}.webm`, { type: videoBlob.type || 'video/webm' });
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('email', email);
-      formData.append('video', videoFile);
-      formData.append('deviceFingerprint', fp);
-      if (wishMessage.trim()) formData.append('message', wishMessage.trim());
-      const res = await fetch(`${base}/api/remote/public/events/${selectedEvent.id}/wishes/video`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.action === 1) {
-        setWishSuccess('Your video wish was sent to the event organizer!');
-        setWishMessage('');
-        setShowWishVideoRecorder(false);
-        cacheWishIdentity(name, email);
-        setTimeout(() => setWishSuccess(null), 5000);
-      } else {
-        const msg = data.message || '';
-        if (msg.includes('closed for this event') || msg.includes('only allowed before')) setWishError('Wishes are closed for this event.');
-        else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
-        else if (msg.includes('size') || msg.includes('large')) setWishError('Video upload failed. Please try a shorter clip.');
-        else setWishError(msg || 'Could not send your video wish. Please try again.');
-      }
-    } catch {
-      setWishError('Connection error. Please try again.');
-    } finally {
-      setWishLoading(false);
-    }
-  };
 
   const handleViewerAuth = async () => {
     const name = vaName.trim();
@@ -1834,6 +1727,26 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
               <div className="ve-body">
                 <div className="ve-body-grid">
                   <div className="ve-main-col">
+                    <WishStyles />
+                    <EventWhenCard event={selectedEvent} title={selectedEvent.title} location={selectedEvent.location}>
+                      <div><i className="bi bi-geo-alt" aria-hidden="true" />{selectedEvent.location || 'TBD'}</div>
+                      {selectedEvent.maxGuests && selectedEvent.maxGuests > 0 ? (
+                        <div><i className="bi bi-people" aria-hidden="true" />{`${selectedEvent.maxGuests.toLocaleString()} ${t('people')}`}</div>
+                      ) : null}
+                    </EventWhenCard>
+
+                    {isUpcoming && <WishesMemoriesCard eventId={selectedEvent.id} title={selectedEvent.title} />}
+
+                    <HostedByCard
+                      rows={hostRows({
+                        creator: selectedEvent.creator,
+                        eventOrganizer: selectedEvent.eventOrganizer,
+                        photographerId: selectedEvent.photographer?.id,
+                        photographerName: photographerName ?? undefined,
+                        photographerImage: selectedEvent.photographer?.profilePicture,
+                      })}
+                    />
+
                     <article className="ve-card">
                       <header className="ve-card-head">
                         <span className="ve-card-tag" aria-hidden="true" />
@@ -1879,118 +1792,6 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                       </div>
                     </div>
 
-                    <article className="ve-card">
-                      <header className="ve-card-head">
-                        <span className="ve-card-tag" aria-hidden="true" />
-                        <h2 className="ve-card-h">Hosts &amp; crew</h2>
-                      </header>
-                      <div className="ve-hosts-grid">
-                        <div className="ve-host">
-                          <div className="ve-host-av ve-host-av--organizer">
-                            <i className="bi bi-mic-fill" aria-hidden="true" />
-                          </div>
-                          <div className="ve-host-info">
-                            <span className="ve-host-role">{t('organizedBy')}</span>
-                            <strong>{selectedEvent.eventOrganizer || 'TBD'}</strong>
-                            <small>Event organizer</small>
-                          </div>
-                        </div>
-                        {photographerName && (
-                          <div className="ve-host">
-                            <div className="ve-host-av">
-                              {selectedEvent.photographer?.profilePicture
-                                ? <img src={selectedEvent.photographer.profilePicture} alt={photographerName} />
-                                : <i className="bi bi-camera-fill" aria-hidden="true" />}
-                            </div>
-                            <div className="ve-host-info">
-                              <span className="ve-host-role">Photographer</span>
-                              <strong>{photographerName}</strong>
-                              <small>Capturing the moment</small>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </article>
-
-                    {/* Wishes */}
-                    {isUpcoming && (
-                      <article className="ve-card ve-wishes" id="wishes">
-                        <header className="ve-card-head ve-wishes-head">
-                          <span className="ve-card-tag" aria-hidden="true" />
-                          <div>
-                            <h2 className="ve-card-h">
-                              <i className="bi bi-chat-heart-fill ve-wishes-ico" aria-hidden="true" />
-                              Send a wish to the organizer
-                            </h2>
-                            <p className="ve-wishes-sub">Your message, typed or recorded, will appear on screen during the event.</p>
-                          </div>
-                        </header>
-                        <div className="ve-wishes-grid">
-                          <input
-                            type="text"
-                            value={wishName}
-                            onChange={(e) => { setWishName(e.target.value); setWishError(null); }}
-                            placeholder="Your name"
-                            disabled={wishLoading}
-                            className="ve-input"
-                          />
-                          <input
-                            type="email"
-                            value={wishEmail}
-                            onChange={(e) => { setWishEmail(e.target.value); setWishError(null); }}
-                            placeholder="Email"
-                            disabled={wishLoading}
-                            className="ve-input"
-                          />
-                        </div>
-                        <textarea
-                          value={wishMessage}
-                          onChange={(e) => { setWishMessage(e.target.value); setWishError(null); }}
-                          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && wishMessage.trim()) handleSendTextWish(); }}
-                          placeholder="Write your message…  (Ctrl/⌘ + Enter to send)"
-                          disabled={wishLoading}
-                          rows={3}
-                          className="ve-input ve-textarea"
-                        />
-                        <div className="ve-wishes-actions">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!wishName.trim() || !wishEmail.trim()) {
-                                setWishError('Please enter your name and email first.');
-                                return;
-                              }
-                              setWishError(null);
-                              setShowWishVideoRecorder(true);
-                            }}
-                            disabled={wishLoading}
-                            className="ve-btn ve-btn--ghost ve-btn--md"
-                          >
-                            <i className="bi bi-camera-video-fill" aria-hidden="true" />
-                            <span className="ve-btn-label">Record video</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSendTextWish}
-                            disabled={wishLoading || !wishMessage.trim()}
-                            className="ve-btn ve-btn--reserve ve-btn--md"
-                          >
-                            <i className="bi bi-send-fill" aria-hidden="true" />
-                            <span className="ve-btn-label">{wishLoading ? 'Sending…' : 'Send wish'}</span>
-                          </button>
-                        </div>
-                        {wishError && (
-                          <p className="ve-msg ve-msg--err">
-                            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{wishError}
-                          </p>
-                        )}
-                        {wishSuccess && (
-                          <p className="ve-msg ve-msg--ok">
-                            <i className="bi bi-check-circle-fill" aria-hidden="true" />{wishSuccess}
-                          </p>
-                        )}
-                      </article>
-                    )}
                   </div>
 
                   {/* Sticky sidebar */}
@@ -2058,36 +1859,12 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                         </div>
                       )}
 
-                      <div className="ve-ticket-meta">
-                        <div className="ve-ticket-row">
-                          <i className="bi bi-calendar-event" aria-hidden="true" />
-                          <div>
-                            <span>Date</span>
-                            <strong>{formatDate(selectedEvent.eventDate)}</strong>
-                          </div>
-                        </div>
-                        <div className="ve-ticket-row">
-                          <i className="bi bi-clock" aria-hidden="true" />
-                          <div>
-                            <span>Time</span>
-                            <strong>{formatTimeRange(selectedEvent.startTime, selectedEvent.endTime)}</strong>
-                          </div>
-                        </div>
-                        <div className="ve-ticket-row">
-                          <i className="bi bi-geo-alt" aria-hidden="true" />
-                          <div>
-                            <span>Venue</span>
-                            <strong>{selectedEvent.location || 'TBD'}</strong>
-                          </div>
-                        </div>
-                        <div className="ve-ticket-row">
-                          <i className="bi bi-people" aria-hidden="true" />
-                          <div>
-                            <span>Capacity</span>
-                            <strong>{selectedEvent.maxGuests && selectedEvent.maxGuests > 0 ? `${selectedEvent.maxGuests.toLocaleString()} ${t('people')}` : 'Unlimited'}</strong>
-                          </div>
-                        </div>
-                      </div>
+                      {!isCancelled && (
+                        <a className="ve-btn ve-btn--ghost ve-btn--md ve-btn--block" href={`/user/donations?eventId=${encodeURIComponent(selectedEvent.id)}`}>
+                          <i className="bi bi-heart" aria-hidden="true" />
+                          <span className="ve-btn-label">{isCompleted ? 'Make a donation' : 'Support this event with a donation'}</span>
+                        </a>
+                      )}
 
                       <div className="ve-ticket-cta">
                         {primaryCTA && renderPrimaryCTA('lg', 've-btn--block')}
@@ -3538,14 +3315,6 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         </div>
       )}
 
-
-      {/* ── Video Wish Recorder Modal ── */}
-      {showWishVideoRecorder && (
-        <VideoMessageRecorder
-          onClose={() => setShowWishVideoRecorder(false)}
-          onSend={handleSendVideoWish}
-        />
-      )}
 
       {/* ── Global Error / Notice Popup ── */}
       {reminderNote && (
