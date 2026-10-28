@@ -9,6 +9,8 @@ import type { ApiResponse } from '@/lib/api/types';
 
 export interface CreateEventRequest {
   title: string;
+  /** Required by the server when an event is created: whether viewers may invite others to send wishes. */
+  allowWishInvites?: boolean;
   description?: string;
   eventType?: string;
   eventDate?: string;
