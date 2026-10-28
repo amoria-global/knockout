@@ -63,6 +63,7 @@
     "@vitest/coverage-v8": "^3",
     "baseline-browser-mapping": "^2.10.20",
     "happy-dom": "^20.14.3",
+    "jsqr": "^1.4.0",
     "tailwindcss": "^4.1.14",
     "typescript": "^6.0.3",
     "vitest": "^3"
