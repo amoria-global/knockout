@@ -19,6 +19,10 @@ const WIZARD_ROUTES: RegExp[] = [
   /^\/user\/events\/(?!join-event|join-package|live-stream|livestream|view-event)[^/]+\/?$/,
   /^\/user\/events\/livestream\/[^/]+(\/[^/]+)?\/?$/,
   /^\/user\/events\/join-event\/?$/,
+  /^\/user\/events\/live-stream\/?$/,
+  /^\/user\/events\/photobooks\/[^/]+\/?$/,
+  /^\/user\/gallery\/album\/?$/,
+  /^\/pay-to-watch\/?$/,
   /^\/user\/find-my-photos\/?$/,
   /^\/user\/browse-photos\/(?!purchase|recover)[^/]+\/?$/,
   /^\/user\/albums\/free\/[^/]+\/?$/,
@@ -47,6 +51,14 @@ export function appDeepLinkFor(pathname: string, search: URLSearchParams, target
     const from = search.get('from');
     return `connekt://wish/${wish[1]}${from ? `?from=${encodeURIComponent(from)}` : ''}`;
   }
+  // The pages whose content the installed app can open by id (the id comes from the link, so it is checked first).
+  const id = (v: string | null) => (v && /^[A-Za-z0-9_-]{1,64}$/.test(v) ? v : null);
+  const photobook = pathname.match(/^\/user\/events\/photobooks\/([^/]+)/);
+  if (photobook && id(photobook[1])) return `connekt://photobook/${photobook[1]}`;
+  if (pathname === '/user/gallery/album' && id(search.get('id'))) return `connekt://album/${search.get('id')}`;
+  const eventId = id(search.get('eventId')) ?? id(search.get('id'));
+  if (pathname === '/user/events/view-event' && eventId) return `connekt://scan/${eventId}`;
+  if ((pathname === '/user/events/live-stream' || pathname === '/pay-to-watch') && eventId) return `connekt://event/${eventId}`;
   return 'connekt://';
 }
 
