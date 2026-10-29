@@ -30,6 +30,11 @@ describe('shouldShowWizard', () => {
     expect(shouldShowWizard({ ...base, search: q('app=0') })).toBe(false);
     expect(shouldShowWizard({ ...base, search: q('app=1'), dismissedUntil: base.now + 1e9 })).toBe(true);
   });
+  it('stays out of the way of pages the app itself opens (they carry lang=)', () => {
+    expect(shouldShowWizard({ ...base, search: q('eventId=e1&lang=fr') })).toBe(false);
+    expect(shouldShowWizard({ ...base, search: q('code=A1&locale=en&src=qr') })).toBe(false);
+    expect(shouldShowWizard({ ...base, search: q('lang=fr&app=1') })).toBe(true);
+  });
   it('stays hidden after "continue on the web" until the dismissal runs out', () => {
     expect(shouldShowWizard({ ...base, dismissedUntil: dismissUntil(base.now) })).toBe(false);
     expect(shouldShowWizard({ ...base, dismissedUntil: base.now - 1 })).toBe(true);
