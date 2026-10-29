@@ -106,6 +106,9 @@ export function shouldShowWizard(input: {
   if (!isWizardRoute(pathname)) return false;
   if (search.get('noapp') === '1' || search.get('app') === '0') return false;
   if (search.get('app') === '1') return true;
+  // The app opens its own checkout pages in its in-app browser and always adds lang=; a link someone shares never has it.
+  // That keeps people already in the app, including those on a version before the noapp marker, out of the prompt.
+  if (search.has('lang') || search.has('locale')) return false;
   if (isQrVisit(search)) return !dismissedThisSession;
   return !(dismissedUntil !== null && dismissedUntil > now);
 }
