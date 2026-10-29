@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PLAY_STORE_URL, APP_STORE_URL } from '@/lib/qr/eventQr';
-import { appDeepLinkFor, dismissUntil, isPendingInstall, isWizardRoute, shouldShowWizard, storeUrlFor } from './appInstall';
+import { appDeepLinkFor, destinationFor, dismissUntil, isPendingInstall, isWizardRoute, shouldShowWizard, storeUrlFor } from './appInstall';
 
 const q = (s = '') => new URLSearchParams(s);
 const base = { platform: 'android' as const, pathname: '/user/events/my-event', search: q(), now: 1_000_000, dismissedUntil: null, dismissedThisSession: false, standalone: false };
@@ -63,5 +63,22 @@ describe('a pending install', () => {
     expect(isPendingInstall(1000, 1000 + 3600_000)).toBe(true);
     expect(isPendingInstall(1000, 1000 + 25 * 3600_000)).toBe(false);
     expect(isPendingInstall(null, 5)).toBe(false);
+  });
+});
+
+describe('the destination saved for the app', () => {
+  it('keeps the page and its query, without the wizard switches', () => {
+    expect(destinationFor('/wish/e1', q('from=Amina&app=1'), null)).toBe('/wish/e1?from=Amina');
+    expect(destinationFor('/user/find-my-photos', q('code=A1&noapp=1'), null)).toBe('/user/find-my-photos?code=A1');
+    expect(destinationFor('/photographers/jane', q(), null)).toBe('/photographers/jane');
+  });
+  it('turns an event page into the id form the app can open', () => {
+    expect(destinationFor('/user/events/bible-revival', q('src=qr'), 'scan/e1')).toBe('/user/events/view-event?id=e1&src=qr');
+    expect(destinationFor('/user/events/bible-revival', q(), 'scan/e1')).toBe('/user/events/view-event?id=e1');
+  });
+  it('puts the link code in the Google Play referrer, and leaves the App Store alone', () => {
+    expect(decodeURIComponent(storeUrlFor('android', false, 'ABCDEFGHJK'))).toContain('&dl=ABCDEFGHJK');
+    expect(decodeURIComponent(storeUrlFor('android', false))).not.toContain('dl=');
+    expect(storeUrlFor('ios', false, 'ABCDEFGHJK')).toBe(APP_STORE_URL);
   });
 });

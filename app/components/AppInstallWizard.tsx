@@ -8,6 +8,7 @@ import {
   PENDING_INSTALL_KEY,
   SESSION_DISMISS_KEY,
   appDeepLinkFor,
+  destinationFor,
   dismissUntil,
   isPendingInstall,
   isQrVisit,
@@ -15,6 +16,7 @@ import {
   storeUrlFor,
 } from '@/lib/appInstall/appInstall';
 import { getAppTarget, subscribeAppTarget } from '@/lib/appInstall/target';
+import { saveDeferredLink } from '@/lib/appInstall/deferredLink';
 
 /**
  * The "get the app" wizard. A phone that opens a shared link or a scanned QR code is offered the Connekyt app first,
@@ -102,10 +104,15 @@ export default function AppInstallWizard(): React.JSX.Element | null {
     setPhase('closed');
   }, [clearTimer, fromQr]);
 
-  const openStore = useCallback(() => {
-    // Remember it, so coming back from the store offers "Open in the app" instead of the pitch again.
+  // Going to the store: remember where the visitor was headed (the installed app reads it back and carries them there
+  // after sign-up) and that they went, so coming back offers "Open in the app" instead of the pitch again.
+  const goToStore = useCallback(async (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    if (!platform) return;
     safeSet(window.localStorage, PENDING_INSTALL_KEY, String(Date.now()));
-  }, []);
+    const code = await saveDeferredLink(destinationFor(pathname, new URLSearchParams(searchKey), target), platform);
+    window.location.href = storeUrlFor(platform, fromQr, code);
+  }, [platform, pathname, searchKey, target, fromQr]);
 
   const openApp = useCallback(() => {
     setPhase('checking');
@@ -205,14 +212,14 @@ export default function AppInstallWizard(): React.JSX.Element | null {
         ) : phase === 'checking' ? (
           <button type="button" disabled style={{ ...primaryStyle, opacity: 0.7, cursor: 'wait' }}>Opening...</button>
         ) : (
-          <a href={store} ref={(el) => { primaryRef.current = el; }} onClick={openStore} rel="noopener" style={primaryStyle}>
+          <a href={store} ref={(el) => { primaryRef.current = el; }} onClick={goToStore} rel="noopener" style={primaryStyle}>
             <i className={`bi ${platform === 'ios' ? 'bi-apple' : 'bi-google-play'}`} aria-hidden="true" style={{ marginRight: 8 }} />
             {phase === 'missing' ? `Download from ${storeName}` : `Get the app on ${storeName}`}
           </a>
         )}
 
         {phase !== 'checking' && (
-          <button type="button" onClick={phase === 'returned' ? () => { window.location.href = store; } : openApp} style={secondaryStyle}>
+          <button type="button" onClick={phase === 'returned' ? () => { void goToStore(); } : openApp} style={secondaryStyle}>
             {phase === 'returned' ? `Not installed? Open ${storeName}` : phase === 'missing' ? 'I installed it, open the app' : 'I already have the app'}
           </button>
         )}
