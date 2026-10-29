@@ -183,7 +183,7 @@ describe('wishes are sent with or without the invite marker', () => {
     vi.stubGlobal('fetch', fetchMock);
     render(<WishForm eventId="e1" variant={variant} />);
     setValue(host.querySelector('input[aria-label="Your name"]')!, 'Grace');
-    setValue(host.querySelector('input[aria-label="Your email"]')!, 'g@example.test');
+    expect(host.querySelector('input[aria-label="Your email"]')).toBeNull();
     setValue(host.querySelector('textarea')!, 'Congratulations');
     await act(async () => { ([...host.querySelectorAll('button')].find((b) => b.textContent === 'Send wish') as HTMLButtonElement).click(); });
     vi.unstubAllGlobals();
