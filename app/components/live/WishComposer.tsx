@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sendTextWish, sendVideoWish } from '@/lib/live/api';
-import { canSend, formatClock, isEmail, remainingChars, sentNotice, validateDraft, type ComposerDraft, type Identity } from '@/lib/live/composer';
+import { canSend, formatClock, remainingChars, sentNotice, validateDraft, type ComposerDraft, type Identity } from '@/lib/live/composer';
 import { MAX_WISH_TEXT, MAX_WISH_VIDEO_SECONDS, type WishVisibility } from '@/lib/live/types';
 import { Icon } from './icons';
 
@@ -16,9 +16,10 @@ function loadIdentity(): Partial<Identity> {
     return {};
   }
 }
-function saveIdentity(id: Identity) {
+/** Remember the name only; an email another form saved under the same key (the event reminder) is kept. */
+function saveName(name: string) {
   try {
-    localStorage.setItem(IDENTITY_KEY, JSON.stringify(id));
+    localStorage.setItem(IDENTITY_KEY, JSON.stringify({ ...loadIdentity(), name }));
   } catch {
     /* private mode: ask again next time */
   }
@@ -26,7 +27,7 @@ function saveIdentity(id: Identity) {
 
 /**
  * The wish composer for a text or a video wish, as a dialog. A signed-in person is sent as their account (`account`);
- * a guest is asked for a name and email once and remembered. Visibility has no default and Send waits for the choice.
+ * a guest is asked for a name once and remembered. Visibility has no default and Send waits for the choice.
  * A video is recorded (up to 60 seconds) or uploaded, and previewed before it is sent. Same rules as the mobile composer.
  */
 export function WishComposer({
@@ -45,7 +46,6 @@ export function WishComposer({
   onSent?: () => void;
 }) {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [visibility, setVisibility] = useState<WishVisibility | null>(null);
   const [clip, setClip] = useState<{ blob: Blob; url: string; seconds: number | null } | null>(null);
@@ -62,7 +62,6 @@ export function WishComposer({
   useEffect(() => {
     const id = loadIdentity();
     if (id.name) setName(id.name);
-    if (id.email) setEmail(id.email);
     lastFocus.current = document.activeElement;
     dialogRef.current?.querySelector<HTMLElement>('input,textarea,button')?.focus();
     return () => {
@@ -83,7 +82,7 @@ export function WishComposer({
   );
   useEffect(() => () => void (clip && URL.revokeObjectURL(clip.url)), [clip]);
 
-  const draft: ComposerDraft = { kind, name, email, message, visibility, durationSeconds: clip?.seconds ?? null, hasVideo: !!clip };
+  const draft: ComposerDraft = { kind, name, message, visibility, durationSeconds: clip?.seconds ?? null, hasVideo: !!clip };
   const errors = validateDraft(draft, account);
   const shown = (k: keyof typeof errors) => (tried ? errors[k] : undefined);
 
@@ -142,14 +141,14 @@ export function WishComposer({
   const send = async () => {
     setTried(true);
     if (!canSend(errors) || !visibility) return;
-    const who = account ?? { name: name.trim(), email: email.trim() };
+    const who = { name: (account?.name ?? name).trim() };
     setBusy(true);
     setError(null);
     try {
       const fingerprint = await getFingerprint();
       if (kind === 'text') await sendTextWish(eventId, { ...who, message: message.trim(), visibility, fingerprint });
       else await sendVideoWish(eventId, { ...who, message, visibility, durationSeconds: clip?.seconds ?? undefined, video: clip!.blob, fingerprint });
-      if (!account && isEmail(who.email)) saveIdentity(who);
+      if (!account) saveName(who.name);
       setSent(sentNotice(visibility));
       onSent?.();
     } catch (e) {
@@ -235,11 +234,6 @@ export function WishComposer({
                   <label htmlFor="lv-name">Your name</label>
                   <input id="lv-name" className="lv-input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" aria-invalid={!!shown('name')} />
                   {shown('name') ? <p className="lv-err">{shown('name')}</p> : null}
-                </div>
-                <div className="lv-field">
-                  <label htmlFor="lv-email">Your email</label>
-                  <input id="lv-email" className="lv-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" aria-invalid={!!shown('email')} />
-                  {shown('email') ? <p className="lv-err">{shown('email')}</p> : null}
                 </div>
               </>
             ) : null}
