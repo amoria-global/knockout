@@ -4,7 +4,7 @@ import { hideOwnWish, listHostWishes, listWishes, mapWish, moderateWish, sendTex
 import { wishLink } from './qr';
 
 const json = (body: unknown, ok = true) => ({ ok, status: ok ? 200 : 500, json: async () => body }) as Response;
-const base: ComposerDraft = { kind: 'text', name: 'Aline', email: 'a@b.co', message: 'Congratulations', visibility: 'public', durationSeconds: null, hasVideo: false };
+const base: ComposerDraft = { kind: 'text', name: 'Aline', message: 'Congratulations', visibility: 'public', durationSeconds: null, hasVideo: false };
 const account = { name: 'Aline M', email: 'a@b.co' };
 
 describe('composer rules (same as the mobile app)', () => {
@@ -13,11 +13,15 @@ describe('composer rules (same as the mobile app)', () => {
     expect(validateDraft({ ...base, visibility: null }, null).visibility).toBeDefined();
   });
 
-  it('asks a guest for name and email, never a signed-in person', () => {
-    const e = validateDraft({ ...base, name: ' ', email: 'nope' }, null);
+  it('asks a guest for a name only, never a signed-in person', () => {
+    const e = validateDraft({ ...base, name: ' ' }, null);
     expect(e.name).toBeDefined();
-    expect(e.email).toBeDefined();
-    expect(canSend(validateDraft({ ...base, name: '', email: '' }, account))).toBe(true);
+    expect(Object.keys(e)).toEqual(['name']);
+    expect(canSend(validateDraft({ ...base, name: '' }, account))).toBe(true);
+  });
+
+  it('needs no email: a guest with a name and a message can send', () => {
+    expect(canSend(validateDraft({ ...base, name: 'Aline' }, null))).toBe(true);
   });
 
   it('caps text at 500 characters and a video at 60 seconds, and the caption is optional', () => {
@@ -59,20 +63,22 @@ describe('wish API', () => {
 
   it('sends visibility with a text wish and refuses with the shared wording', async () => {
     const f = vi.fn().mockResolvedValue(json({ action: 1 }));
-    await sendTextWish('e1', { name: 'A', email: 'a@b.co', message: 'Hi', visibility: 'public', fingerprint: 'd' }, f);
+    await sendTextWish('e1', { name: 'A', message: 'Hi', visibility: 'public', fingerprint: 'd' }, f);
     expect(JSON.parse(f.mock.calls[0][1].body as string)).toMatchObject({ visibility: 'public', deviceFingerprint: 'd', message: 'Hi' });
+    expect(JSON.parse(f.mock.calls[0][1].body as string)).not.toHaveProperty('email');
     const closed = vi.fn().mockResolvedValue(json({ action: 0, message: 'Wishes are closed for this event' }));
-    await expect(sendTextWish('e1', { name: 'A', email: 'a@b.co', message: 'Hi', visibility: 'private', fingerprint: 'd' }, closed)).rejects.toThrow('Wishes are closed for this event.');
+    await expect(sendTextWish('e1', { name: 'A', message: 'Hi', visibility: 'private', fingerprint: 'd' }, closed)).rejects.toThrow('Wishes are closed for this event.');
   });
 
   it('posts a video wish as multipart with visibility and the length rounded up', async () => {
     const f = vi.fn().mockResolvedValue(json({ action: 1 }));
-    await sendVideoWish('e1', { name: 'A', email: 'a@b.co', visibility: 'private', durationSeconds: 41.2, video: new Blob(['x'], { type: 'video/webm' }), fingerprint: 'd' }, f);
+    await sendVideoWish('e1', { name: 'A', visibility: 'private', durationSeconds: 41.2, video: new Blob(['x'], { type: 'video/webm' }), fingerprint: 'd' }, f);
     const form = f.mock.calls[0][1].body as FormData;
     expect(f.mock.calls[0][0]).toContain('/wishes/video');
     expect(form.get('visibility')).toBe('private');
     expect(form.get('duration')).toBe('42');
     expect(form.get('deviceFingerprint')).toBe('d');
+    expect(form.has('email')).toBe(false);
     expect(form.has('message')).toBe(false);
   });
 
