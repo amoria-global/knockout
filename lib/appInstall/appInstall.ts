@@ -1,0 +1,87 @@
+/**
+ * The rules of the "get the app" wizard: which pages show it, what the app opens, where the store link points and how long
+ * a dismissal lasts. Pure, so the component is only layout. The pages it covers are the ones people reach from a shared
+ * link or a scanned QR code (an event, a live stream, an album, a photographer, a wish, Find My Photos); sign-in,
+ * checkout, help and legal pages never show it.
+ */
+import { APP_STORE_URL, PLAY_STORE_URL, type MobilePlatform } from '@/lib/qr/eventQr';
+
+export const DISMISS_KEY = 'connekyt.appWizard.dismissedUntil';
+export const SESSION_DISMISS_KEY = 'connekyt.appWizard.dismissedSession';
+export const PENDING_INSTALL_KEY = 'connekyt.appWizard.pendingInstall';
+/** A plain "continue on the web" hides the wizard this long. A QR scan is asked again on the next scan. */
+export const DISMISS_DAYS = 3;
+/** After the store was opened, "did you install it?" is offered for this long. */
+export const PENDING_INSTALL_HOURS = 24;
+
+const WIZARD_ROUTES: RegExp[] = [
+  /^\/user\/events\/view-event\/?$/,
+  /^\/user\/events\/(?!join-event|join-package|live-stream|livestream|view-event)[^/]+\/?$/,
+  /^\/user\/events\/livestream\/[^/]+(\/[^/]+)?\/?$/,
+  /^\/user\/events\/join-event\/?$/,
+  /^\/user\/find-my-photos\/?$/,
+  /^\/user\/browse-photos\/(?!purchase|recover)[^/]+\/?$/,
+  /^\/user\/albums\/free\/[^/]+\/?$/,
+  /^\/photographers\/[^/]+\/?$/,
+  /^\/user\/photographers\/view-profile\/?$/,
+  /^\/wish\/[^/]+\/?$/,
+];
+
+export function isWizardRoute(pathname: string): boolean {
+  return WIZARD_ROUTES.some((re) => re.test(pathname));
+}
+
+/** Whether the visit came from a scanned QR code (?src=qr). */
+export function isQrVisit(search: URLSearchParams): boolean {
+  return search.get('src') === 'qr';
+}
+
+/**
+ * The custom-scheme link that opens the app on this content. A page that knows its own app route registers it (`target`,
+ * for example "scan/<eventId>"); a wish link carries its own; anything else opens the app's home screen.
+ */
+export function appDeepLinkFor(pathname: string, search: URLSearchParams, target: string | null): string {
+  if (target) return `connekt://${target}`;
+  const wish = pathname.match(/^\/wish\/([^/]+)/);
+  if (wish) {
+    const from = search.get('from');
+    return `connekt://wish/${wish[1]}${from ? `?from=${encodeURIComponent(from)}` : ''}`;
+  }
+  return 'connekt://';
+}
+
+/** The store listing for the phone, tagged on Google Play so installs from this wizard can be told apart. */
+export function storeUrlFor(platform: Exclude<MobilePlatform, null>, fromQr: boolean): string {
+  if (platform === 'ios') return APP_STORE_URL;
+  const referrer = `utm_source=connekyt_web&utm_medium=${fromQr ? 'qr' : 'share_link'}&utm_campaign=app_install_wizard`;
+  return `${PLAY_STORE_URL}&referrer=${encodeURIComponent(referrer)}`;
+}
+
+export function shouldShowWizard(input: {
+  platform: MobilePlatform;
+  pathname: string;
+  search: URLSearchParams;
+  now: number;
+  /** Epoch ms until which a "continue on the web" hides the wizard, or null. */
+  dismissedUntil: number | null;
+  /** True once the visitor dismissed it during this browser session (the QR case). */
+  dismissedThisSession: boolean;
+  /** Already running as an installed web app. */
+  standalone: boolean;
+}): boolean {
+  const { platform, pathname, search, now, dismissedUntil, dismissedThisSession, standalone } = input;
+  if (!platform || standalone) return false;
+  if (!isWizardRoute(pathname)) return false;
+  if (search.get('noapp') === '1' || search.get('app') === '0') return false;
+  if (search.get('app') === '1') return true;
+  if (isQrVisit(search)) return !dismissedThisSession;
+  return !(dismissedUntil !== null && dismissedUntil > now);
+}
+
+export function dismissUntil(now: number): number {
+  return now + DISMISS_DAYS * 24 * 3600 * 1000;
+}
+
+export function isPendingInstall(at: number | null, now: number): boolean {
+  return at !== null && now - at < PENDING_INSTALL_HOURS * 3600 * 1000;
+}

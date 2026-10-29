@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../../components/navbar';
-import QrMobileGate from '../../../components/QrMobileGate';
+import { setAppTarget } from '@/lib/appInstall/target';
 
 import ErrorPopup, { type PopupSeverity } from '../../../components/ErrorPopup';
 import InternationalPhoneInput, { type PhoneValue } from '../../../components/phone/InternationalPhoneInput';
@@ -184,6 +184,10 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   // Fall back to URL params so the legacy ?id= entry point and any
   // intra-app navigations keep working unchanged.
   const eventId = eventIdProp || searchParams.get('id') || searchParams.get('eventId');
+  useEffect(() => {
+    setAppTarget(eventId ? `scan/${encodeURIComponent(eventId)}` : null);
+    return () => setAppTarget(null);
+  }, [eventId]);
 
   const [isLoading, setIsLoading] = useState(true);
   // Location-aware effective price for this event (geo-pricing).
@@ -3380,9 +3384,7 @@ function LoadingFallback() {
 export default function ViewEventPage({ eventId }: { eventId?: string } = {}): React.JSX.Element {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <QrMobileGate eventId={eventId}>
-        <ViewEventContent eventIdProp={eventId} />
-      </QrMobileGate>
+      <ViewEventContent eventIdProp={eventId} />
     </Suspense>
   );
 }
