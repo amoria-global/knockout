@@ -68,13 +68,13 @@ export async function hideOwnWish(eventId: string, wishId: string, fingerprint: 
 
 export async function sendTextWish(
   eventId: string,
-  data: { name: string; email: string; message: string; visibility: WishVisibility; fingerprint: string },
+  data: { name: string; message: string; visibility: WishVisibility; fingerprint: string },
   f: Fetcher = fetch,
 ): Promise<void> {
   const res = await f(`${apiBase()}/api/remote/public/events/${eid(eventId)}/wishes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: data.name, email: data.email, message: data.message, visibility: data.visibility, deviceFingerprint: data.fingerprint }),
+    body: JSON.stringify({ name: data.name, message: data.message, visibility: data.visibility, deviceFingerprint: data.fingerprint }),
   });
   const body = (await res.json().catch(() => ({}))) as Raw;
   if (!res.ok || body.action !== 1) throw new Error(wishErrorMessage(text(body.message), 'text'));
@@ -82,12 +82,11 @@ export async function sendTextWish(
 
 export async function sendVideoWish(
   eventId: string,
-  data: { name: string; email: string; message?: string; visibility: WishVisibility; durationSeconds?: number; video: Blob; fingerprint: string },
+  data: { name: string; message?: string; visibility: WishVisibility; durationSeconds?: number; video: Blob; fingerprint: string },
   f: Fetcher = fetch,
 ): Promise<void> {
   const form = new FormData();
   form.append('name', data.name);
-  form.append('email', data.email);
   form.append('video', new File([data.video], `wish-${Date.now()}.webm`, { type: data.video.type || 'video/webm' }));
   form.append('deviceFingerprint', data.fingerprint);
   form.append('visibility', data.visibility);

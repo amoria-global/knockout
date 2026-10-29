@@ -9,7 +9,6 @@ export type Identity = { name: string; email: string };
 export type ComposerDraft = {
   kind: 'text' | 'video';
   name: string;
-  email: string;
   message: string;
   visibility: WishVisibility | null;
   /** Video only: the clip's length in seconds, null while unknown, and whether a clip is attached. */
@@ -17,17 +16,13 @@ export type ComposerDraft = {
   hasVideo: boolean;
 };
 
-export type ComposerErrors = Partial<Record<'name' | 'email' | 'message' | 'visibility' | 'video', string>>;
+export type ComposerErrors = Partial<Record<'name' | 'message' | 'visibility' | 'video', string>>;
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const isEmail = (v: string) => EMAIL.test(v.trim());
-
-/** `account` is set for a signed-in person, who is never asked for a name or email. */
+/** `account` is set for a signed-in person, who is never asked for a name. A wish needs a name and no email. */
 export function validateDraft(draft: ComposerDraft, account: Identity | null): ComposerErrors {
   const errors: ComposerErrors = {};
   if (!account) {
     if (!draft.name.trim()) errors.name = 'Please enter your name.';
-    if (!isEmail(draft.email)) errors.email = 'Please enter a valid email.';
   }
   if (draft.kind === 'text') {
     if (!draft.message.trim()) errors.message = 'Please write your message.';

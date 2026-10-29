@@ -25,7 +25,6 @@ export function loadWishIdentity(): { name?: string; email?: string } {
  */
 export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: string; variant?: 'card' | 'page'; onIdentity?: (name: string) => void }) {
   const [wishName, setWishName] = useState('');
-  const [wishEmail, setWishEmail] = useState('');
   const [wishMessage, setWishMessage] = useState('');
   const [wishLoading, setWishLoading] = useState(false);
   const [wishError, setWishError] = useState<string | null>(null);
@@ -36,11 +35,11 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
   useEffect(() => {
     const d = loadWishIdentity();
     if (d.name) setWishName(d.name);
-    if (d.email) setWishEmail(d.email);
   }, []);
 
-  const cacheWishIdentity = (name: string, email: string) => {
-    try { localStorage.setItem(IDENTITY_KEY, JSON.stringify({ name, email })); } catch {}
+  // Only the name is remembered from a wish. An email another form saved under the same key (the event reminder) is kept.
+  const cacheWishIdentity = (name: string) => {
+    try { localStorage.setItem(IDENTITY_KEY, JSON.stringify({ ...loadWishIdentity(), name })); } catch {}
     onIdentity?.(name);
   };
 
@@ -49,10 +48,8 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
 
   const handleSendTextWish = async () => {
     const name = wishName.trim();
-    const email = wishEmail.trim();
     const message = wishMessage.trim();
     if (!name) { setWishError('Please enter your name.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setWishError('Please enter a valid email.'); return; }
     if (!message) { setWishError('Please write your message.'); return; }
     if (!eventId) return;
     setWishLoading(true);
@@ -63,13 +60,13 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
       const res = await fetch(`${apiBase()}/api/remote/public/events/${eventId}/wishes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, message, deviceFingerprint: fp, ...(variant === 'page' ? { via: 'invite' } : {}) }),
+        body: JSON.stringify({ name, message, deviceFingerprint: fp, ...(variant === 'page' ? { via: 'invite' } : {}) }),
       });
       const data = await res.json();
       if (data.action === 1) {
         setWishSuccess('Your wish was sent to the event organizer!');
         setWishMessage('');
-        cacheWishIdentity(name, email);
+        cacheWishIdentity(name);
         setTimeout(() => setWishSuccess(null), 5000);
       } else {
         const msg = data.message || '';
@@ -88,9 +85,7 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
 
   const handleSendVideoWish = async (videoBlob: Blob) => {
     const name = wishName.trim();
-    const email = wishEmail.trim();
     if (!name) { setWishError('Please enter your name first.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setWishError('Please enter a valid email first.'); return; }
     if (!eventId) return;
     setWishLoading(true);
     setWishError(null);
@@ -100,7 +95,6 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
       const videoFile = new File([videoBlob], `wish-${Date.now()}.webm`, { type: videoBlob.type || 'video/webm' });
       const formData = new FormData();
       formData.append('name', name);
-      formData.append('email', email);
       formData.append('video', videoFile);
       formData.append('deviceFingerprint', fp);
       if (variant === 'page') formData.append('via', 'invite');
@@ -114,7 +108,7 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
         setWishSuccess('Your video wish was sent to the event organizer!');
         setWishMessage('');
         setShowWishVideoRecorder(false);
-        cacheWishIdentity(name, email);
+        cacheWishIdentity(name);
         setTimeout(() => setWishSuccess(null), 5000);
       } else {
         const msg = data.message || '';
@@ -141,8 +135,8 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
     <button
       type="button"
       onClick={() => {
-        if (!wishName.trim() || !wishEmail.trim()) {
-          setWishError('Please enter your name and email first.');
+        if (!wishName.trim()) {
+          setWishError('Please enter your name first.');
           return;
         }
         setWishError(null);
@@ -167,16 +161,6 @@ export function WishForm({ eventId, variant = 'card', onIdentity }: { eventId: s
           placeholder="Your name"
           aria-label="Your name"
           autoComplete="name"
-          disabled={wishLoading}
-          className="wm-input"
-        />
-        <input
-          type="email"
-          value={wishEmail}
-          onChange={(e) => { setWishEmail(e.target.value); setWishError(null); }}
-          placeholder="Email"
-          aria-label="Your email"
-          autoComplete="email"
           disabled={wishLoading}
           className="wm-input"
         />
