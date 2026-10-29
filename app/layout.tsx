@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -8,6 +9,7 @@ import GoogleOAuthProvider from "./providers/GoogleOAuthProvider";
 import { ToastProvider } from "@/lib/notifications/ToastProvider";
 import { BannerNotification, OfflineBanner } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import AppInstallWizard from "./components/AppInstallWizard";
 import { SITE_URL, SITE_NAME } from "@/lib/seo/seo";
 
 const DEFAULT_DESCRIPTION =
@@ -103,6 +105,9 @@ export default function RootLayout({
                   <BackToTop />
                   <BannerNotification />
                   <OfflineBanner />
+                  <Suspense fallback={null}>
+                    <AppInstallWizard />
+                  </Suspense>
                 </ErrorBoundary>
               </ToastProvider>
             </AuthProvider>
