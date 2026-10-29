@@ -10,10 +10,11 @@ describe('which pages show the wizard', () => {
     '/user/events/view-event', '/user/events/bible-revival-conference', '/user/events/livestream/some-slug', '/user/events/livestream/some-slug/viewer1',
     '/user/events/join-event', '/user/find-my-photos', '/user/browse-photos/an-album', '/user/albums/free/ABC123', '/photographers/jane-doe',
     '/user/photographers/view-profile', '/wish/event-1',
+    '/user/events/live-stream', '/user/events/photobooks/b1', '/user/gallery/album', '/pay-to-watch',
   ])('shows on %s', (p) => expect(isWizardRoute(p)).toBe(true));
 
   it.each([
-    '/', '/user/auth/login', '/user/complete-payment', '/user/events/join-package', '/user/events/live-stream', '/user/events', '/pay-to-watch',
+    '/', '/user/auth/login', '/user/complete-payment', '/user/events/join-package', '/user/events', '/user/complete-payment/x',
     '/user/browse-photos/purchase/ref1', '/user/browse-photos/recover', '/user/help-center', '/user/terms-of-service', '/get-app',
   ])('does not show on %s', (p) => expect(isWizardRoute(p)).toBe(false));
 });
@@ -45,6 +46,17 @@ describe('the app link', () => {
   it('opens a wish page in the app with who invited you', () => {
     expect(appDeepLinkFor('/wish/e1', q('from=Amina'), null)).toBe('connekt://wish/e1?from=Amina');
     expect(appDeepLinkFor('/wish/e1', q(), null)).toBe('connekt://wish/e1');
+  });
+  it('opens the content the installed app can open by id', () => {
+    expect(appDeepLinkFor('/user/events/photobooks/b1', q(), null)).toBe('connekt://photobook/b1');
+    expect(appDeepLinkFor('/user/gallery/album', q('id=a1'), null)).toBe('connekt://album/a1');
+    expect(appDeepLinkFor('/user/events/view-event', q('id=e1'), null)).toBe('connekt://scan/e1');
+    expect(appDeepLinkFor('/user/events/live-stream', q('eventId=e1&id=e1'), null)).toBe('connekt://event/e1');
+    expect(appDeepLinkFor('/pay-to-watch', q('eventId=e1&device=tv'), null)).toBe('connekt://event/e1');
+  });
+  it('never puts an unchecked id into the app link', () => {
+    expect(appDeepLinkFor('/user/gallery/album', q('id=../../x'), null)).toBe('connekt://');
+    expect(appDeepLinkFor('/user/events/live-stream', q('eventId=a b'), null)).toBe('connekt://');
   });
   it('opens the home screen when nothing more is known', () => expect(appDeepLinkFor('/user/find-my-photos', q('code=A'), null)).toBe('connekt://'));
 });
