@@ -1,5 +1,7 @@
 'use client';
 
+import { currencyFlagCountry } from '../../lib/currencyFlag';
+import FlagCurrencySelect from './CurrencySelect';
 import { WishInvitesField, focusWishInvitesField } from './wishes/WishInvitesField';
 import { WishStyles } from './wishes/WishStyles';
 import { wishInvitesError } from '@/lib/wishes/wishInvites';
@@ -221,24 +223,8 @@ function describeConflict(b: BookedDate): string {
   return `The photographer is fully booked on ${b.date}.`;
 }
 
-// Currency code → ISO 3166-1 alpha-2 country code, used to fetch flag PNGs
-// from flagcdn.com. Native flag emojis don't render on Windows fonts, so we
-// use the same image-CDN approach the navbar's language picker uses.
-const CURRENCY_FLAG_CODES: Record<string, string> = {
-  // East / Africa
-  RWF: 'rw', KES: 'ke', UGX: 'ug', TZS: 'tz', BIF: 'bi',
-  ZAR: 'za', NGN: 'ng', GHS: 'gh', EGP: 'eg', ETB: 'et',
-  MAD: 'ma', DZD: 'dz', TND: 'tn',
-  // World
-  USD: 'us', EUR: 'eu', GBP: 'gb', CAD: 'ca', AUD: 'au', NZD: 'nz',
-  CHF: 'ch', SEK: 'se', NOK: 'no', DKK: 'dk',
-  JPY: 'jp', CNY: 'cn', INR: 'in', BRL: 'br', MXN: 'mx',
-  AED: 'ae', SAR: 'sa', QAR: 'qa', TRY: 'tr', RUB: 'ru',
-  SGD: 'sg', HKD: 'hk', KRW: 'kr', THB: 'th',
-};
 function flagCode(code?: string): string | null {
-  if (!code) return null;
-  return CURRENCY_FLAG_CODES[code.toUpperCase()] || null;
+  return currencyFlagCountry(code);
 }
 
 // ─── Visual styles for the wizard shell, stepper, and inputs/buttons ───
@@ -645,7 +631,7 @@ function ServiceTypeChooser({
   );
 }
 
-// Tiny visual atom - flag image (flagcdn.com) + currency code. Used inside
+// Tiny visual atom - bundled flag image + currency code. Used inside
 // the custom CurrencySelect since native <option> elements strip HTML.
 function CurrencyChip({ code, size = 18 }: { code: string; size?: number }) {
   const cc = flagCode(code);
@@ -654,7 +640,7 @@ function CurrencyChip({ code, size = 18 }: { code: string; size?: number }) {
       {cc ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`https://flagcdn.com/w40/${cc}.png`}
+          src={`/flags/${cc}.svg`}
           alt=""
           width={size + 6}
           height={Math.round((size + 6) * 0.75)}
@@ -2893,16 +2879,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       <div>
                         <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Stream Fee (per viewer)</label>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <select
+                          <FlagCurrencySelect
                             value={evtStreamFeeCurrencyId}
-                            onChange={e => setEvtStreamFeeCurrencyId(e.target.value)}
-                            style={{ ...inputStyle, flex: '0 0 110px' }}
-                          >
-                            {currencies.length === 0 && <option value="">RWF</option>}
-                            {currencies.map(c => (
-                              <option key={c.id} value={c.id}>{c.code || c.symbol || c.name}</option>
-                            ))}
-                          </select>
+                            onChange={setEvtStreamFeeCurrencyId}
+                            placeholder="RWF"
+                            options={currencies.map(c => ({ value: c.id, code: c.code || c.symbol || '', name: c.name }))}
+                            style={{ ...inputStyle, flex: '0 0 110px', width: 110 }}
+                          />
                           <input
                             type="number"
                             min={0}

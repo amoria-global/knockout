@@ -1,5 +1,6 @@
 "use client";
 
+import CurrencyFlag from '../components/CurrencyFlag';
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -1556,7 +1557,8 @@ const DonationsContent = () => {
               <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f3f4f6', padding: '3px', borderRadius: '8px' }}>
                 {currencyToggleList.map((curr) => (
                   <button key={curr} onClick={() => { setCurrency(curr); setCustomAmount(''); }}
-                    style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', border: 'none', backgroundColor: currency === curr ? '#083A85' : 'transparent', color: currency === curr ? '#fff' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', border: 'none', backgroundColor: currency === curr ? '#083A85' : 'transparent', color: currency === curr ? '#fff' : '#64748b', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <CurrencyFlag code={curr} width={16} />
                     {curr}
                   </button>
                 ))}
