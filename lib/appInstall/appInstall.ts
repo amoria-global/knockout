@@ -19,6 +19,10 @@ const WIZARD_ROUTES: RegExp[] = [
   /^\/user\/events\/(?!join-event|join-package|live-stream|livestream|view-event)[^/]+\/?$/,
   /^\/user\/events\/livestream\/[^/]+(\/[^/]+)?\/?$/,
   /^\/user\/events\/join-event\/?$/,
+  /^\/user\/events\/live-stream\/?$/,
+  /^\/user\/events\/photobooks\/[^/]+\/?$/,
+  /^\/user\/gallery\/album\/?$/,
+  /^\/pay-to-watch\/?$/,
   /^\/user\/find-my-photos\/?$/,
   /^\/user\/browse-photos\/(?!purchase|recover)[^/]+\/?$/,
   /^\/user\/albums\/free\/[^/]+\/?$/,
@@ -47,14 +51,42 @@ export function appDeepLinkFor(pathname: string, search: URLSearchParams, target
     const from = search.get('from');
     return `connekt://wish/${wish[1]}${from ? `?from=${encodeURIComponent(from)}` : ''}`;
   }
+  // The pages whose content the installed app can open by id (the id comes from the link, so it is checked first).
+  const id = (v: string | null) => (v && /^[A-Za-z0-9_-]{1,64}$/.test(v) ? v : null);
+  const photobook = pathname.match(/^\/user\/events\/photobooks\/([^/]+)/);
+  if (photobook && id(photobook[1])) return `connekt://photobook/${photobook[1]}`;
+  if (pathname === '/user/gallery/album' && id(search.get('id'))) return `connekt://album/${search.get('id')}`;
+  const eventId = id(search.get('eventId')) ?? id(search.get('id'));
+  if (pathname === '/user/events/view-event' && eventId) return `connekt://scan/${eventId}`;
+  if ((pathname === '/user/events/live-stream' || pathname === '/pay-to-watch') && eventId) return `connekt://event/${eventId}`;
   return 'connekt://';
 }
 
-/** The store listing for the phone, tagged on Google Play so installs from this wizard can be told apart. */
-export function storeUrlFor(platform: Exclude<MobilePlatform, null>, fromQr: boolean): string {
+/**
+ * The store listing for the phone. Google Play carries a referrer back to the installed app, so it is tagged to tell wizard
+ * installs apart and, when the destination was saved, carries its code (`dl`) so the app can open exactly that page.
+ */
+export function storeUrlFor(platform: Exclude<MobilePlatform, null>, fromQr: boolean, code: string | null = null): string {
   if (platform === 'ios') return APP_STORE_URL;
-  const referrer = `utm_source=connekyt_web&utm_medium=${fromQr ? 'qr' : 'share_link'}&utm_campaign=app_install_wizard`;
+  const referrer = `utm_source=connekyt_web&utm_medium=${fromQr ? 'qr' : 'share_link'}&utm_campaign=app_install_wizard${code ? `&dl=${code}` : ''}`;
   return `${PLAY_STORE_URL}&referrer=${encodeURIComponent(referrer)}`;
+}
+
+/**
+ * The page the visitor was going to, as a path the backend accepts. An event page registers its app route
+ * (scan/<eventId>); that becomes the id form of the event link, which the app can open, where a slug cannot be resolved
+ * there. The wizard's own switches are dropped.
+ */
+export function destinationFor(pathname: string, search: URLSearchParams, target: string | null): string {
+  const scan = target?.match(/^scan\/([^/?#]+)$/);
+  if (scan) {
+    const id = decodeURIComponent(scan[1]);
+    return `/user/events/view-event?id=${encodeURIComponent(id)}${isQrVisit(search) ? '&src=qr' : ''}`;
+  }
+  const kept = new URLSearchParams(search);
+  ['app', 'noapp'].forEach((k) => kept.delete(k));
+  const q = kept.toString();
+  return `${pathname}${q ? `?${q}` : ''}`;
 }
 
 export function shouldShowWizard(input: {
