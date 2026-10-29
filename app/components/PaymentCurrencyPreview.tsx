@@ -198,7 +198,7 @@ const PaymentCurrencyPreview: React.FC<PaymentCurrencyPreviewProps> = ({
             }}
           >
             <img
-              src={`https://flagcdn.com/w40/${FLAG[displayCode]}.png`}
+              src={`/flags/${FLAG[displayCode]}.svg`}
               alt=""
               style={{ width: "16px", height: "12px", objectFit: "cover", borderRadius: "2px" }}
             />
@@ -259,7 +259,7 @@ const PaymentCurrencyPreview: React.FC<PaymentCurrencyPreviewProps> = ({
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <img
-                      src={`https://flagcdn.com/w40/${FLAG[c]}.png`}
+                      src={`/flags/${FLAG[c]}.svg`}
                       alt={NAME[c]}
                       style={{ width: "20px", height: "15px", objectFit: "cover", borderRadius: "2px" }}
                     />

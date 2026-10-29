@@ -1,5 +1,6 @@
 'use client';
 
+import CurrencySelect from './CurrencySelect';
 import React, { useState, useEffect, useReducer, useRef, useCallback } from 'react';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { apiClient } from '@/lib/api/client';
@@ -1487,10 +1488,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                       <div>
                         <label style={labelStyle}>Price <span style={{ color: '#DC2626' }}>*</span></label>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <select value={pkgCurrencyId} onChange={e => setPkgCurrencyId(e.target.value)}
-                            style={{ ...inputStyle, width: 'auto', minWidth: 96, flex: '0 0 auto', appearance: 'auto' as const, fontWeight: 700, color: PINK }}>
-                            {currencies.map(c => <option key={c.id} value={c.id} style={{ color: TEXT_PRIMARY }}>{c.code}</option>)}
-                          </select>
+                          <CurrencySelect value={pkgCurrencyId} onChange={setPkgCurrencyId}
+                            options={currencies.map(c => ({ value: c.id, code: c.code, name: c.name }))}
+                            style={{ ...inputStyle, width: 'auto', minWidth: 120, flex: '0 0 auto', fontWeight: 700, color: PINK }} />
                           <input type="number" value={pkgPrice || ''} onChange={e => setPkgPrice(parseInt(e.target.value) || 0)}
                             placeholder="Enter your price" required
                             style={{ ...inputStyle, flex: 1, fontWeight: 700, fontSize: 15 }}

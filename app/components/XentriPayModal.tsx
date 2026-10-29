@@ -1,5 +1,6 @@
 'use client';
 
+import CurrencySelect from './CurrencySelect';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import { type CurrencyCode, useLiveRates } from './PaymentCurrencyPreview';
@@ -912,20 +913,18 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 </span>
                 <label style={{ marginLeft: 'auto', position: 'relative', flexShrink: 0 }}>
                   <span style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} aria-hidden />
-                  <select
+                  <CurrencySelect
                     value={displayCurrency}
-                    onChange={(e) => setDisplayCurrency(e.target.value as CurrencyCode)}
-                    aria-label="View amount in currency"
+                    onChange={(v) => setDisplayCurrency(v as CurrencyCode)}
+                    options={DISPLAY_CCYS.map(c => ({ value: c, code: c }))}
+                    menuBg={darkMode ? '#0a1f44' : '#fff'} menuHover={darkMode ? '#143266' : '#f3f4f6'}
+                    menuText={darkMode ? '#fff' : '#0f1f3d'} menuSub={darkMode ? '#aab6d0' : '#6b7280'} menuBorder={T.chipBorder}
                     style={{
-                      appearance: 'none', WebkitAppearance: 'none',
-                      padding: '6px 24px 6px 12px', borderRadius: 999,
-                      background: `${T.chip} url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23848fa5' fill='none' stroke-width='1.6' stroke-linecap='round'/></svg>") no-repeat right 9px center`,
+                      padding: '6px 12px', borderRadius: 999, background: T.chip,
                       border: `1px solid ${T.chipBorder}`, color: T.sub,
-                      fontSize: 11.5, fontWeight: 800, cursor: 'pointer', outline: 'none',
+                      fontSize: 11.5, fontWeight: 800, outline: 'none', minWidth: 96,
                     }}
-                  >
-                    {DISPLAY_CCYS.map(c => <option key={c} value={c} style={{ background: darkMode ? '#0a1f44' : '#fff', color: darkMode ? '#fff' : '#0f1f3d' }}>{c}</option>)}
-                  </select>
+                  />
                 </label>
               </div>
               {hasDonation ? (
