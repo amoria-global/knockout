@@ -59,6 +59,11 @@ export function appDeepLinkFor(pathname: string, search: URLSearchParams, target
   const eventId = id(search.get('eventId')) ?? id(search.get('id'));
   if (pathname === '/user/events/view-event' && eventId) return `connekt://scan/${eventId}`;
   if ((pathname === '/user/events/live-stream' || pathname === '/pay-to-watch') && eventId) return `connekt://event/${eventId}`;
+  // An album invite: the app's Find My Photos screen takes the code and opens that album, as the page here does.
+  const free = pathname.match(/^\/user\/albums\/free\/([^/]+)/);
+  const invite = free ? id(decodeURIComponent(free[1])) : pathname === '/user/find-my-photos' ? id(search.get('code')) : null;
+  if (invite) return `connekt://find-photos?code=${encodeURIComponent(invite)}`;
+  if (pathname === '/user/find-my-photos' || free) return 'connekt://find-photos';
   return 'connekt://';
 }
 
