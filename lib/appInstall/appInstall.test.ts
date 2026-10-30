@@ -63,7 +63,15 @@ describe('the app link', () => {
     expect(appDeepLinkFor('/user/gallery/album', q('id=../../x'), null)).toBe('connekt://');
     expect(appDeepLinkFor('/user/events/live-stream', q('eventId=a b'), null)).toBe('connekt://');
   });
-  it('opens the home screen when nothing more is known', () => expect(appDeepLinkFor('/user/find-my-photos', q('code=A'), null)).toBe('connekt://'));
+  it('opens the home screen when nothing more is known', () => expect(appDeepLinkFor('/user/browse-photos/an-album', q(), null)).toBe('connekt://'));
+  it('opens Find My Photos with the album invite code', () => {
+    expect(appDeepLinkFor('/user/find-my-photos', q('code=981210'), null)).toBe('connekt://find-photos?code=981210');
+    expect(appDeepLinkFor('/user/albums/free/981210', q(), null)).toBe('connekt://find-photos?code=981210');
+  });
+  it('opens Find My Photos without a code when the link has none or an odd one', () => {
+    expect(appDeepLinkFor('/user/find-my-photos', q(), null)).toBe('connekt://find-photos');
+    expect(appDeepLinkFor('/user/find-my-photos', q('code=a%2Fb'), null)).toBe('connekt://find-photos');
+  });
 });
 
 describe('the store link', () => {
