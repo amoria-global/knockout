@@ -32,6 +32,8 @@ import { signup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { unverifiedLoginCustomerId } from '@/lib/auth/otp-resend';
 import { useOtpResend } from '@/lib/auth/useOtpResend';
+import OtpInput from '@/app/components/OtpInput';
+import { useOtpRefusal } from '@/lib/auth/useOtpRefusal';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { saveDraft, loadDraft, clearDraft, type BookingDraft } from '@/lib/utils/bookingDraft';
 
@@ -942,6 +944,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [otpEmail, setOtpEmail] = useState('');
   const [otpPassword, setOtpPassword] = useState('');
   const otpResend = useOtpResend();
+  const otpRefusal = useOtpRefusal();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -1611,11 +1614,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     finally { setAuthLoading(false); }
   };
 
-  const handleAuthOtp = async () => {
-    if (!otpValue || otpValue.length < 4) { setAuthError('Please enter the verification code.'); return; }
-    setAuthLoading(true); setAuthError('');
+  const handleAuthOtp = async (typed?: string) => {
+    const code = typed ?? otpValue;
+    if (authLoading || otpRefusal.locked) return;
+    if (!code || code.length < 6) { setAuthError('Please enter the verification code.'); return; }
+    setAuthLoading(true); setAuthError(''); otpRefusal.clear();
     try {
-      const res = await verifyOtp({ customerId: otpCustomerId, otp: parseInt(otpValue, 10) });
+      const res = await verifyOtp({ customerId: otpCustomerId, otp: code });
       if (res.success && res.data?.action === 1) {
         const loginRes = await login({ email: otpEmail, password: otpPassword });
         if (loginRes.success && loginRes.data?.token) {
@@ -1631,7 +1636,9 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
           setAuthError('Verified! Please switch to Log In.');
         }
       } else {
-        setAuthError(res.data?.message || res.error || 'Incorrect or expired code.');
+        // Wrong, expired or locked: the server's words, tries left and wait.
+        setOtpValue('');
+        otpRefusal.record(res, 'Incorrect or expired code.');
       }
     } catch { setAuthError('Connection error.'); }
     finally { setAuthLoading(false); }
@@ -2074,8 +2081,19 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     <p style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>Enter the verification code sent to {otpEmail}</p>
                     {otpResend.notice && <p role="status" style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>{otpResend.notice}</p>}
                     {otpResend.error && <p role="alert" style={{ color: '#dc2626', fontSize: 13, margin: 0 }}>{otpResend.error}</p>}
-                    <input type="text" value={otpValue} onChange={e => setOtpValue(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter code" style={{ ...inputStyle, textAlign: 'center' as const, letterSpacing: 8, fontSize: 20 }} onKeyDown={e => e.key === 'Enter' && handleAuthOtp()} />
-                    <button onClick={handleAuthOtp} disabled={authLoading} style={{ ...btnPrimary, opacity: authLoading ? 0.6 : 1 }}>
+                    <OtpInput
+                      id="booking-code"
+                      value={otpValue}
+                      onChange={(v) => { setOtpValue(v); otpRefusal.clear(); }}
+                      onComplete={(c) => { void handleAuthOtp(c); }}
+                      error={otpRefusal.error}
+                      hint={otpRefusal.hint}
+                      busy={authLoading}
+                      disabled={otpRefusal.locked}
+                      shakeKey={otpRefusal.shakeKey}
+                      colors={{ border: INPUT_BORDER, bg: '#ffffff', text: TEXT_PRIMARY, muted: TEXT_SECONDARY }}
+                    />
+                    <button onClick={() => handleAuthOtp()} disabled={authLoading || otpRefusal.locked || otpValue.length < 6} style={{ ...btnPrimary, opacity: authLoading || otpValue.length < 6 ? 0.6 : 1 }}>
                       {authLoading ? 'Verifying...' : 'Verify & Continue'}
                     </button>
                     <button type="button" onClick={() => otpResend.resend(otpCustomerId)} disabled={otpResend.sending || otpResend.secondsLeft > 0} style={{ background: 'none', border: 'none', color: TEXT_SECONDARY, fontSize: 13, cursor: otpResend.sending || otpResend.secondsLeft > 0 ? 'not-allowed' : 'pointer', textDecoration: 'underline', padding: '4px 0' }}>
