@@ -38,7 +38,8 @@ export async function resendOtp(data: ResendOtpRequest): Promise<ApiResponse<Res
     undefined,
     {
       skipAuth: true,
-      retries: 2,
+      // No retries: a repeat would spend one of the 3 sends the server allows.
+      retries: 0,
     }
   );
 

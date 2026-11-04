@@ -32,7 +32,7 @@ export async function verifyFreeAlbumAccess(
       otp: otp.trim(),
     },
     {
-      retries: 1,
+      retries: 0, // a repeat would spend one of the 3 tries
       skipAuth: true,
       credentials: 'include'  // Receive session cookie in response
     }
