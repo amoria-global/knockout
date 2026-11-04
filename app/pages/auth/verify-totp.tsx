@@ -58,7 +58,9 @@ function VerifyTotpContent(): React.JSX.Element {
   const [done, setDone] = useState(false);
   const [sending, setSending] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  // The server locks each method on its own, so a lock on one must not block the other.
+  const [locks, setLocks] = useState<Partial<Record<TwoFactorMethod, number>>>({});
+  const lockedUntil = locks[method] ?? null;
   const [resendAt, setResendAt] = useState<number | null>(null);
   const submitting = useRef(false);
   const asked = useRef(false);
@@ -83,10 +85,10 @@ function VerifyTotpContent(): React.JSX.Element {
     setRefusal(r);
     if (r.retryAfterSeconds) {
       const until = Date.now() + r.retryAfterSeconds * 1000;
-      if (r.errorCode === 'LOCKED') setLockedUntil(until);
+      if (r.errorCode === 'LOCKED') setLocks((l) => ({ ...l, [method]: until }));
       else setResendAt(until);
     }
-  }, [router, showWarning]);
+  }, [router, showWarning, method]);
 
   const sendEmail = useCallback(async () => {
     if (!challenge.challengeId || sending) return;
