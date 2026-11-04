@@ -40,6 +40,11 @@ export interface LoginResponse {
   customerId?: string | null;
   customer_id?: string | null;
   twoFactorRequired?: boolean; // True when TOTP verification is needed (action=2)
+  challengeId?: string;
+  challengeExpiresAt?: string;
+  twoFactorMethods?: string[];
+  twoFactorDefaultMethod?: string;
+  maskedEmail?: string;
   twoFactorSetupRequired?: boolean; // True when 2FA setup is mandatory (balance > 0, action=1)
   token?: string; // JWT token (success login, OR minted pre-OTP for the completion gate)
   refreshToken?: string; // Refresh token UUID (only on successful login)

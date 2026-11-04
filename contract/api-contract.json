@@ -82,15 +82,6 @@
     "pathVariables" : [ "id" ]
   }, {
     "method" : "GET",
-    "path" : "/admin/archives",
-    "controller" : "AdminArchiveController#index"
-  }, {
-    "method" : "GET",
-    "path" : "/admin/archives/delete/{id}",
-    "controller" : "AdminArchiveController#delete",
-    "pathVariables" : [ "id" ]
-  }, {
-    "method" : "GET",
     "path" : "/admin/bonuses",
     "controller" : "AdminBonusPageController#index"
   }, {
@@ -256,6 +247,10 @@
     "method" : "GET",
     "path" : "/admin/content-approvals",
     "controller" : "AdminContentApprovalPageController#index"
+  }, {
+    "method" : "GET",
+    "path" : "/admin/content-disputes",
+    "controller" : "AdminContentDisputePageController#index"
   }, {
     "method" : "GET",
     "path" : "/admin/customers/clients",
@@ -451,6 +446,10 @@
     "method" : "GET",
     "path" : "/admin/kyc",
     "controller" : "AdminKycPageController#index"
+  }, {
+    "method" : "GET",
+    "path" : "/admin/locked-albums",
+    "controller" : "AdminLockedAlbumsController#index"
   }, {
     "method" : "GET",
     "path" : "/admin/notifications",
@@ -990,10 +989,6 @@
     "method" : "GET",
     "path" : "/admin/withdrawals",
     "controller" : "AdminWithdrawalController#index"
-  }, {
-    "method" : "GET",
-    "path" : "/api/admin/archives/all",
-    "controller" : "AdminArchiveApiController#getArchives"
   }, {
     "method" : "GET",
     "path" : "/api/admin/bookings/all",
@@ -1599,6 +1594,11 @@
       "type" : "ApproveRequest",
       "properties" : [ "adminNotes", "targetAlbumId" ]
     },
+    "pathVariables" : [ "id" ]
+  }, {
+    "method" : "GET",
+    "path" : "/api/admin/content-disputes/{id}/claimant-albums",
+    "controller" : "AdminContentDisputeApiController#claimantAlbums",
     "pathVariables" : [ "id" ]
   }, {
     "method" : "POST",
@@ -2502,6 +2502,9 @@
     "method" : "POST",
     "path" : "/api/opportunities/{candidateId}/approve",
     "controller" : "HybridBookingController#approveOpportunity",
+    "body" : {
+      "type" : "Map"
+    },
     "pathVariables" : [ "candidateId" ]
   }, {
     "method" : "POST",
@@ -2864,6 +2867,20 @@
     "pathVariables" : [ "id" ]
   }, {
     "method" : "POST",
+    "path" : "/api/remote/auth/2fa/email/send",
+    "controller" : "AuthController#sendTwoFactorEmail",
+    "body" : {
+      "type" : "Map"
+    }
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/auth/2fa/email/verify",
+    "controller" : "AuthController#verifyTwoFactorEmail",
+    "body" : {
+      "type" : "Map"
+    }
+  }, {
+    "method" : "POST",
     "path" : "/api/remote/auth/apple",
     "controller" : "AppleAuthController#appleAuth",
     "body" : {
@@ -3147,53 +3164,6 @@
       "name" : "to",
       "required" : false
     } ]
-  }, {
-    "method" : "GET",
-    "path" : "/api/remote/coordinator/archives",
-    "controller" : "CoordinatorController#getArchives",
-    "params" : [ {
-      "name" : "page",
-      "required" : false
-    }, {
-      "name" : "size",
-      "required" : false
-    } ]
-  }, {
-    "method" : "POST",
-    "path" : "/api/remote/coordinator/archives",
-    "controller" : "CoordinatorController#createArchive",
-    "params" : [ {
-      "name" : "title",
-      "required" : true
-    }, {
-      "name" : "description",
-      "required" : false
-    }, {
-      "name" : "archiveType",
-      "required" : false
-    }, {
-      "name" : "eventId",
-      "required" : false
-    } ],
-    "parts" : [ {
-      "name" : "file",
-      "required" : false,
-      "file" : true
-    } ],
-    "consumes" : [ "multipart/form-data" ]
-  }, {
-    "method" : "DELETE",
-    "path" : "/api/remote/coordinator/archives/{archiveId}",
-    "controller" : "CoordinatorController#deleteArchive",
-    "pathVariables" : [ "archiveId" ]
-  }, {
-    "method" : "PUT",
-    "path" : "/api/remote/coordinator/archives/{archiveId}",
-    "controller" : "CoordinatorController#updateArchive",
-    "body" : {
-      "type" : "Map"
-    },
-    "pathVariables" : [ "archiveId" ]
   }, {
     "method" : "GET",
     "path" : "/api/remote/coordinator/balance",
@@ -3772,6 +3742,31 @@
       "type" : "Map"
     }
   }, {
+    "method" : "POST",
+    "path" : "/api/remote/customer/2fa/email/disable",
+    "controller" : "CustomerTwoFactorController#disable",
+    "body" : {
+      "type" : "Map"
+    }
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/customer/2fa/email/enable",
+    "controller" : "CustomerTwoFactorController#enable",
+    "body" : {
+      "type" : "Map"
+    }
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/customer/2fa/email/send",
+    "controller" : "CustomerTwoFactorController#send",
+    "body" : {
+      "type" : "Map"
+    }
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/customer/2fa/status",
+    "controller" : "CustomerTwoFactorController#status"
+  }, {
     "method" : "GET",
     "path" : "/api/remote/customer/albums",
     "controller" : "ClientAlbumController#getAlbums"
@@ -3868,14 +3863,6 @@
       "name" : "to",
       "required" : false
     } ]
-  }, {
-    "method" : "PUT",
-    "path" : "/api/remote/customer/archives/{archiveId}",
-    "controller" : "CustomerArchiveController#updateArchive",
-    "body" : {
-      "type" : "Map"
-    },
-    "pathVariables" : [ "archiveId" ]
   }, {
     "method" : "GET",
     "path" : "/api/remote/customer/events",
@@ -4792,6 +4779,14 @@
     "pathVariables" : [ "deviceId" ]
   }, {
     "method" : "POST",
+    "path" : "/api/remote/customer/tv-devices/{deviceId}/cast",
+    "controller" : "TvCastController#send",
+    "body" : {
+      "type" : "Map"
+    },
+    "pathVariables" : [ "deviceId" ]
+  }, {
+    "method" : "POST",
     "path" : "/api/remote/customer/withdraw/initiate",
     "controller" : "WithdrawalController#initiateWithdraw",
     "body" : {
@@ -5014,6 +5009,23 @@
     } ],
     "consumes" : [ "multipart/form-data" ]
   }, {
+    "method" : "GET",
+    "path" : "/api/remote/events/hybrid-draft",
+    "controller" : "HybridBookingController#getHybridDraft"
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/events/hybrid-draft",
+    "controller" : "HybridBookingController#saveHybridDraft",
+    "body" : {
+      "type" : "HybridDraftRequestDTO",
+      "properties" : [ "allowWishInvites", "city", "description", "draftStep", "endTime", "eventCategoryId", "eventDate", "eventId", "eventType", "hasLiveStream", "latitude", "location", "longitude", "maxBudget", "minBudget", "minimumPhotos", "startTime", "title", "venue" ]
+    }
+  }, {
+    "method" : "DELETE",
+    "path" : "/api/remote/events/hybrid-draft/{id}",
+    "controller" : "HybridBookingController#deleteHybridDraft",
+    "pathVariables" : [ "id" ]
+  }, {
     "method" : "POST",
     "path" : "/api/remote/events/join",
     "controller" : "EventRemoteController#joinEvent",
@@ -5032,7 +5044,7 @@
     "controller" : "HybridBookingController#getMatchPreview",
     "body" : {
       "type" : "MatchPreviewRequestDTO",
-      "properties" : [ "allowWishInvites", "city", "currency", "digitalDeliveryDays", "editedPhotos", "endTime", "eventDate", "eventId", "hasLiveStream", "latitude", "locationCoverage", "longVideosQty", "longitude", "maxBudget", "minBudget", "photoAlbumsQty", "photoBooksQty", "photographerSpecialty", "photographerType", "shortVideosQty", "specialty", "startTime", "wallPortraitsQty" ]
+      "properties" : [ "allowWishInvites", "city", "clientType", "coverageMode", "currency", "digitalDeliveryDays", "editedPhotos", "editingStyle", "endTime", "eventDate", "eventId", "hasLiveStream", "instantUpdates", "latitude", "locationCoverage", "longVideosDuration", "longVideosQty", "longitude", "maxBudget", "minBudget", "photoAlbumPrints", "photoAlbumSize", "photoAlbumsQty", "photoBookPages", "photoBookPhotos", "photoBookSize", "photoBooksQty", "photographerSpecialty", "photographerType", "printCollectionMethod", "printProductionTime", "printProposedDate", "shortVideosDuration", "shortVideosQty", "specialty", "startTime", "usageRights", "wallPortraitFrame", "wallPortraitSize", "wallPortraitsQty" ]
     }
   }, {
     "method" : "PATCH",
@@ -5336,7 +5348,7 @@
     "controller" : "HybridBookingController#createMatchRequest",
     "body" : {
       "type" : "CreateMatchRequestDTO",
-      "properties" : [ "allowWishInvites", "city", "clientType", "country", "currency", "digitalDeliveryDays", "eventId", "expirationHours", "hasLiveStream", "instructions", "latitude", "locationCoverage", "longitude", "maxBudget", "minBudget", "minimumPhotos", "photographerSpecialty", "photographerType", "printDeliveryAddress", "printDeliveryMethod", "printProposedDate", "specialty", "venue" ]
+      "properties" : [ "allowWishInvites", "city", "clientType", "country", "currency", "digitalDeliveryDays", "endTime", "eventDate", "eventId", "expirationHours", "hasLiveStream", "instructions", "latitude", "location", "locationCoverage", "longitude", "maxBudget", "minBudget", "minimumPhotos", "photographerSpecialty", "photographerType", "printDeliveryAddress", "printDeliveryMethod", "printProposedDate", "specialty", "startTime", "title", "venue" ]
     },
     "pathVariables" : [ "id" ],
     "params" : [ {
@@ -5364,6 +5376,9 @@
     "method" : "POST",
     "path" : "/api/remote/match/candidates/{candidateId}/approve",
     "controller" : "HybridBookingController#approveOpportunity",
+    "body" : {
+      "type" : "Map"
+    },
     "pathVariables" : [ "candidateId" ]
   }, {
     "method" : "POST",
@@ -5387,6 +5402,23 @@
     "method" : "POST",
     "path" : "/api/remote/match/convert/{id}",
     "controller" : "HybridBookingController#convertToHybrid",
+    "pathVariables" : [ "id" ]
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/match/draft",
+    "controller" : "HybridBookingController#getHybridDraft"
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/match/draft",
+    "controller" : "HybridBookingController#saveHybridDraft",
+    "body" : {
+      "type" : "HybridDraftRequestDTO",
+      "properties" : [ "allowWishInvites", "city", "description", "draftStep", "endTime", "eventCategoryId", "eventDate", "eventId", "eventType", "hasLiveStream", "latitude", "location", "longitude", "maxBudget", "minBudget", "minimumPhotos", "startTime", "title", "venue" ]
+    }
+  }, {
+    "method" : "DELETE",
+    "path" : "/api/remote/match/draft/{id}",
+    "controller" : "HybridBookingController#deleteHybridDraft",
     "pathVariables" : [ "id" ]
   }, {
     "method" : "GET",
@@ -5414,6 +5446,9 @@
     "method" : "POST",
     "path" : "/api/remote/match/opportunities/{candidateId}/approve",
     "controller" : "HybridBookingController#approveOpportunity",
+    "body" : {
+      "type" : "Map"
+    },
     "pathVariables" : [ "candidateId" ]
   }, {
     "method" : "POST",
@@ -5429,7 +5464,7 @@
     "controller" : "HybridBookingController#getMatchPreview",
     "body" : {
       "type" : "MatchPreviewRequestDTO",
-      "properties" : [ "allowWishInvites", "city", "currency", "digitalDeliveryDays", "editedPhotos", "endTime", "eventDate", "eventId", "hasLiveStream", "latitude", "locationCoverage", "longVideosQty", "longitude", "maxBudget", "minBudget", "photoAlbumsQty", "photoBooksQty", "photographerSpecialty", "photographerType", "shortVideosQty", "specialty", "startTime", "wallPortraitsQty" ]
+      "properties" : [ "allowWishInvites", "city", "clientType", "coverageMode", "currency", "digitalDeliveryDays", "editedPhotos", "editingStyle", "endTime", "eventDate", "eventId", "hasLiveStream", "instantUpdates", "latitude", "locationCoverage", "longVideosDuration", "longVideosQty", "longitude", "maxBudget", "minBudget", "photoAlbumPrints", "photoAlbumSize", "photoAlbumsQty", "photoBookPages", "photoBookPhotos", "photoBookSize", "photoBooksQty", "photographerSpecialty", "photographerType", "printCollectionMethod", "printProductionTime", "printProposedDate", "shortVideosDuration", "shortVideosQty", "specialty", "startTime", "usageRights", "wallPortraitFrame", "wallPortraitSize", "wallPortraitsQty" ]
     }
   }, {
     "method" : "POST",
@@ -5437,7 +5472,7 @@
     "controller" : "HybridBookingController#createMatchRequest",
     "body" : {
       "type" : "CreateMatchRequestDTO",
-      "properties" : [ "allowWishInvites", "city", "clientType", "country", "currency", "digitalDeliveryDays", "eventId", "expirationHours", "hasLiveStream", "instructions", "latitude", "locationCoverage", "longitude", "maxBudget", "minBudget", "minimumPhotos", "photographerSpecialty", "photographerType", "printDeliveryAddress", "printDeliveryMethod", "printProposedDate", "specialty", "venue" ]
+      "properties" : [ "allowWishInvites", "city", "clientType", "country", "currency", "digitalDeliveryDays", "endTime", "eventDate", "eventId", "expirationHours", "hasLiveStream", "instructions", "latitude", "location", "locationCoverage", "longitude", "maxBudget", "minBudget", "minimumPhotos", "photographerSpecialty", "photographerType", "printDeliveryAddress", "printDeliveryMethod", "printProposedDate", "specialty", "startTime", "title", "venue" ]
     },
     "pathVariables" : [ "id" ],
     "params" : [ {
@@ -5450,7 +5485,7 @@
     "controller" : "HybridBookingController#createMatchRequest",
     "body" : {
       "type" : "CreateMatchRequestDTO",
-      "properties" : [ "allowWishInvites", "city", "clientType", "country", "currency", "digitalDeliveryDays", "eventId", "expirationHours", "hasLiveStream", "instructions", "latitude", "locationCoverage", "longitude", "maxBudget", "minBudget", "minimumPhotos", "photographerSpecialty", "photographerType", "printDeliveryAddress", "printDeliveryMethod", "printProposedDate", "specialty", "venue" ]
+      "properties" : [ "allowWishInvites", "city", "clientType", "country", "currency", "digitalDeliveryDays", "endTime", "eventDate", "eventId", "expirationHours", "hasLiveStream", "instructions", "latitude", "location", "locationCoverage", "longitude", "maxBudget", "minBudget", "minimumPhotos", "photographerSpecialty", "photographerType", "printDeliveryAddress", "printDeliveryMethod", "printProposedDate", "specialty", "startTime", "title", "venue" ]
     },
     "pathVariables" : [ "id" ],
     "params" : [ {
@@ -5491,6 +5526,9 @@
     "method" : "POST",
     "path" : "/api/remote/opportunities/{candidateId}/approve",
     "controller" : "HybridBookingController#approveOpportunity",
+    "body" : {
+      "type" : "Map"
+    },
     "pathVariables" : [ "candidateId" ]
   }, {
     "method" : "POST",
@@ -5997,6 +6035,19 @@
     "body" : {
       "type" : "Map"
     },
+    "pathVariables" : [ "albumId" ]
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/photographer/albums/{albumId}/restore-payment",
+    "controller" : "PhotographerAlbumController#restorePayment",
+    "body" : {
+      "type" : "Map"
+    },
+    "pathVariables" : [ "albumId" ]
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/photographer/albums/{albumId}/restore-quote",
+    "controller" : "PhotographerAlbumController#restoreQuote",
     "pathVariables" : [ "albumId" ]
   }, {
     "method" : "POST",
@@ -7081,6 +7132,26 @@
     "path" : "/api/remote/public/currencies/rates",
     "controller" : "PublicRemoteController#getCurrencyRates"
   }, {
+    "method" : "POST",
+    "path" : "/api/remote/public/deferred-links",
+    "controller" : "DeferredLinkController#create",
+    "body" : {
+      "type" : "Map"
+    }
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/public/deferred-links/match",
+    "controller" : "DeferredLinkController#byNetwork",
+    "params" : [ {
+      "name" : "platform",
+      "required" : true
+    } ]
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/public/deferred-links/{code}",
+    "controller" : "DeferredLinkController#byCode",
+    "pathVariables" : [ "code" ]
+  }, {
     "method" : "GET",
     "path" : "/api/remote/public/donation-tiers",
     "controller" : "PublicRemoteController#getDonationTiers",
@@ -7363,7 +7434,7 @@
       "required" : true
     }, {
       "name" : "email",
-      "required" : true
+      "required" : false
     }, {
       "name" : "deviceFingerprint",
       "required" : true
@@ -7884,6 +7955,15 @@
     "controller" : "TeamController#retired"
   }, {
     "method" : "GET",
+    "path" : "/api/remote/tv/cast/{pairingCode}",
+    "controller" : "TvCastController#poll",
+    "pathVariables" : [ "pairingCode" ],
+    "params" : [ {
+      "name" : "deviceSecret",
+      "required" : false
+    } ]
+  }, {
+    "method" : "GET",
     "path" : "/api/remote/tv/catalog/categories",
     "controller" : "TvCatalogController#getCategories"
   }, {
@@ -8204,6 +8284,9 @@
     "method" : "POST",
     "path" : "/opportunities/{candidateId}/approve",
     "controller" : "HybridBookingController#approveOpportunity",
+    "body" : {
+      "type" : "Map"
+    },
     "pathVariables" : [ "candidateId" ]
   }, {
     "method" : "POST",
