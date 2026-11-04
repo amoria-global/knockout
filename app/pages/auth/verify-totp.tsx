@@ -19,6 +19,7 @@ import { readChallenge, type TwoFactorMethod } from '@/lib/utils/two-factor-url'
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { getRefreshToken } from '@/lib/api/client';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { isCollaboratorType, workspaceDestination } from '@/lib/utils/workspace-entry';
 import PostLoginModal from '@/app/components/PostLoginModal';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 import { readPostAuthDestination, goToPostAuthDestination } from '@/lib/utils/post-auth-destination';
@@ -157,6 +158,12 @@ function VerifyTotpContent(): React.JSX.Element {
         setLoggedInUserType(customerType);
 
         showSuccess('Verified successfully!');
+        // A collaborator login only opens workspaces: straight in, or to the picker when there are several.
+        if (isCollaboratorType(customerType)) {
+          const dest = workspaceDestination((data as { workspaces?: Array<{ workspaceId: string }> }).workspaces);
+          if (dest.startsWith('http')) window.location.href = dest; else router.push(dest);
+          return;
+        }
         if (readPostAuthDestination()) { setTimeout(() => goToPostAuthDestination(), 300); }
         else { setShowPostLoginModal(true); }
       } else {

@@ -17,6 +17,7 @@ import { forgetFirstHandshake as forgetAppleHandshake, type AppleWebCredential }
 import { setAuthToken, getAuthToken, getRefreshToken } from '@/lib/api/client';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { isCollaboratorType, workspaceDestination } from '@/lib/utils/workspace-entry';
 import PostLoginModal from '@/app/components/PostLoginModal';
 import UserTypeModal from '@/app/components/UserTypeModal';
 import dynamic from 'next/dynamic';
@@ -562,6 +563,13 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
         if (response.success && data) {
           const customerType = data.user?.userType || data.customerType || '';
+          // A workspace collaborator opens a workspace, never a dashboard of their own: straight in, or the picker when there are several.
+          if (isCollaboratorType(customerType)) {
+            loginUser({ id: data.id || '', firstName: data.firstName || '', lastName: data.lastName || '', email: data.email || loginEmail, phone: '', customerId: data.customerId || '', customerType }, data.token || '');
+            const dest = workspaceDestination((data as { workspaces?: Array<{ workspaceId: string }> }).workspaces);
+            if (dest.startsWith('http')) window.location.href = dest; else router.push(dest);
+            return;
+          }
           if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); setLoginLoading(false); return; }
           const userData = { id: data.id || data.user?.id || '', firstName: data.firstName || data.user?.firstName || '', lastName: data.lastName || data.user?.lastName || '', email: data.email || data.user?.email || loginEmail, phone: data.phone || '', customerId: data.customerId || '', customerType };
           loginUser(userData, data.token || '');
@@ -1249,6 +1257,9 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
               <input type="checkbox" style={{ width: '16px', height: '16px', accentColor: '#083A85', cursor: 'pointer' }} />Keep me logged in
             </label>
             <Link href="/user/auth/forgotpswd" style={{ fontSize: '13px', color: '#083A85', textDecoration: 'none', fontWeight: '600' }}>{t('forgotPasswordLink')}</Link>
+          </div>
+          <div style={{ marginTop: isMobile ? '8px' : '10px', textAlign: 'right' }}>
+            <Link href="/user/auth/login-code" style={{ fontSize: '13px', color: '#083A85', textDecoration: 'none', fontWeight: '600' }}>Email me a code instead</Link>
           </div>
 
           <div style={{ marginTop: isMobile ? '12px' : '16px' }}>
