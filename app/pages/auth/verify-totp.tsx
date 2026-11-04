@@ -2,7 +2,20 @@
 import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { verifyTotp } from '@/lib/APIs/auth/verify-totp/route';
+import { verifyTotp, verifyEmailCode, sendEmailCode } from '@/lib/APIs/auth/verify-totp/route';
+import OtpInput from '@/app/components/OtpInput';
+import {
+  attemptsText,
+  formatCountdown,
+  localDeadline,
+  lockText,
+  OTP_LENGTH,
+  refusalFrom,
+  secondsLeft,
+  sentFromResponse,
+  type CodeRefusal,
+} from '@/lib/otp';
+import { readChallenge, type TwoFactorMethod } from '@/lib/utils/two-factor-url';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { getRefreshToken } from '@/lib/api/client';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -10,17 +23,49 @@ import PostLoginModal from '@/app/components/PostLoginModal';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 import { readPostAuthDestination, goToPostAuthDestination } from '@/lib/utils/post-auth-destination';
 
+/** Whole seconds left until a deadline, re-rendering once a second while it runs. */
+function useCountdown(deadlineMs: number | null): number {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (deadlineMs == null) return;
+    const id = setInterval(() => {
+      tick((n) => n + 1);
+      if (Date.now() >= deadlineMs) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [deadlineMs]);
+  return secondsLeft(deadlineMs);
+}
+
+/**
+ * Second step of sign-in. The server decides everything: this page sends the code and shows what
+ * comes back (tries left, a lock with its time, a resend wait). Timers run off the server's
+ * timestamps, never the device clock alone, and no code is ever checked in the browser.
+ */
 function VerifyTotpContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
   const { login: loginUser } = useAuth();
 
-  const customerIdFromQuery = searchParams.get('customerId');
-  const [customerId] = useState(customerIdFromQuery || '');
-  const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [error, setError] = useState('');
+  const challenge = readChallenge((k) => searchParams.get(k));
+  const canVerify = !!(challenge.challengeId || challenge.customerId);
+  const [method, setMethod] = useState<TwoFactorMethod>(challenge.defaultMethod);
+  const [maskedEmail, setMaskedEmail] = useState(challenge.maskedEmail);
+  const [code, setCode] = useState('');
+  const [refusal, setRefusal] = useState<CodeRefusal | null>(null);
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [resendAt, setResendAt] = useState<number | null>(null);
+  const submitting = useRef(false);
+  const asked = useRef(false);
+
+  const lockSeconds = useCountdown(lockedUntil);
+  const resendSeconds = useCountdown(resendAt);
+  const locked = lockSeconds > 0;
 
   // PostLoginModal state
   const [showPostLoginModal, setShowPostLoginModal] = useState(false);
@@ -29,41 +74,78 @@ function VerifyTotpContent(): React.JSX.Element {
   const storedTokenRef = useRef<string>('');
   const storedRefreshTokenRef = useRef<string>('');
 
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  useEffect(() => {
-    if (!customerId) {
-      setError('Invalid verification link. Please log in again.');
+  const refuse = useCallback((r: CodeRefusal) => {
+    if (r.errorCode === 'SESSION_EXPIRED') {
+      showWarning('Your sign-in session ended. Please sign in again.');
+      router.replace('/user/auth/login');
+      return;
     }
-  }, [customerId]);
+    setRefusal(r);
+    if (r.retryAfterSeconds) {
+      const until = Date.now() + r.retryAfterSeconds * 1000;
+      if (r.errorCode === 'LOCKED') setLockedUntil(until);
+      else setResendAt(until);
+    }
+  }, [router, showWarning]);
 
-  const doVerify = useCallback(async (totpCode: string) => {
-    if (!customerId || loading || showPostLoginModal) return;
+  const sendEmail = useCallback(async () => {
+    if (!challenge.challengeId || sending) return;
+    setSending(true);
+    setRefusal(null);
+    try {
+      const out = sentFromResponse(await sendEmailCode(challenge.challengeId), 'We could not send a code. Try again.');
+      if ('sent' in out) {
+        // Measured on the server clock, so a device with the wrong time still counts right.
+        setResendAt(localDeadline(out.sent.resendAvailableAt, out.sent.serverTime, Date.now()));
+        if (out.sent.maskedEmail) setMaskedEmail(out.sent.maskedEmail);
+      } else {
+        refuse(out.refused);
+      }
+    } catch {
+      setRefusal({ message: 'We could not send a code. Try again.', errorCode: 'UNKNOWN' });
+    } finally {
+      setSending(false);
+    }
+  }, [challenge.challengeId, sending, refuse]);
+
+  // Landing on the email method asks for its code once.
+  useEffect(() => {
+    if (method === 'EMAIL' && !asked.current) {
+      asked.current = true;
+      void sendEmail();
+    }
+  }, [method, sendEmail]);
+
+  const doVerify = useCallback(async (typed: string) => {
+    if (!canVerify || submitting.current || locked || showPostLoginModal || typed.length !== OTP_LENGTH) return;
 
     if (!isOnline) {
       showWarning('You are offline. Please check your internet connection.');
       return;
     }
 
-    setError('');
+    submitting.current = true;
+    setRefusal(null);
     setLoading(true);
 
     try {
-      const response = await verifyTotp({ customerId, code: totpCode });
+      const send = method === 'EMAIL' ? verifyEmailCode : verifyTotp;
+      const response = await send({ challengeId: challenge.challengeId, customerId: challenge.customerId, code: typed });
 
       if (response.success && response.data?.token) {
         const data = response.data;
         const token = data.token as string;
         const customerType = data.customerType || '';
         const userData = {
-          id: data.customerId || customerId,
+          id: data.customerId || challenge.customerId,
           firstName: data.firstName || '',
           lastName: data.lastName || '',
           email: data.email || '',
           phone: data.phone || '',
-          customerId: data.customerId || customerId,
+          customerId: data.customerId || challenge.customerId,
           customerType,
         };
+        setDone(true);
         loginUser(userData, token);
 
         // Store for modal handlers
@@ -76,71 +158,39 @@ function VerifyTotpContent(): React.JSX.Element {
         if (readPostAuthDestination()) { setTimeout(() => goToPostAuthDestination(), 300); }
         else { setShowPostLoginModal(true); }
       } else {
-        const errorMessage = response.error || 'Invalid code. Please try again.';
-        setError(errorMessage);
-        showError(errorMessage);
-        setCode(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
+        setCode('');
+        setShakeKey((k) => k + 1);
+        const body = (response.data ?? {}) as { message?: string };
+        refuse(refusalFrom({ ...body, message: body.message || response.error }, 'Invalid code. Please try again.'));
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
-      setError(errorMessage);
-      showError(errorMessage);
+      setCode('');
+      setShakeKey((k) => k + 1);
+      setRefusal({ message: err instanceof Error ? err.message : 'An error occurred. Please try again.', errorCode: 'UNKNOWN' });
+      showError('An error occurred. Please try again.');
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
-  }, [customerId, loading, showPostLoginModal, isOnline, showWarning, showError, showSuccess, loginUser]);
+  }, [canVerify, locked, showPostLoginModal, isOnline, showWarning, showError, showSuccess, loginUser, method, challenge.challengeId, challenge.customerId, refuse]);
 
-  // Auto-submit when all 6 digits are filled
-  useEffect(() => {
-    if (code.every(d => d !== '') && !loading && !showPostLoginModal && customerId) {
-      doVerify(code.join(''));
-    }
-  }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleCodeChange = (index: number, value: string) => {
-    if (value && !/^\d$/.test(value)) return;
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace') {
-      if (!code[index] && index > 0) {
-        inputRefs.current[index - 1]?.focus();
-      } else {
-        const newCode = [...code];
-        newCode[index] = '';
-        setCode(newCode);
-      }
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    } else if (e.key === 'ArrowRight' && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pastedData) {
-      const newCode = pastedData.split('').concat(Array(6).fill('')).slice(0, 6);
-      setCode(newCode);
-      const nextIndex = Math.min(pastedData.length, 5);
-      inputRefs.current[nextIndex]?.focus();
-    }
+  const switchMethod = (next: TwoFactorMethod) => {
+    setMethod(next);
+    setCode('');
+    setRefusal(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.every(d => d !== '') && !loading && !showPostLoginModal && customerId) {
-      doVerify(code.join(''));
-    }
+    void doVerify(code);
   };
+
+  const error = !canVerify
+    ? 'Invalid verification link. Please log in again.'
+    : locked
+      ? lockText(lockSeconds)
+      : refusal?.message;
+  const hint = !locked && refusal ? attemptsText(refusal.attemptsLeft) : undefined;
 
   // PostLoginModal handlers
   const handleGoToDashboard = () => {
@@ -159,6 +209,8 @@ function VerifyTotpContent(): React.JSX.Element {
     router.push('/user/photographers');
   };
 
+  const blocked = loading || locked || !canVerify || code.length !== OTP_LENGTH;
+
   return (
     <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4">
       <div className="w-full max-w-md h-[90vh] max-h-[800px] bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl overflow-y-auto flex flex-col">
@@ -176,88 +228,82 @@ function VerifyTotpContent(): React.JSX.Element {
           </h1>
 
           <p style={{ fontSize: '15px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: '24px', lineHeight: '1.4', opacity: '0.7' }}>
-            Open your authenticator app and enter the 6-digit code to sign in.
+            {method === 'EMAIL'
+              ? `We sent a 6-digit code to ${maskedEmail ?? 'your email'}. Enter it to sign in.`
+              : 'Open your authenticator app and enter the 6-digit code to sign in.'}
           </p>
 
-          {/* Error Message */}
-          {error && (
-            <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
-              <p style={{ fontSize: '13px', color: '#991b1b', margin: 0 }}>{error}</p>
+          {challenge.methods.length > 1 && (
+            <div role="tablist" aria-label="Sign-in method" style={{ display: 'flex', gap: '6px', marginBottom: '16px', background: '#f3f4f6', padding: '4px', borderRadius: '10px' }}>
+              {challenge.methods.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={method === m}
+                  onClick={() => switchMethod(m)}
+                  disabled={loading}
+                  style={{ flex: 1, padding: '8px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: method === m ? '#083A85' : 'transparent', color: method === m ? '#ffffff' : '#374151' }}
+                >
+                  {m === 'EMAIL' ? 'Email code' : 'Authenticator app'}
+                </button>
+              ))}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Code Input */}
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>
-                Verification Code
-              </label>
-              <div style={{
-                display: 'flex',
-                gap: '6px',
-                justifyContent: 'center',
-                marginTop: '10px'
-              }}>
-                {code.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => { inputRefs.current[index] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
-                    aria-label={`Digit ${index + 1}`}
-                    value={digit}
-                    onChange={(e) => handleCodeChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    onPaste={handlePaste}
-                    disabled={loading}
-                    style={{
-                      width: '45px',
-                      height: '45px',
-                      fontSize: '18px',
-                      fontWeight: '500',
-                      textAlign: 'center',
-                      border: '1.5px solid #d1d5db',
-                      borderRadius: '10px',
-                      outline: 'none',
-                      transition: 'all 0.3s',
-                      backgroundColor: loading ? '#f3f4f6' : '#ffffff',
-                      color: '#000000',
-                    }}
-                    onFocus={(e) => { e.target.style.borderColor = '#083A85'; }}
-                    onBlur={(e) => { e.target.style.borderColor = '#d1d5db'; }}
-                  />
-                ))}
-              </div>
+              <OtpInput
+                id="signin-code"
+                label="Verification Code"
+                value={code}
+                onChange={setCode}
+                onComplete={doVerify}
+                error={error}
+                hint={hint}
+                busy={loading}
+                success={done}
+                disabled={locked || !canVerify}
+                shakeKey={shakeKey}
+                colors={{ border: '#d1d5db', bg: '#ffffff', text: '#000000', muted: '#4b5563' }}
+              />
             </div>
 
-            {/* Loading indicator (replaces button) */}
-            {loading && (
-              <div style={{
-                textAlign: 'center',
-                padding: '10px',
-                marginBottom: '16px',
-                color: '#083A85',
-                fontSize: '14px',
-                fontWeight: '600',
-              }}>
-                Verifying...
+            <button
+              type="submit"
+              disabled={blocked}
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: '#083A85', color: '#ffffff', fontWeight: 600, fontSize: '15px', marginBottom: '16px', opacity: blocked ? 0.6 : 1, cursor: blocked ? 'not-allowed' : 'pointer' }}
+            >
+              {loading ? 'Verifying...' : 'Verify'}
+            </button>
+
+            {method === 'EMAIL' && (
+              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                <button
+                  type="button"
+                  onClick={sendEmail}
+                  disabled={resendSeconds > 0 || sending || locked}
+                  style={{ background: 'none', border: 'none', fontSize: '14px', fontWeight: 600, color: resendSeconds > 0 || locked ? '#6b7280' : '#083A85', cursor: resendSeconds > 0 || locked ? 'not-allowed' : 'pointer' }}
+                >
+                  {resendSeconds > 0 ? `Resend code in ${formatCountdown(resendSeconds)}` : 'Resend code'}
+                </button>
               </div>
             )}
 
             {/* Info text */}
-            <div style={{
-              backgroundColor: '#f0f5ff',
-              border: '1px solid #dbeafe',
-              borderRadius: '8px',
-              padding: '12px',
-              marginBottom: '16px',
-            }}>
-              <p style={{ fontSize: '12px', color: '#1e40af', margin: 0, lineHeight: '1.5' }}>
-                Open Google Authenticator, Authy, or your preferred authenticator app to find your code. The code refreshes every 30 seconds.
-              </p>
-            </div>
+            {method === 'TOTP' && (
+              <div style={{
+                backgroundColor: '#f0f5ff',
+                border: '1px solid #dbeafe',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px',
+              }}>
+                <p style={{ fontSize: '12px', color: '#1e40af', margin: 0, lineHeight: '1.5' }}>
+                  Open Google Authenticator, Authy, or your preferred authenticator app to find your code. The code refreshes every 30 seconds.
+                </p>
+              </div>
+            )}
 
             {/* Divider */}
             <div style={{borderTop: '2px solid #9a9a9cff', marginBottom: '14px'}}></div>

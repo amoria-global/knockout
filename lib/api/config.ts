@@ -102,6 +102,8 @@ export const API_ENDPOINTS = {
     GOOGLE: '/api/remote/auth/google',
     APPLE: '/api/remote/auth/apple',
     VERIFY_TOTP: '/api/remote/auth/verify-totp',
+    SEND_EMAIL_2FA: '/api/remote/auth/2fa/email/send',
+    VERIFY_EMAIL_2FA: '/api/remote/auth/2fa/email/verify',
   },
 
   // Public endpoints
