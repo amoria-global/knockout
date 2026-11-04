@@ -15,6 +15,9 @@ import { unlockAlbumPhotos } from '@/lib/APIs/public/unlock-photos/route';
 import { getDeviceId } from '@/lib/fingerprint';
 import { requestFreeAlbumAccess } from '@/lib/APIs/public/request-free-access/route';
 import { verifyFreeAlbumAccess } from '@/lib/APIs/public/verify-free-access/route';
+import OtpInput from '@/app/components/OtpInput';
+import { useCountdown } from '@/lib/useCountdown';
+import { attemptsText, formatCountdown, localDeadline, lockText, OTP_LENGTH, refusalFrom, sentFromResponse } from '@/lib/otp';
 import {
   getFreeAlbum,
   logFreeAlbumDownload,
@@ -224,6 +227,14 @@ const FindMyPhotos = () => {
   const [freeAlbumError, setFreeAlbumError] = useState('');
   const [freeAlbumLoading, setFreeAlbumLoading] = useState(false);
   const [freeAlbumOtp, setFreeAlbumOtp] = useState('');
+  // The server decides tries, locks and the resend gap; these only hold what it said.
+  const [freeAttemptsLeft, setFreeAttemptsLeft] = useState<number | null>(null);
+  const [freeShake, setFreeShake] = useState(0);
+  const [freeLockedUntil, setFreeLockedUntil] = useState<number | null>(null);
+  const [freeResendAt, setFreeResendAt] = useState<number | null>(null);
+  const freeSubmitting = useRef(false);
+  const freeLockSeconds = useCountdown(freeLockedUntil);
+  const freeResendSeconds = useCountdown(freeResendAt);
   // Cap + pay-for-extras: when an album has maxFreeDownloads set, the first
   // `cap` selected photos are free and the remainder requires payment at
   // `pricePerExtraImage` each (existing paid-album XentriPay flow).
@@ -605,8 +616,18 @@ const FindMyPhotos = () => {
     try {
       const response = await requestFreeAlbumAccess(inviteCode.trim(), freeAlbumEmail.trim());
       if (response.success) {
+        const out = sentFromResponse(response, '');
+        // Measured on the server clock; an older backend sends no timers, so fall back to its 3 minute gap.
+        setFreeResendAt('sent' in out ? localDeadline(out.sent.resendAvailableAt, out.sent.serverTime, Date.now()) : Date.now() + 180_000);
         setFreeAlbumFlow('otp');
       } else {
+        const refusal = refusalFrom({ ...((response.data ?? {}) as object), message: ((response.data ?? {}) as { message?: string }).message || response.error }, '');
+        if (refusal.errorCode !== 'UNKNOWN') {
+          // A limit on asking for codes: the server's words, and Resend held for its wait.
+          if (refusal.retryAfterSeconds) setFreeResendAt(Date.now() + refusal.retryAfterSeconds * 1000);
+          setFreeAlbumError(refusal.message);
+          return;
+        }
         const err = response.error || '';
         if (err.toLowerCase().includes('not authorized') || (err.toLowerCase().includes('email') && err.toLowerCase().includes('match'))) {
           setFreeAlbumError('This email was not invited to this album');
@@ -621,12 +642,15 @@ const FindMyPhotos = () => {
     }
   };
 
-  const handleFreeAlbumVerify = async () => {
-    if (!freeAlbumOtp.trim()) return;
+  const handleFreeAlbumVerify = async (typed?: string) => {
+    const otpCode = (typed ?? freeAlbumOtp).trim();
+    if (!otpCode || freeSubmitting.current || freeLockSeconds > 0) return;
+    freeSubmitting.current = true;
     setFreeAlbumLoading(true);
     setFreeAlbumError('');
+    setFreeAttemptsLeft(null);
     try {
-      const response = await verifyFreeAlbumAccess(inviteCode.trim(), freeAlbumEmail.trim(), freeAlbumOtp.trim());
+      const response = await verifyFreeAlbumAccess(inviteCode.trim(), freeAlbumEmail.trim(), otpCode);
       if (response.success && response.data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const d = response.data as any;
@@ -663,6 +687,16 @@ const FindMyPhotos = () => {
           }
         }
       } else {
+        const refusal = refusalFrom({ ...((response.data ?? {}) as object), message: ((response.data ?? {}) as { message?: string }).message || response.error }, '');
+        if (refusal.errorCode !== 'UNKNOWN') {
+          // Wrong, expired or locked: the server's attempts left and wait come with the answer.
+          setFreeAlbumOtp('');
+          setFreeShake((k) => k + 1);
+          if (refusal.errorCode === 'LOCKED' && refusal.retryAfterSeconds) setFreeLockedUntil(Date.now() + refusal.retryAfterSeconds * 1000);
+          setFreeAttemptsLeft(refusal.attemptsLeft ?? null);
+          setFreeAlbumError(refusal.message);
+          return;
+        }
         const err = response.error || '';
         if (err.toLowerCase().includes('invalid') && err.toLowerCase().includes('otp')) {
           setFreeAlbumError('Invalid verification code. Please try again.');
@@ -675,11 +709,13 @@ const FindMyPhotos = () => {
     } catch {
       setFreeAlbumError('Connection error. Please try again.');
     } finally {
+      freeSubmitting.current = false;
       setFreeAlbumLoading(false);
     }
   };
 
   const handleFreeAlbumResendOtp = async () => {
+    if (freeResendSeconds > 0 || freeLockSeconds > 0) return;
     setFreeAlbumOtp('');
     setFreeAlbumError('');
     await handleFreeAlbumRequestAccess();
@@ -2202,44 +2238,26 @@ const FindMyPhotos = () => {
                 We sent a 6-digit code to<br />
                 <strong style={{ color: '#fff' }}>{maskEmail(freeAlbumEmail)}</strong>
               </p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    maxLength={1}
-                    value={freeAlbumOtp[i] || ''}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '');
-                      const arr = freeAlbumOtp.split('');
-                      arr[i] = val;
-                      setFreeAlbumOtp(arr.join('').slice(0, 6));
-                      setFreeAlbumError('');
-                      if (val && e.target.nextElementSibling instanceof HTMLInputElement) {
-                        e.target.nextElementSibling.focus();
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Backspace' && !freeAlbumOtp[i] && e.target instanceof HTMLInputElement && e.target.previousElementSibling instanceof HTMLInputElement) {
-                        e.target.previousElementSibling.focus();
-                      }
-                      if (e.key === 'Enter' && freeAlbumOtp.length === 6) handleFreeAlbumVerify();
-                    }}
-                    style={{
-                      width: 44, height: 52, borderRadius: 10,
-                      border: freeAlbumError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.2)',
-                      background: 'rgba(255,255,255,0.06)', color: '#fff',
-                      fontSize: 20, fontWeight: 700, textAlign: 'center', outline: 'none',
-                    }}
-                  />
-                ))}
+              <div style={{ marginBottom: 16 }}>
+                <OtpInput
+                  id="free-album-code"
+                  value={freeAlbumOtp}
+                  onChange={(v) => { setFreeAlbumOtp(v); if (freeAlbumError) setFreeAlbumError(''); }}
+                  onComplete={(c) => { void handleFreeAlbumVerify(c); }}
+                  error={freeLockSeconds > 0 ? lockText(freeLockSeconds) : (freeAlbumError || undefined)}
+                  hint={freeLockSeconds <= 0 && freeAlbumError ? attemptsText(freeAttemptsLeft ?? undefined) : undefined}
+                  busy={freeAlbumLoading}
+                  disabled={freeLockSeconds > 0}
+                  shakeKey={freeShake}
+                  accent="#7be0e5"
+                  colors={{ border: 'rgba(255,255,255,0.2)', bg: 'rgba(255,255,255,0.06)', text: '#ffffff', muted: 'rgba(255,255,255,0.6)' }}
+                />
               </div>
-              {freeAlbumError && <p style={{ color: '#ef4444', fontSize: 13, margin: '0 0 12px' }}>{freeAlbumError}</p>}
               <button
                 className="fr-btn-brand"
                 style={{ width: '100%', padding: 14, marginBottom: 12 }}
-                onClick={handleFreeAlbumVerify}
-                disabled={freeAlbumLoading || freeAlbumOtp.length < 6}
+                onClick={() => handleFreeAlbumVerify()}
+                disabled={freeAlbumLoading || freeAlbumOtp.length < OTP_LENGTH || freeLockSeconds > 0}
               >
                 {freeAlbumLoading ? 'Verifying…' : 'Open my album'}
               </button>
@@ -2247,10 +2265,10 @@ const FindMyPhotos = () => {
                 {"Didn't receive it? "}
                 <button
                   onClick={handleFreeAlbumResendOtp}
-                  disabled={freeAlbumLoading}
-                  style={{ background: 'none', border: 'none', color: '#7be0e5', fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                  disabled={freeAlbumLoading || freeResendSeconds > 0 || freeLockSeconds > 0}
+                  style={{ background: 'none', border: 'none', color: freeResendSeconds > 0 || freeLockSeconds > 0 ? 'rgba(255,255,255,0.5)' : '#7be0e5', fontSize: 13, cursor: freeResendSeconds > 0 || freeLockSeconds > 0 ? 'not-allowed' : 'pointer', textDecoration: freeResendSeconds > 0 || freeLockSeconds > 0 ? 'none' : 'underline', padding: 0 }}
                 >
-                  Resend
+                  {freeResendSeconds > 0 ? `Resend in ${formatCountdown(freeResendSeconds)}` : 'Resend'}
                 </button>
               </p>
               <button

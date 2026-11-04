@@ -29,7 +29,7 @@ export async function requestFreeAlbumAccess(
       accessCode: accessCode.trim(),
       email: email.trim().toLowerCase(),
     },
-    { retries: 1, skipAuth: true }
+    { retries: 0, skipAuth: true }
   );
 
   // Handle wrapped { action, data } response
