@@ -40,6 +40,11 @@ export interface GoogleAuthResponse {
   profilePicture?: string | null;
   coverPicture?: string | null;
   twoFactorRequired?: boolean;
+  challengeId?: string;
+  challengeExpiresAt?: string;
+  twoFactorMethods?: string[];
+  twoFactorDefaultMethod?: string;
+  maskedEmail?: string;
   twoFactorSetupRequired?: boolean;
   token?: string;
   refreshToken?: string;

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { buildTotpUrl } from '@/lib/utils/two-factor-url';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -466,7 +467,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       const userInfo = await googleResponse.json();
       const response = await googleAuth({ accessToken: tokenResponse.access_token, email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Client' });
       const data = response.data;
-      if (response.success && data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
+      if (response.success && data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your sign-in code.'); router.push(buildTotpUrl(data)); return; }
       if (response.success && data?.token) {
         const customerType = data.customerType || '';
         if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); return; }
@@ -494,7 +495,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         const data = response.data;
         // Security gates first - a locked / 2FA account is never bypassed.
         if (data?.accountLocked === true || data?.accountLocked === 'true') { setLoginError('Your account has been locked.'); showError('Your account has been locked.'); setLoginLoading(false); return; }
-        if (data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); setLoginLoading(false); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
+        if (data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your sign-in code.'); setLoginLoading(false); router.push(buildTotpUrl(data)); return; }
 
         // Unverified accounts go to OTP FIRST. The profile-completion modal
         // is shown right AFTER verification (on the verify-otp page), not
@@ -692,7 +693,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         window.history.replaceState(null, '', '/user/auth/signup');
         return;
       }
-      if (response.success && data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
+      if (response.success && data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your sign-in code.'); router.push(buildTotpUrl(data)); return; }
       if (response.success && data?.token) {
         const customerType = data.customerType || '';
         if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); return; }
@@ -714,7 +715,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     setAppleSignupLoading(true);
     try {
       const br = await appleAuth({ ...credential, customerType: signupUserType, createIfMissing: true });
-      if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(br.data.customerId))}`); return; }
+      if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your sign-in code.'); router.push(buildTotpUrl(br.data)); return; }
       if (br.success && br.data?.token) {
         setAuthToken(br.data.token);
         forgetAppleHandshake(credential.appleUserId);
@@ -738,7 +739,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       const userInfo = await response.json();
       try {
         const br = await googleAuth({ accessToken: tokenResponse.access_token, email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: signupUserType });
-        if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(br.data.customerId))}`); return; }
+        if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your sign-in code.'); router.push(buildTotpUrl(br.data)); return; }
         if (br.success && br.data?.token) {
           setAuthToken(br.data.token);
           // The email already had an account, and its role is NOT the one just
