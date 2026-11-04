@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
+import OtpInput from '@/app/components/OtpInput';
+import { useCountdown } from '@/lib/useCountdown';
+import { attemptsText, formatCountdown, localDeadline, lockText, OTP_LENGTH, refusalFrom, sentFromResponse, type CodeRefusal } from '@/lib/otp';
 import { resendOtp } from '@/lib/APIs/auth/resend-otp/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { getAuthToken, getRefreshToken, setAuthToken } from '@/lib/api/client';
@@ -93,8 +96,17 @@ function VerifyOtpContent(): React.JSX.Element {
   // Renders the return-to-app overlay: the button re-fires the redirect with a
   // fresh user gesture, mirroring the login page's fallback.
   const [appHandbackUrl, setAppHandbackUrl] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [refusal, setRefusal] = useState<CodeRefusal | null>(null);
+  const [shakeKey, setShakeKey] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [resendAt, setResendAt] = useState<number | null>(null);
+  const [resending, setResending] = useState(false);
+  const submitting = useRef(false);
+  const lockSeconds = useCountdown(lockedUntil);
+  const resendSeconds = useCountdown(resendAt);
+  const locked = lockSeconds > 0;
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -131,7 +143,6 @@ function VerifyOtpContent(): React.JSX.Element {
   };
 
   // Create refs for each input box
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Update state when query params change
   useEffect(() => {
@@ -146,62 +157,27 @@ function VerifyOtpContent(): React.JSX.Element {
     }
   }, [applicantId]);
 
-  const isDisabled = otp.some(digit => digit === '') || !applicantId;
+  const isDisabled = otp.length !== OTP_LENGTH || !applicantId || locked;
 
-  const handleOtpChange = (index: number, value: string) => {
-    // Only allow single digit numbers
-    if (value && !/^\d$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+  // A refused check or send: show the server's words, its tries left, and hold the lock or the resend wait.
+  const refuse = (r: CodeRefusal) => {
+    setRefusal(r);
+    if (r.retryAfterSeconds) {
+      const until = Date.now() + r.retryAfterSeconds * 1000;
+      if (r.errorCode === 'LOCKED') setLockedUntil(until);
+      else setResendAt(until);
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Handle backspace
-    if (e.key === 'Backspace') {
-      if (!otp[index] && index > 0) {
-        // If current box is empty, move to previous box
-        inputRefs.current[index - 1]?.focus();
-      } else {
-        // Clear current box
-        const newOtp = [...otp];
-        newOtp[index] = '';
-        setOtp(newOtp);
-      }
-    }
-    // Handle left arrow
-    else if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-    // Handle right arrow
-    else if (e.key === 'ArrowRight' && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-
-    if (pastedData) {
-      const newOtp = pastedData.split('').concat(Array(6).fill('')).slice(0, 6);
-      setOtp(newOtp);
-
-      // Focus on the next empty box or last box
-      const nextIndex = Math.min(pastedData.length, 5);
-      inputRefs.current[nextIndex]?.focus();
-    }
+    void submit(otp);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = async (code: string) => {
+    if (submitting.current || locked || code.length !== OTP_LENGTH || !applicantId) return;
     setError('');
+    setRefusal(null);
 
     // Check online status
     if (!isOnline) {
@@ -209,13 +185,14 @@ function VerifyOtpContent(): React.JSX.Element {
       return;
     }
 
-    if (!isDisabled) {
+    {
+      submitting.current = true;
       setLoading(true);
-      const otpCode = otp.join('');
+      const otpCode = code;
 
       try {
         // Use customerId as expected by backend
-        const response = await verifyOtp({ customerId: applicantId, otp: parseInt(otpCode, 10) });
+        const response = await verifyOtp({ customerId: applicantId, otp: otpCode });
 
         if (response.success) {
           const d = response.data;
@@ -266,23 +243,28 @@ function VerifyOtpContent(): React.JSX.Element {
             }, 2000);
           }
         } else {
-          const errorMessage = response.error || 'Invalid OTP. Please try again.';
-          setError(errorMessage);
-          showError(errorMessage);
+          // Wrong, expired or locked: the server's attempts left and wait come with the answer.
+          const body = (response.data ?? {}) as { message?: string };
+          setOtp('');
+          setShakeKey((k) => k + 1);
+          refuse(refusalFrom({ ...body, message: body.message || response.error }, 'Invalid OTP. Please try again.'));
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
         setError(errorMessage);
         showError(errorMessage);
       } finally {
+        submitting.current = false;
         setLoading(false);
       }
     }
   };
 
   const handleResendOtp = async () => {
+    if (resending || resendSeconds > 0 || locked) return;
     setError('');
-    setOtp(['', '', '', '', '', '']);
+    setRefusal(null);
+    setOtp('');
 
     // Check online status
     if (!isOnline) {
@@ -290,26 +272,26 @@ function VerifyOtpContent(): React.JSX.Element {
       return;
     }
 
+    setResending(true);
     try {
       const response = await resendOtp({ customerId: applicantId });
 
       if (response.success) {
+        const out = sentFromResponse(response, '');
+        // Measured on the server clock; an older backend sends no timers, so fall back to its 3 minute gap.
+        setResendAt('sent' in out ? localDeadline(out.sent.resendAvailableAt, out.sent.serverTime, Date.now()) : Date.now() + 180_000);
         showSuccess('Verification code sent successfully!');
       } else {
-        const errorMessage = response.error || 'Failed to resend code. Please try again.';
-        setError(errorMessage);
-        showError(errorMessage);
+        const body = (response.data ?? {}) as { message?: string };
+        refuse(refusalFrom({ ...body, message: body.message || response.error }, 'Failed to resend code. Please try again.'));
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to resend code. Please try again.';
       setError(errorMessage);
       showError(errorMessage);
+    } finally {
+      setResending(false);
     }
-
-    // Focus on first input box
-    setTimeout(() => {
-      inputRefs.current[0]?.focus();
-    }, 100);
   };
 
   if (success) {
@@ -417,52 +399,21 @@ function VerifyOtpContent(): React.JSX.Element {
               </div>
             </div>
 
-            {/* OTP Input - Individual Boxes */}
+            {/* One real input drawn as six boxes: autofill, paste and screen readers see one code */}
             <div style={{ marginBottom: window.innerWidth < 640 ? '10px' : '16px' }}>
-              <label style={{ display: 'block', fontSize: window.innerWidth < 640 ? '12px' : '14px', fontWeight: '500', color: '#000000', marginBottom: window.innerWidth < 640 ? '4px' : '6px' }}>
-                Verification Code
-              </label>
-              <div style={{
-                display: 'flex',
-                gap: window.innerWidth < 640 ? '4px' : '6px',
-                justifyContent: 'center',
-                marginTop: window.innerWidth < 640 ? '8px' : '10px'
-              }}>
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => { inputRefs.current[index] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
-                    aria-label={`Digit ${index + 1}`}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    onPaste={handlePaste}
-                    style={{
-                      width: window.innerWidth < 640 ? '40px' : '45px',
-                      height: window.innerWidth < 640 ? '40px' : '45px',
-                      fontSize: window.innerWidth < 640 ? '16px' : '18px',
-                      fontWeight: '500',
-                      textAlign: 'center',
-                      border: '1.5px solid #d1d5db',
-                      borderRadius: window.innerWidth < 640 ? '8px' : '10px',
-                      outline: 'none',
-                      transition: 'all 0.3s',
-                      backgroundColor: '#ffffff',
-                      color: '#000000',
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#083A85';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#d1d5db';
-                    }}
-                  />
-                ))}
-              </div>
+              <OtpInput
+                id="signup-code"
+                label="Verification Code"
+                value={otp}
+                onChange={(v) => { setOtp(v); if (refusal) setRefusal(null); }}
+                onComplete={(c) => { void submit(c); }}
+                error={locked ? lockText(lockSeconds) : refusal?.message}
+                hint={!locked && refusal ? attemptsText(refusal.attemptsLeft) : undefined}
+                busy={loading}
+                disabled={locked || !applicantId}
+                shakeKey={shakeKey}
+                colors={{ border: '#d1d5db', bg: '#ffffff', text: '#000000', muted: '#4b5563' }}
+              />
             </div>
 
             {/* Submit Button */}
@@ -491,19 +442,19 @@ function VerifyOtpContent(): React.JSX.Element {
               <button
                 type="button"
                 onClick={handleResendOtp}
-                disabled={loading || !applicantId}
+                disabled={loading || resending || resendSeconds > 0 || locked || !applicantId}
                 style={{
                   background: 'none',
                   border: 'none',
                   fontSize: window.innerWidth < 640 ? '11px' : '13px',
                   fontWeight: '600',
                   color: '#000000',
-                  opacity: (loading || !applicantId) ? '0.4' : '0.7',
-                  cursor: (loading || !applicantId) ? 'not-allowed' : 'pointer',
+                  opacity: (loading || resending || resendSeconds > 0 || locked || !applicantId) ? '0.4' : '0.7',
+                  cursor: (loading || resending || resendSeconds > 0 || locked || !applicantId) ? 'not-allowed' : 'pointer',
                   textDecoration: 'underline'
                 }}
               >
-                Didn't receive the code? Resend
+                {resendSeconds > 0 ? `Resend code in ${formatCountdown(resendSeconds)}` : "Didn't receive the code? Resend"}
               </button>
             </div>
 
