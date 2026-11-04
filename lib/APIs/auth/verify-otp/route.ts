@@ -15,7 +15,8 @@ import type { ApiResponse } from '@/lib/api/types';
 
 export interface VerifyOtpRequest {
   customerId: string; // Backend expects customerId (UUID)
-  otp: number; // Backend expects otp as a number
+  /** The 6-digit code as typed. A number is still accepted (older call sites) and padded back to 6 digits. */
+  otp: string | number;
 }
 
 export interface VerifyOtpResponse {
@@ -46,10 +47,12 @@ export interface VerifyOtpResponse {
 export async function verifyOtp(data: VerifyOtpRequest): Promise<ApiResponse<VerifyOtpResponse>> {
   const response = await apiClient.post<VerifyOtpResponse>(
     API_ENDPOINTS.AUTH.VERIFY_OTP,
-    data,
+    // A string, never a number: a code can start with 0, which a number drops (012345 becomes 12345).
+    { customerId: data.customerId, otp: typeof data.otp === 'number' ? String(data.otp).padStart(6, '0') : data.otp },
     {
       skipAuth: true,
-      retries: 2,
+      // No retries: a repeat would spend one of the 3 tries the server allows.
+      retries: 0,
     }
   );
 
