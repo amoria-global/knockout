@@ -12,6 +12,8 @@ import { useAuth } from '../../providers/AuthProvider';
 import { login as apiLogin } from '@/lib/APIs/auth/login/route';
 import { signup as apiSignup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
+import OtpInput from '@/app/components/OtpInput';
+import { useOtpRefusal } from '@/lib/auth/useOtpRefusal';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
 import ViewerInfoModal, { type ViewerInfoData } from '../../components/ViewerInfoModal';
@@ -123,6 +125,7 @@ function JoinPackageContent(): React.JSX.Element {
   const [signupPassword, setSignupPassword] = useState('');
   const [otpCustomerId, setOtpCustomerId] = useState('');
   const [otpValue, setOtpValue] = useState('');
+  const otpRefusal = useOtpRefusal();
   const [googleLoading, setGoogleLoading] = useState(false);
 
   // Anonymous viewer modal state
@@ -198,17 +201,23 @@ function JoinPackageContent(): React.JSX.Element {
     } catch { setAuthError('Unable to connect. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
 
-  const handleVerifyOtp = async () => {
-    if (!otpValue) { setAuthError('Please enter the verification code sent to your email.'); return; }
-    setAuthLoading(true); setAuthError('');
+  const handleVerifyOtp = async (typed?: string) => {
+    const code = typed ?? otpValue;
+    if (authLoading || otpRefusal.locked) return;
+    if (!code || code.length < 6) { setAuthError('Please enter the 6-digit verification code sent to your email.'); return; }
+    setAuthLoading(true); setAuthError(''); otpRefusal.clear();
     try {
-      const res = await verifyOtp({ customerId: otpCustomerId, otp: Number(otpValue) });
+      const res = await verifyOtp({ customerId: otpCustomerId, otp: code });
       if (res.success && res.data?.token) {
         const d = res.data as unknown as Record<string, string>;
         await authLogin({ id: d.id || d.customerId || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || (signupPhoneVal?.digits ?? ''), customerId: d.customerId || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
         if ((selectedEvent?.price || 0) > 0) { openPaymentFlow(); } else { handleProceed(); }
-      } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'The verification code is incorrect or has expired.'); }
+      } else {
+        // Wrong, expired or locked: the server's words, tries left and wait.
+        setOtpValue('');
+        otpRefusal.record(res, 'The verification code is incorrect or has expired.');
+      }
     } catch { setAuthError('Unable to verify. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
 
@@ -2187,9 +2196,20 @@ function JoinPackageContent(): React.JSX.Element {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Verification Code</label>
-                  <input type="text" value={otpValue} onChange={e => setOtpValue(e.target.value)} placeholder="Enter code" onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', textAlign: 'center', letterSpacing: 8, fontWeight: 700 }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <OtpInput
+                    id="package-code"
+                    value={otpValue}
+                    onChange={(v) => { setOtpValue(v); otpRefusal.clear(); }}
+                    onComplete={(c) => { void handleVerifyOtp(c); }}
+                    error={otpRefusal.error}
+                    hint={otpRefusal.hint}
+                    busy={authLoading}
+                    disabled={otpRefusal.locked}
+                    shakeKey={otpRefusal.shakeKey}
+                    colors={{ border: 'rgba(255,255,255,0.12)', bg: 'rgba(255,255,255,0.06)', text: '#ffffff', muted: '#a1a1aa' }}
+                  />
                 </div>
-                <button onClick={handleVerifyOtp} disabled={authLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <button onClick={() => handleVerifyOtp()} disabled={authLoading || otpRefusal.locked || otpValue.length < 6} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Verifying…</> : <><i className="bi bi-shield-check"></i> Verify</>}
                 </button>
               </div>

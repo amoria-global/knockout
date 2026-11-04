@@ -27,6 +27,8 @@ import { signup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { unverifiedLoginCustomerId } from '@/lib/auth/otp-resend';
 import { useOtpResend } from '@/lib/auth/useOtpResend';
+import OtpInput from '@/app/components/OtpInput';
+import { useOtpRefusal } from '@/lib/auth/useOtpRefusal';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
@@ -527,6 +529,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const [otpEmail, setOtpEmail] = useState('');
   const [otpPassword, setOtpPassword] = useState('');
   const otpResend = useOtpResend();
+  const otpRefusal = useOtpRefusal();
   // Pending destination after auth
   const [pendingJoinUrl, setPendingJoinUrl] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -1173,12 +1176,15 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
     }
   };
 
-  const handleVerifyOtp = async () => {
-    if (!otpValue || otpValue.length < 4) { setAuthError('Please enter the 6-digit verification code sent to your email.'); return; }
+  const handleVerifyOtp = async (typed?: string) => {
+    const code = typed ?? otpValue;
+    if (authLoading || otpRefusal.locked) return;
+    if (!code || code.length < 6) { setAuthError('Please enter the 6-digit verification code sent to your email.'); return; }
     setAuthLoading(true);
     setAuthError('');
+    otpRefusal.clear();
     try {
-      const res = await verifyOtp({ customerId: otpCustomerId, otp: parseInt(otpValue, 10) });
+      const res = await verifyOtp({ customerId: otpCustomerId, otp: code });
       if (res.success && res.data?.action === 1) {
         // OTP verify only confirms email - token comes from login. Auto-login with signup credentials.
         const loginRes = await login({ email: otpEmail, password: otpPassword });
@@ -1228,7 +1234,9 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
           setAuthError(loginRes.data?.message || loginRes.error || 'Email verified successfully! Please switch to the Log In tab to sign in.');
         }
       } else {
-        setAuthError(res.data?.message || res.error || 'The verification code is incorrect or has expired. Please check your email and try again.');
+        // Wrong, expired or locked: the server's words, tries left and wait.
+        setOtpValue('');
+        otpRefusal.record(res, 'The verification code is incorrect or has expired. Please check your email and try again.');
       }
     } catch {
       setAuthError('Unable to verify. Please check your internet connection and try again.');
@@ -3302,9 +3310,21 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                 {otpResend.error && <p role="alert" style={{ color: '#f87171', fontSize: 13, margin: 0 }}>{otpResend.error}</p>}
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Verification Code</label>
-                  <input type="text" inputMode="numeric" maxLength={6} value={otpValue} onChange={e => setOtpValue(e.target.value.replace(/[^0-9]/g, ''))} placeholder="000000" onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()} style={{ width: '100%', padding: '14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 22, fontWeight: 700, letterSpacing: '0.35em', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <OtpInput
+                    id="event-code"
+                    value={otpValue}
+                    onChange={(v) => { setOtpValue(v); otpRefusal.clear(); }}
+                    onComplete={(c) => { void handleVerifyOtp(c); }}
+                    error={otpRefusal.error}
+                    hint={otpRefusal.hint}
+                    busy={authLoading}
+                    disabled={otpRefusal.locked}
+                    shakeKey={otpRefusal.shakeKey}
+                    accent="#5b9bff"
+                    colors={{ border: 'rgba(255,255,255,0.12)', bg: 'rgba(255,255,255,0.06)', text: '#ffffff', muted: '#a1a1aa' }}
+                  />
                 </div>
-                <button onClick={handleVerifyOtp} disabled={authLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #083A85, #103E83)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <button onClick={() => handleVerifyOtp()} disabled={authLoading || otpRefusal.locked || otpValue.length < 6} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #083A85, #103E83)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} /> Verifying…</> : <><i className="bi bi-shield-check"></i> Verify & Continue</>}
                 </button>
                 <button type="button" onClick={() => otpResend.resend(otpCustomerId)} disabled={otpResend.sending || otpResend.secondsLeft > 0} style={{ background: 'none', border: 'none', color: otpResend.sending || otpResend.secondsLeft > 0 ? '#6b7280' : '#5b9bff', fontSize: 13, fontWeight: 600, cursor: otpResend.sending || otpResend.secondsLeft > 0 ? 'not-allowed' : 'pointer', textAlign: 'center', padding: '4px 0' }}>

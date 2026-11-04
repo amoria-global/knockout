@@ -71,8 +71,8 @@ describe('requestOtpResend', () => {
 });
 
 describe('resendSecondsLeft', () => {
-  it('is 30 seconds', () => {
-    expect(OTP_RESEND_COOLDOWN_SECONDS).toBe(30);
+  it('is 180 seconds, the server gap', () => {
+    expect(OTP_RESEND_COOLDOWN_SECONDS).toBe(180);
   });
 
   it('allows a resend when nothing has been sent yet', () => {
@@ -81,9 +81,37 @@ describe('resendSecondsLeft', () => {
 
   it('counts down from the last send and then opens up', () => {
     const t = 1_000_000;
-    expect(resendSecondsLeft(t, t)).toBe(30);
-    expect(resendSecondsLeft(t, t + 10_500)).toBe(20);
-    expect(resendSecondsLeft(t, t + 30_000)).toBe(0);
-    expect(resendSecondsLeft(t, t + 90_000)).toBe(0);
+    expect(resendSecondsLeft(t, t)).toBe(180);
+    expect(resendSecondsLeft(t, t + 10_500)).toBe(170);
+    expect(resendSecondsLeft(t, t + 180_000)).toBe(0);
+    expect(resendSecondsLeft(t, t + 600_000)).toBe(0);
+  });
+});
+
+describe('requestOtpResend and the server clock', () => {
+  it('returns the deadline the server timers give', async () => {
+    const now = Date.now();
+    const send = vi.fn().mockResolvedValue({
+      success: true,
+      data: { expiresAt: new Date(now + 300_000).toISOString(), resendAvailableAt: new Date(now + 180_000).toISOString(), serverTime: new Date(now).toISOString() },
+    });
+    const r = await requestOtpResend('abc', send);
+    expect(r.ok).toBe(true);
+    expect(r.resendAt).toBeGreaterThan(now + 170_000);
+    expect(r.resendAt).toBeLessThan(now + 190_000);
+  });
+
+  it('has no deadline from an older backend, so the hook falls back to the 3 minute gap', async () => {
+    const send = vi.fn().mockResolvedValue({ success: true, data: { action: 1 } });
+    expect((await requestOtpResend('abc', send)).resendAt).toBeUndefined();
+  });
+
+  it('turns a refusal into the server words and its wait', async () => {
+    const send = vi.fn().mockResolvedValue({ success: false, error: 'x', data: { errorCode: 'RESEND_TOO_SOON', retryAfterSeconds: 120, message: 'Please wait before asking for another code.' } });
+    const before = Date.now();
+    const r = await requestOtpResend('abc', send);
+    expect(r.ok).toBe(false);
+    expect(r.message).toBe('Please wait before asking for another code.');
+    expect(r.resendAt).toBeGreaterThanOrEqual(before + 120_000);
   });
 });

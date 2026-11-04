@@ -12,9 +12,13 @@
  */
 import { resendOtp } from '@/lib/APIs/auth/resend-otp/route';
 import type { ApiResponse } from '@/lib/api/types';
+import { localDeadline, refusalFrom, sentFromResponse } from '@/lib/otp';
 
-/** Each resend replaces the previous code, so do not let users fire them rapidly. */
-export const OTP_RESEND_COOLDOWN_SECONDS = 30;
+/**
+ * The server's gap between codes. Each resend replaces the previous code, so users cannot fire them rapidly. The
+ * server's own timestamps win when an answer carries them; this is the fallback for one that does not.
+ */
+export const OTP_RESEND_COOLDOWN_SECONDS = 180;
 
 type LoginLike = {
   otpVerified?: boolean | string | null;
@@ -35,9 +39,11 @@ export function unverifiedLoginCustomerId(data: LoginLike): string | null {
   return String(data.customerId);
 }
 
-export type ResendResult = { ok: boolean; message: string };
+/** `resendAt` is when Resend unlocks, as epoch ms on this device's clock, built from the server's timestamps. */
+export type ResendResult = { ok: boolean; message: string; resendAt?: number };
 
 type ResendFn = (req: { customerId: string }) => Promise<ApiResponse<{ message?: string }>>;
+
 
 /**
  * Ask the backend for a new code. `success` from the API client already
@@ -54,18 +60,27 @@ export async function requestOtpResend(
   try {
     const res = await send({ customerId });
     if (res.success) {
-      return { ok: true, message: 'A new code is on its way. Use the newest code, earlier ones no longer work.' };
+      const out = sentFromResponse(res, '');
+      const resendAt = 'sent' in out ? localDeadline(out.sent.resendAvailableAt, out.sent.serverTime, Date.now()) : undefined;
+      return {
+        ok: true,
+        message: 'A new code is on its way. Use the newest code, earlier ones no longer work.',
+        ...(resendAt !== undefined ? { resendAt } : {}),
+      };
     }
+    // Refused (too soon, rate limited, locked): the server's words and its wait.
+    const refusal = refusalFrom({ ...((res.data ?? {}) as object), message: res.data?.message || res.error }, 'We could not resend the code. Please try again.');
     return {
       ok: false,
-      message: res.data?.message || res.error || 'We could not resend the code. Please try again.',
+      message: refusal.message,
+      ...(refusal.retryAfterSeconds ? { resendAt: Date.now() + refusal.retryAfterSeconds * 1000 } : {}),
     };
   } catch {
     return { ok: false, message: 'Unable to connect. Please check your internet connection and try again.' };
   }
 }
 
-/** Whole seconds left before another resend is allowed. */
+/** Whole seconds left before another resend is allowed. `sentAtMs` is when the last code was sent, on this device. */
 export function resendSecondsLeft(sentAtMs: number | null, nowMs: number): number {
   if (sentAtMs === null) return 0;
   const left = OTP_RESEND_COOLDOWN_SECONDS - Math.floor((nowMs - sentAtMs) / 1000);
