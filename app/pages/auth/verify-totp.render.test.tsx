@@ -164,4 +164,19 @@ describe('email sign-in', () => {
     await act(async () => tab.click());
     expect(sendEmailCode).toHaveBeenCalledTimes(1);
   });
+
+  it('a lock on the authenticator does not block the email code, and comes back with its tab', async () => {
+    sendEmailCode.mockResolvedValue(sent());
+    verifyTotp.mockResolvedValue({ success: false, data: { errorCode: 'LOCKED', retryAfterSeconds: 900, message: 'Locked' } });
+    await mount('challengeId=p.sig&methods=TOTP,EMAIL&defaultMethod=TOTP');
+    await type('000000');
+    expect(field().disabled).toBe(true);
+    const tab = (label: string) => Array.from(host.querySelectorAll('[role="tab"]')).find((t) => t.textContent === label) as HTMLButtonElement;
+    await act(async () => tab('Email code').click());
+    expect(field().disabled).toBe(false);
+    expect(host.textContent).not.toContain('Too many wrong codes');
+    await act(async () => tab('Authenticator app').click());
+    expect(field().disabled).toBe(true);
+    expect(host.textContent).toContain('Try again in 15:00');
+  });
 });
