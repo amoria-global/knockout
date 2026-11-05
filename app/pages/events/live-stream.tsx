@@ -1,5 +1,6 @@
 "use client";
 
+import { minimumAmountMessage } from '@/lib/payments/minimumMessage';
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -2330,8 +2331,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       const raw = err instanceof Error ? err.message : '';
       const lower = raw.toLowerCase();
       let msg: string;
-      if (lower.includes('minimum amount')) {
-        msg = `The minimum gift amount is 100 ${mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'}. Please enter a higher amount.`;
+      const minimumMsg = minimumAmountMessage(raw, mainEvent?.streamFeeCurrencyAbbreviation || undefined);
+      if (minimumMsg) {
+        msg = minimumMsg;
       } else if (lower.includes('maximum amount') || lower.includes('exceeds')) {
         msg = 'The gift amount exceeds the allowed limit. Please enter a smaller amount.';
       } else if (lower.includes('insufficient') || lower.includes('balance')) {
