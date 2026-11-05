@@ -40,3 +40,12 @@ Handled failures (the ones the user is shown) and uncaught errors and unhandled 
 (`window.error`, `window.unhandledrejection`). There is no SDK, so there is no bundle weight and no build risk. It does
 not yet give symbolicated stack traces from minified code; that needs source maps uploaded from the build, which is the
 reason to move to `@sentry/nextjs` later if the traces matter.
+
+## Status
+
+Switched on 2026-11-05. Sentry organisation `amoria-global-tech` (EU data region), project `connekyt-landing`. The DSN is the
+`NEXT_PUBLIC_SENTRY_DSN` line in `/var/www/front/knockout/.env.production` on the server. It is a public ingest key and is not in git. It is read at
+build time, so changing it needs a rebuild (push to `main`).
+
+To check it: open the site, run `window.dispatchEvent(new ErrorEvent('error', { error: new Error('sentry test') }))` in
+the browser console, and the event appears under Issues in `connekyt-landing` within a minute, tagged `app:landing`.
