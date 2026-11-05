@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { startErrorReporting } from '@/lib/errorSystem/startReporting';
 import { ErrorDialogHost } from './ErrorDialog';
 import { ToastHost } from './Toast';
 
@@ -10,6 +11,9 @@ import { ToastHost } from './Toast';
  * layout, not above it. `PlatformAlert` stays for now and is replaced screen by screen as pages migrate.
  */
 export default function ErrorHost() {
+  useEffect(() => {
+    startErrorReporting();
+  }, []);
   return (
     <>
       <ToastHost />
