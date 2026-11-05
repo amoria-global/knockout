@@ -1,6 +1,6 @@
 'use client';
 
-import CurrencySelect from './CurrencySelect';
+import MoneyInput from './MoneyInput';
 import React, { useState, useEffect, useReducer, useRef, useCallback } from 'react';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { apiClient } from '@/lib/api/client';
@@ -1484,21 +1484,20 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                         </div>
                       </div>
 
-                      {/* Price + Currency */}
-                      <div>
-                        <label style={labelStyle}>Price <span style={{ color: '#DC2626' }}>*</span></label>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <CurrencySelect value={pkgCurrencyId} onChange={setPkgCurrencyId}
-                            options={currencies.map(c => ({ value: c.id, code: c.code, name: c.name }))}
-                            style={{ ...inputStyle, width: 'auto', minWidth: 120, flex: '0 0 auto', fontWeight: 700, color: PINK }} />
-                          <input type="number" value={pkgPrice || ''} onChange={e => setPkgPrice(parseInt(e.target.value) || 0)}
-                            placeholder="Enter your price" required
-                            style={{ ...inputStyle, flex: 1, fontWeight: 700, fontSize: 15 }}
-                            onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
-                            onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
-                          />
-                        </div>
-                      </div>
+                      {/* Price and currency in one field. Packages are not held to the listing minimum by the server. */}
+                      <MoneyInput
+                        label="Price"
+                        required
+                        value={pkgPrice ? String(pkgPrice) : ''}
+                        onChange={(v) => setPkgPrice(parseInt(v) || 0)}
+                        currencyId={pkgCurrencyId}
+                        onCurrencyChange={setPkgCurrencyId}
+                        currencies={currencies.map(c => ({ value: c.id, code: c.code, name: c.name }))}
+                        placeholder="Enter your price"
+                        showLimits={false}
+                        wholeNumbersOnly
+                        displayCurrency="RWF"
+                      />
 
                       <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ flex: 1 }}>
