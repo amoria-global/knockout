@@ -20,10 +20,10 @@ const options = [
   { value: 'kes', code: 'KES', name: 'Kenyan shilling' },
 ];
 
-function Harness({ amount = '', currency = 'usd', onAmount }: { amount?: string; currency?: string; onAmount?: (v: string) => void }) {
+function Harness({ amount = '', currency = 'usd', onAmount, keep = true }: { amount?: string; currency?: string; onAmount?: (v: string) => void; keep?: boolean }) {
   const [a, setA] = useState(amount);
   const [c, setC] = useState(currency);
-  return <MoneyInput label="PRICE PER IMAGE" required value={a} onChange={(v) => { setA(v); onAmount?.(v); }} currencyId={c} onCurrencyChange={setC} currencies={options} displayCurrency="RWF" />;
+  return <MoneyInput label="PRICE PER IMAGE" required value={a} onChange={(v) => { setA(v); onAmount?.(v); }} currencyId={c} onCurrencyChange={setC} currencies={options} displayCurrency="RWF" keepAmountOnCurrencyChange={keep} />;
 }
 
 let root: Root;
@@ -155,5 +155,13 @@ describe('MoneyInput (web)', () => {
     await act(async () => root.render(<MoneyInput label="P" value="1" onChange={() => {}} currencyId="usd" onCurrencyChange={() => {}} currencies={options} showLimits={false} />));
     await flush();
     expect(text()).not.toContain('Minimum');
+  });
+
+  it('empties the amount on a currency change where the amount is a payment', async () => {
+    await mount(<Harness amount="5000" keep={false} />);
+    const rwf = [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('RWF') && b.getAttribute('aria-pressed') !== null)!;
+    await act(async () => rwf.click());
+    await flush();
+    expect(input().value).toBe('');
   });
 });
