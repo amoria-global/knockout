@@ -10,6 +10,7 @@ import { ToastProvider } from "@/lib/notifications/ToastProvider";
 import { BannerNotification, OfflineBanner } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import AppInstallWizard from "./components/AppInstallWizard";
+import ErrorHost from "./components/errors/ErrorHost";
 import { SITE_URL, SITE_NAME } from "@/lib/seo/seo";
 
 const DEFAULT_DESCRIPTION =
@@ -108,6 +109,8 @@ export default function RootLayout({
                   <Suspense fallback={null}>
                     <AppInstallWizard />
                   </Suspense>
+                  {/* Toasts and decision dialogs raised by showError() from any page. */}
+                  <ErrorHost />
                 </ErrorBoundary>
               </ToastProvider>
             </AuthProvider>
