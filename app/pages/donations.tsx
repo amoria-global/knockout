@@ -1,5 +1,6 @@
 "use client";
 
+import MoneyInput from '../components/MoneyInput';
 import CurrencyFlag from '../components/CurrencyFlag';
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
@@ -1554,15 +1555,6 @@ const DonationsContent = () => {
             {/* Amount + Currency row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1a1a2e', margin: 0 }}>{tl("Select Amount")}</h3>
-              <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f3f4f6', padding: '3px', borderRadius: '8px' }}>
-                {currencyToggleList.map((curr) => (
-                  <button key={curr} onClick={() => { setCurrency(curr); setCustomAmount(''); }}
-                    style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', border: 'none', backgroundColor: currency === curr ? '#083A85' : 'transparent', color: currency === curr ? '#fff' : '#64748b', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <CurrencyFlag code={curr} width={16} />
-                    {curr}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Amount grid */}
@@ -1574,14 +1566,21 @@ const DonationsContent = () => {
               ))}
             </div>
 
-            {/* Custom amount */}
-            <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '0 12px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '15px', color: '#64748b', fontWeight: 600, marginRight: '4px' }}>
-                {currency === 'RWF' ? '' : getCurrencyConfig(currency).symbol}
-              </span>
-              <input type="number" value={customAmount} onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(0); }}
-                placeholder={tl("Custom amount")} style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 8px', fontSize: '15px', fontWeight: 500 }} />
-              {currency === 'RWF' && <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>RWF</span>}
+            {/* Custom amount: one field, the currency inside it. The suggested amounts above follow the currency. */}
+            <div style={{ marginBottom: '12px' }}>
+              <MoneyInput
+                label={tl("Custom amount")}
+                value={customAmount}
+                onChange={(v) => { setCustomAmount(v); setSelectedAmount(0); }}
+                currencyId={currency}
+                onCurrencyChange={(code) => { setCurrency(code as typeof currency); setCustomAmount(''); }}
+                currencies={currencyToggleList.map((code) => ({ value: code, code, name: getCurrencyConfig(code).name }))}
+                placeholder={tl("Custom amount")}
+                showLimits={false}
+                showQuickPick={false}
+                keepAmountOnCurrencyChange={false}
+                displayCurrency={apiBaseCurrency}
+              />
             </div>
 
             {/* Live-rate cross-currency preview. The panel's selector
