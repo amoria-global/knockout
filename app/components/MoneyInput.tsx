@@ -17,7 +17,7 @@ import { isWholeNumberCurrency, priceError, usePaymentLimitState } from '@/lib/p
 import { recordCurrencyUse, useCurrencyUsage, useRates } from '@/lib/useMoney';
 
 /** The landing is a light surface with the brand navy and pink, so the field draws from these instead of a theme context. */
-const colors = {
+const LIGHT = {
   bgSecondary: '#FFFFFF',
   bgTertiary: '#F3F4F6',
   bgInput: '#FFFFFF',
@@ -30,6 +30,22 @@ const colors = {
   statusWarning: '#F59E0B',
   statusWarningBg: '#FFFBEB',
   shadowLg: '0 12px 32px rgba(0, 0, 0, 0.12)',
+};
+
+/** The dark live-stream modals draw the same field on a glass-dark ground. */
+const DARK: typeof LIGHT = {
+  bgSecondary: '#101a30',
+  bgTertiary: 'rgba(255, 255, 255, 0.10)',
+  bgInput: 'rgba(255, 255, 255, 0.06)',
+  textPrimary: '#FFFFFF',
+  textSecondary: 'rgba(255, 255, 255, 0.75)',
+  textTertiary: 'rgba(255, 255, 255, 0.55)',
+  borderPrimary: 'rgba(255, 255, 255, 0.20)',
+  borderFocus: '#60A5FA',
+  statusError: '#FCA5A5',
+  statusWarning: '#FBBF24',
+  statusWarningBg: 'rgba(251, 191, 36, 0.12)',
+  shadowLg: '0 12px 32px rgba(0, 0, 0, 0.45)',
 };
 
 /** A country's English name from its two-letter code, where the runtime can say it. Used only for searching. */
@@ -69,7 +85,9 @@ export default function MoneyInput({
   onFocus,
   id,
   hideLabel,
+  keepAmountOnCurrencyChange = true,
   displayCurrency,
+  tone = 'light',
 }: {
   label: string;
   required?: boolean;
@@ -93,10 +111,15 @@ export default function MoneyInput({
   id?: string;
   /** The label stays for screen readers but is not drawn (the surrounding form already shows one). */
   hideLabel?: boolean;
+  /** Keep the typed amount when the currency changes (the default). Off where the amount is a payment: the same number in another currency is a different sum of money. */
+  keepAmountOnCurrencyChange?: boolean;
+  /** 'dark' for the live-stream modals. */
+  tone?: 'light' | 'dark';
   /** The currency the "about" line converts into (the viewer's own). No line is drawn without it. */
   displayCurrency?: string;
 }) {
   const accountCode = displayCurrency;
+  const colors = tone === 'dark' ? DARK : LIGHT;
   const uid = useId();
   const fieldId = id ?? `money-${uid}`;
   const helperId = `${fieldId}-help`;
@@ -145,8 +168,8 @@ export default function MoneyInput({
     if (c && nextId !== currencyId) {
       recordCurrencyUse(c.code);
       onCurrencyChange(nextId);
-      // The amount is kept; only digits a zero-decimal currency cannot carry are dropped.
-      if (value) onChange(rawFromInput(value, c.code));
+      // By default the amount is kept and only digits a zero-decimal currency cannot carry are dropped.
+      if (value) onChange(keepAmountOnCurrencyChange ? rawFromInput(value, c.code) : '');
     }
     setOpen(false);
     setQuery('');
@@ -239,13 +262,13 @@ export default function MoneyInput({
             if (!c) return null;
             const on = c.value === currencyId;
             return (
-              <button key={c.value} type="button" disabled={disabled} aria-pressed={on} onClick={() => choose(c.value)} style={chipStyle(on)}>
+              <button key={c.value} type="button" disabled={disabled} aria-pressed={on} onClick={() => choose(c.value)} style={chipStyle(colors, on)}>
                 <CurrencyFlag code={c.code} width={16} />
                 {c.code}
               </button>
             );
           })}
-          <button type="button" disabled={disabled} onClick={() => { setOpen(true); setActive(0); }} style={chipStyle(false)}>More...</button>
+          <button type="button" disabled={disabled} onClick={() => { setOpen(true); setActive(0); }} style={chipStyle(colors, false)}>More...</button>
         </div>
       ) : null}
 
@@ -300,7 +323,7 @@ export default function MoneyInput({
 
 const srOnly = { position: 'absolute', width: 1, height: 1, margin: -1, padding: 0, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 } as const;
 
-function chipStyle(on: boolean) {
+function chipStyle(colors: typeof LIGHT, on: boolean) {
   return {
     display: 'inline-flex',
     alignItems: 'center',

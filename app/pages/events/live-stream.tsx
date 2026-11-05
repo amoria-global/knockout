@@ -1,5 +1,6 @@
 "use client";
 
+import MoneyInput from '../../components/MoneyInput';
 import { minimumAmountMessage } from '@/lib/payments/minimumMessage';
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -10729,17 +10730,26 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 <summary style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
                   Or enter a custom amount ({giftViewCurrency})
                 </summary>
-                <input
-                  type="number"
-                  value={giftAmount}
-                  onChange={(e) => {
-                    setGiftAmount(e.target.value);
-                    if (e.target.value) setSelectedGift(null);
-                  }}
-                  placeholder="Enter amount"
-                  className="gift-modal-amount-input"
-                  style={{ marginTop: '8px' }}
-                />
+                <div style={{ marginTop: '8px' }}>
+                  <MoneyInput
+                    label="Custom amount"
+                    hideLabel
+                    tone="dark"
+                    value={giftAmount}
+                    onChange={(v) => {
+                      setGiftAmount(v);
+                      if (v) setSelectedGift(null);
+                    }}
+                    currencyId={giftViewCurrency}
+                    onCurrencyChange={(code) => setGiftViewCurrency(code as CurrencyCode)}
+                    currencies={GIFT_VIEW_CODES.map((code) => ({ value: code, code, name: code }))}
+                    placeholder="Enter amount"
+                    showLimits={false}
+                    showQuickPick={false}
+                    keepAmountOnCurrencyChange={false}
+                    wholeNumbersOnly
+                  />
+                </div>
               </details>
             </div>
 
