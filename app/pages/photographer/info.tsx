@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { confirmYear } from '../../../lib/farFutureDate';
 
 export default function PhotographerInfoPage(): React.JSX.Element {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function PhotographerInfoPage(): React.JSX.Element {
     e.preventDefault();
 
     if (!isDisabled) {
+      if (!confirmYear(eventDate)) return;
       const params = new URLSearchParams({
         country: country === 'other' ? customCountry : country,
         eventType: eventType === 'other' ? customEventType : eventType,
