@@ -8,6 +8,8 @@
  * returned unchanged.
  */
 
+import { regionBlockFromPrice, type RegionBlock } from '@/lib/regionBlock';
+
 export type EffectivePrice = {
   eventId: string;
   price: number | null;
@@ -16,6 +18,8 @@ export type EffectivePrice = {
   currencySymbol?: string;
   source?: 'COUNTRY' | 'CONTINENT' | 'DEFAULT';
   country?: string;
+  /** Set when the visitor's place is kept out of the event (or could not be confirmed): show the region notice. */
+  block?: RegionBlock | null;
 };
 
 type Raw = Record<string, unknown>;
@@ -32,6 +36,7 @@ function toEffective(d: Raw, fallbackId: string): EffectivePrice {
     currencySymbol: str(d.currencySymbol),
     source: str(d.source) as EffectivePrice['source'],
     country: str(d.country),
+    block: regionBlockFromPrice(d),
   };
 }
 

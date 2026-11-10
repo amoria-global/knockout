@@ -30,6 +30,8 @@ import { useOtpResend } from '@/lib/auth/useOtpResend';
 import OtpInput from '@/app/components/OtpInput';
 import { useOtpRefusal } from '@/lib/auth/useOtpRefusal';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
+import RegionBlockedNotice from '@/app/components/RegionBlockedNotice';
+import { regionBlockFromEvent } from '@/lib/regionBlock';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
@@ -1285,6 +1287,18 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   })();
   const tags = getTagsArray(selectedEvent);
   const photographerName = getPhotographerName(selectedEvent);
+
+  // Kept out of this event (or the place could not be confirmed): no stream, no price, no pay button. The event card's
+  // flags already allow someone who paid before the block began, so they are the ones to trust here.
+  const regionBlock = regionBlockFromEvent(selectedEvent);
+  if (regionBlock) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <RegionBlockedNotice block={regionBlock} onRetry={() => window.location.reload()} />
+      </>
+    );
+  }
 
   return (
     <>
