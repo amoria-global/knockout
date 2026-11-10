@@ -6,6 +6,7 @@ import { WishInvitesField, focusWishInvitesField } from './wishes/WishInvitesFie
 import { WishStyles } from './wishes/WishStyles';
 import { wishInvitesError } from '@/lib/wishes/wishInvites';
 import React, { useState, useEffect, useReducer, useCallback, useRef } from 'react';
+import { confirmYear } from '../../lib/farFutureDate';
 import PaymentCurrencyPreview, { type CurrencyCode, useLiveRates } from './PaymentCurrencyPreview';
 import { useAuth } from '../providers/AuthProvider';
 import { getAuthToken, getRefreshToken } from '@/lib/api/client';
@@ -894,8 +895,18 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   })();
   const gateCanProceed = !!gateDate && !gateDateConflict && !gateDateIsPast;
 
+  // A date the person has already confirmed in this booking is not asked about again on the next slide.
+  const confirmedYears = useRef<Set<string>>(new Set());
+  const yearOk = (ymd: string) => {
+    if (confirmedYears.current.has(ymd)) return true;
+    if (!confirmYear(ymd)) return false;
+    confirmedYears.current.add(ymd);
+    return true;
+  };
+
   const confirmAvailability = () => {
     if (!gateCanProceed) return;
+    if (!yearOk(gateDate)) return;
     // Mirror the picked date into both Quick-Brief and Event-Details date fields so every
     // downstream slide reuses it automatically without asking the user again.
     setBriefDate(gateDate);
@@ -1185,6 +1196,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
   const handleBriefNext = () => {
     if (!briefDate) { setBriefError('Please select an event date'); return; }
+    if (!yearOk(briefDate)) return;
     // Studio sessions happen at the photographer's own studio, so the client
     // doesn't supply a location. it's resolved from the photographer's
     // studio address on the backend.
@@ -1360,6 +1372,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     // Validate date & location when Quick Brief was skipped
     if (!state.quickBrief) {
       if (!evtDate) { setEvtError('Please select an event date'); return; }
+      if (!yearOk(evtDate)) return;
       if (!evtLocation.trim()) { setEvtError('Please enter the event location'); return; }
     }
     if (!evtTitle.trim()) { setEvtError('Please enter an event title'); return; }
