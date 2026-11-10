@@ -2360,6 +2360,9 @@ const Events: React.FC = () => {
                 const priceText = (() => {
                   // Prefer the visitor's geo-resolved price when available.
                   const geo = geoPrices[event.id];
+                  if (geo?.block) {
+                    return { label: '', amount: geo.block.unknown ? 'Location not confirmed' : 'Not available in your region' };
+                  }
                   if (geo && geo.price != null && geo.price > 0) {
                     const gCode = geo.currencyAbbreviation || event.streamFeeCurrencyAbbreviation || 'RWF';
                     return { label: 'From', amount: `${gCode} ${geo.price.toLocaleString()}` };

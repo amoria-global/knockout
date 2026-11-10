@@ -20,6 +20,7 @@ import ViewerInfoModal, { type ViewerInfoData } from '../../components/ViewerInf
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
 import { registerAnonymousViewer, confirmAnonymousPayment, anonymousDeviceCheck, checkAnonymousAccessStatus } from '@/lib/APIs/streams/anonymous-viewer';
 import { getDeviceId } from '@/lib/fingerprint';
+import RegionBlockedNotice from '../../components/RegionBlockedNotice';
 import InternationalPhoneInput, { type PhoneValue } from '../../components/phone/InternationalPhoneInput';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
@@ -913,6 +914,16 @@ function JoinPackageContent(): React.JSX.Element {
   const evCategoryName = selectedEvent.eventCategory?.name || (selectedEvent.eventTags?.split(',')[0]?.trim() || 'Event');
 
   const groupReady = selectedPackage === 'group' && isGroupInputValid();
+
+  // Kept out of this event (or the place could not be confirmed): no price, no pay button.
+  if (geoPrice?.block) {
+    return (
+      <div className="jp-page">
+        <AmoriaKNavbar />
+        <RegionBlockedNotice block={geoPrice.block} onRetry={() => window.location.reload()} />
+      </div>
+    );
+  }
 
   return (
     <div className="jp-page">
