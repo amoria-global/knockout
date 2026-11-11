@@ -114,6 +114,8 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
   const [isMobile, setIsMobile] = useState(false);
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // The profile exists but is still under review. Shown as a state, not reported as a failure.
+  const [profilePending, setProfilePending] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
   const [bookedDates, setBookedDates] = useState<BookedDate[]>([]);
   const [bookedCalendarMonth, setBookedCalendarMonth] = useState(() => {
@@ -137,6 +139,7 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
       }
       setIsLoading(true);
       setFetchError(null);
+      setProfilePending(false);
       try {
         const response = await getPhotographerById(photographerId);
         if (response.success && response.data) {
@@ -145,6 +148,10 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
             ? (rawData.data as Photographer)
             : (response.data as Photographer);
           setPhotographer(photographerData);
+        } else if (response.statusCode === 403) {
+          // This public endpoint is called without a session, so 403 only ever means "profile pending".
+          setProfilePending(true);
+          setFetchError(response.error || 'This profile is awaiting approval.');
         } else {
           setFetchError(response.error || 'Photographer not found');
           toast.error(response.error || 'Photographer not found');
@@ -443,7 +450,7 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
     return (
       <>
         <AmoriaKNavbar />
-        <ProfileError message={fetchError || 'Photographer not found'} />
+        <ProfileError message={fetchError || 'Photographer not found'} pending={profilePending} />
       </>
     );
   }
@@ -2353,25 +2360,27 @@ function ProfileSkeleton({ loadingLabel }: { loadingLabel: string }) {
   );
 }
 
-function ProfileError({ message }: { message: string }) {
+function ProfileError({ message, pending = false }: { message: string; pending?: boolean }) {
   return (
     <div className="vp-err-root">
       <div className="vp-err-card" role="alert">
         <div className="vp-err-icon">
-          <i className="bi bi-exclamation-triangle-fill" />
+          <i className={pending ? 'bi bi-hourglass-split' : 'bi bi-exclamation-triangle-fill'} />
         </div>
-        <h2>Could not load profile</h2>
+        <h2>{pending ? 'Profile pending' : 'Could not load profile'}</h2>
         <p>{message}</p>
         <div className="vp-err-actions">
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== 'undefined') window.location.reload();
-            }}
-            className="vp-err-btn vp-err-btn--primary"
-          >
-            <i className="bi bi-arrow-clockwise" /> Try again
-          </button>
+          {!pending && (
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') window.location.reload();
+              }}
+              className="vp-err-btn vp-err-btn--primary"
+            >
+              <i className="bi bi-arrow-clockwise" /> Try again
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
