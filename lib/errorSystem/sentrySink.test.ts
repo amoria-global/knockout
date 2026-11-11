@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildEnvelope, createSentrySink, installCrashReporting, parseDsn } from './sentrySink';
+import { buildEnvelope, createSentrySink, installCrashReporting, isNoise, parseDsn } from './sentrySink';
 import { presentError } from './presentError';
 import { setErrorSink } from './report';
 
@@ -151,3 +151,35 @@ describe('the server support code', () => {
     expect(p.supportCode).toMatch(/^[A-Z2-9]{3}-[A-Z2-9]{3}$/);
   });
 });
+
+/** What Sentry showed in production (LANDING-2 to LANDING-5): other people's scripts and dropped connections. */
+describe('isNoise', () => {
+  const crash = (message: string, stack = '') => ({ kind: 'crash' as const, where: 'window.error', detail: { message, stack } });
+
+  it.each([
+    ['an in-app browser script', crash('Error invoking postMessage: Java object is gone', 'Error\n    at sendDataToNative (iabjs://navigation_performance_logger_android:1:11722)')],
+    ['a browser extension', crash('x is not a function', 'at f (chrome-extension://abcdef/content.js:1:1)')],
+    ['a cross-origin script error', crash('Script error.')],
+    ['the iOS in-app bridge with no frame of ours', crash("undefined is not an object (evaluating 'window.webkit.messageHandlers')")],
+    ['a dropped connection', crash('Failed to fetch')],
+  ])('drops %s', (_name, report) => {
+    expect(isNoise(report)).toBe(true);
+  });
+
+  it.each([
+    ['a real crash from our bundle', crash("Cannot read properties of undefined (reading 'id')", 'at Page (https://connekyt.com/_next/static/chunks/app.js:1:1)')],
+    ['the iOS bridge called from our bundle', crash("undefined is not an object (evaluating 'window.webkit.messageHandlers')", 'at x (https://connekyt.com/_next/static/chunks/app.js:1:1)')],
+    ['a failure we handled and showed', { kind: 'toast' as const, where: 'pay', detail: { message: 'Failed to fetch' } }],
+  ])('keeps %s', (_name, report) => {
+    expect(isNoise(report)).toBe(false);
+  });
+
+  it('never reaches the network', () => {
+    const fetchImpl = vi.fn(async () => ({}) as Response) as unknown as typeof fetch;
+    const sink = createSentrySink({ dsn: DSN, app: 'landing', platform: 'web', fetchImpl })!;
+    sink(crash('Script error.'));
+    sink(crash('Failed to fetch'));
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
