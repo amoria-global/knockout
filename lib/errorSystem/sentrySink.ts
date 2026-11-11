@@ -72,6 +72,27 @@ export function buildEnvelope(report: ErrorReport, o: SentryOptions, nowMs: numb
   return { id, body: [JSON.stringify(header), JSON.stringify({ type: 'event' }), JSON.stringify(event)].join('\n') };
 }
 
+/**
+ * Failures that are not ours and that nobody can act on: a script injected by an in-app browser or a browser
+ * extension, a cross-origin "Script error." with no stack, a bare network drop. They are dropped before they leave the
+ * page. Only uncaught errors (`kind: 'crash'`) are judged; a failure we handled and showed the person is always sent.
+ */
+export function isNoise(report: ErrorReport): boolean {
+  if (report.kind !== 'crash') return false;
+  const d = (report.detail ?? {}) as { message?: unknown; stack?: unknown };
+  const message = typeof d.message === 'string' ? d.message : '';
+  const stack = typeof d.stack === 'string' ? d.stack : '';
+  // Injected by an in-app browser (Facebook, Instagram, ...) or an extension, never by our bundle.
+  if (/iabjs:\/\/|(?:chrome|moz|safari|safari-web)-extension:\/\//.test(stack)) return true;
+  // Cross-origin script failure: the browser hides the message and the stack, so there is nothing to act on.
+  if (message === 'Script error.' || message === 'Script error') return true;
+  // The iOS in-app browser's bridge missing from a page it did not inject into, with no frame from our bundle.
+  if (/window\.webkit\.messageHandlers/.test(message) && !stack.includes('/_next/')) return true;
+  // A dropped connection or a cancelled request, not a defect.
+  if (/^(Failed to fetch|Load failed|NetworkError when attempting to fetch resource\.?)$/.test(message)) return true;
+  return false;
+}
+
 /** A sink that posts each report once, at most `perMinute` a minute, and never twice for the same failure in a minute. */
 export function createSentrySink(o: SentryOptions): ErrorSink | null {
   const dsn = parseDsn(o.dsn);
@@ -85,6 +106,7 @@ export function createSentrySink(o: SentryOptions): ErrorSink | null {
   const seen = new Map<string, number>();
 
   return (report) => {
+    if (isNoise(report)) return;
     const t = now();
     while (recent.length && t - recent[0] > 60_000) recent.shift();
     if (recent.length >= limit) return;
