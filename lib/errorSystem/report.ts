@@ -1,4 +1,5 @@
 import type { Presentation } from './presentError';
+import { captureException, isInitialized, withScope } from '@sentry/nextjs';
 
 /**
  * Where failures are reported. The screen shows a support code; the same code goes out with the event, so a person can
@@ -78,6 +79,20 @@ export function reportError(error: unknown, presentation: Presentation, where?: 
  * support code is the one the person sees on screen, so reading it out finds exactly this event.
  */
 export function reportPageCrash(error: unknown, supportCode: string, digest?: string): void {
+  // With the SDK running, send the real error: its stack frames are what the uploaded source maps turn into file and line.
+  try {
+    if (isInitialized()) {
+      withScope((scope) => {
+        scope.setLevel('fatal');
+        scope.setTags({ kind: 'page.crash', where: 'page.crash', support_code: supportCode });
+        if (digest) scope.setExtra('digest', digest);
+        captureException(error);
+      });
+      return;
+    }
+  } catch {
+    /* fall through to the plain sender */
+  }
   if (!sink) return;
   try {
     const e = error as { name?: string; message?: string; stack?: string } | null | undefined;
