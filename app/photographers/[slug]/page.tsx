@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import ViewProfilePage from '../../pages/photographer/view-profile';
 import {
-  resolveSlug, fetchPhotographerForSeo, photographerDisplayName,
+  resolveSlug, fetchPhotographerForSeo, photographerUnavailableReason, photographerDisplayName,
   clamp, absUrl, photographerUrl, SITE_URL, SITE_NAME,
 } from '@/lib/seo/seo';
 
@@ -27,7 +27,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!r) return { title: 'Photographer', description: `Book photographers on ${SITE_NAME}.` };
 
   const p = await fetchPhotographerForSeo(r.id);
-  if (!p) return { title: r.title || 'Photographer' };
+  if (!p) {
+    // The slug resolves but the profile does not load. If it is awaiting approval (or gone), keep it out of search and
+    // do not print the person's name in the title: they have not been approved to appear publicly. A passing outage
+    // returns null from the check, so a good page never drops out of search by accident.
+    const gone = await photographerUnavailableReason(r.id);
+    return gone
+      ? { title: gone === 'pending' ? 'Profile pending' : 'Photographer', robots: { index: false, follow: false } }
+      : { title: r.title || 'Photographer' };
+  }
 
   const name = photographerDisplayName(p);
   const title = `Book - ${name}`;
