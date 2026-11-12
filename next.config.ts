@@ -1,7 +1,20 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
+import { withSentryConfig } from '@sentry/nextjs/config';
+import { execSync } from 'node:child_process';
 
 const withNextIntl = createNextIntlPlugin('./i18n.ts');
+
+// The release Sentry files every error under: the commit being built, read from git, so no variable has to be set by
+// hand. Outside a git checkout it is simply absent.
+function gitSha(): string | undefined {
+  try {
+    return execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+const release = process.env.SENTRY_RELEASE || gitSha();
 
 // Security headers applied to every response.
 // CSP is kept relatively permissive while we roll it out - tighten after 1 week of
@@ -66,6 +79,8 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // Lets the plain error sender (lib/errorSystem/sentrySink.ts) tag its events with the same release as the SDK's.
+  ...(release ? { env: { NEXT_PUBLIC_SENTRY_RELEASE: release } } : {}),
   turbopack: {
     root: __dirname,
   },
@@ -103,4 +118,21 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+const configured = withNextIntl(nextConfig);
+
+// Source maps are only produced when they can be uploaded and removed again. The Sentry plugin turns browser source
+// maps on, and unless it deletes them after upload they would be served to every visitor, so without an auth token
+// (local builds, CI) the plugin is not applied at all and no maps exist.
+export default process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(configured, {
+      org: 'amoria-global-tech',
+      project: 'connekyt-landing',
+      sentryUrl: 'https://de.sentry.io/',
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+      telemetry: false,
+      widenClientFileUpload: true,
+      release: release ? { name: release } : undefined,
+      sourcemaps: { deleteSourcemapsAfterUpload: true },
+    })
+  : configured;

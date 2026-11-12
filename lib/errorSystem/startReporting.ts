@@ -1,4 +1,5 @@
 import { setErrorSink } from './report';
+import { isInitialized } from '@sentry/nextjs';
 import { createSentrySink, installCrashReporting } from './sentrySink';
 
 let started = false;
@@ -24,6 +25,8 @@ export function startErrorReporting(dsn: string | undefined = process.env.NEXT_P
   if (!sink) return false;
   started = true;
   setErrorSink(sink);
-  installCrashReporting(sink);
+  // The SDK already listens for uncaught errors and rejections, with real stack frames. Listening twice would report each
+  // one twice, so the plain sender only does it when the SDK is not running.
+  if (!isInitialized()) installCrashReporting(sink);
   return true;
 }
