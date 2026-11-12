@@ -50,6 +50,7 @@ function eventId(random: () => number = Math.random): string {
 const APP_BREAKING_WHERE = new Set(['js.fatal', 'page.crash', 'app.crash']);
 
 export function isAppBreaking(report: ErrorReport): boolean {
+  if (report.kind === 'page.crash') return true;
   return report.kind === 'crash' && report.where !== undefined && APP_BREAKING_WHERE.has(report.where);
 }
 

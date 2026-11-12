@@ -7,6 +7,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from '@/lib/api/logger';
+import { PageCrash } from './errors/PageCrash';
 
 /**
  * Error boundary state
@@ -164,14 +165,12 @@ export class ErrorBoundary extends Component<
         return fallback;
       }
 
-      // Render default fallback
-      return (
-        <DefaultErrorFallback
-          error={error}
-          onRetry={this.handleRetry}
-          showDetails={showDetails ?? process.env.NODE_ENV === 'development'}
-        />
-      );
+      // Default: the shared "Something went wrong on this page" screen, which also reports the crash. In development
+      // the old detail view is kept, because an engineer wants the stack there.
+      if (showDetails ?? process.env.NODE_ENV === 'development') {
+        return <DefaultErrorFallback error={error} onRetry={this.handleRetry} showDetails />;
+      }
+      return <PageCrash error={error} retry={this.handleRetry} />;
     }
 
     return children;
