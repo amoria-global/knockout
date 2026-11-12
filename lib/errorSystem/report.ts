@@ -71,3 +71,28 @@ export function reportError(error: unknown, presentation: Presentation, where?: 
     /* a broken tracker must not break the app */
   }
 }
+
+/**
+ * A page that crashed and was replaced by the "Something went wrong on this page" screen. Sent as `kind: 'page.crash'`,
+ * which the sender tags `fatal`: the whole page failed, unlike a stray script error on a page that keeps working. The
+ * support code is the one the person sees on screen, so reading it out finds exactly this event.
+ */
+export function reportPageCrash(error: unknown, supportCode: string, digest?: string): void {
+  if (!sink) return;
+  try {
+    const e = error as { name?: string; message?: string; stack?: string } | null | undefined;
+    sink({
+      supportCode,
+      kind: 'page.crash',
+      where: 'page.crash',
+      detail: {
+        name: e?.name,
+        message: scrubString(String(e?.message ?? 'unknown')),
+        stack: scrubString(String(e?.stack ?? '').slice(0, 2000)),
+        ...(digest ? { digest } : {}),
+      },
+    });
+  } catch {
+    /* a broken tracker must not break the app */
+  }
+}
