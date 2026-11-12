@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildEnvelope, createSentrySink, installCrashReporting, isNoise, parseDsn } from './sentrySink';
+import { buildEnvelope, createSentrySink, installCrashReporting, isAppBreaking, isNoise, parseDsn } from './sentrySink';
 import { presentError } from './presentError';
 import { setErrorSink } from './report';
 
@@ -183,3 +183,18 @@ describe('isNoise', () => {
   });
 });
 
+describe('severity', () => {
+  const level = (r: Parameters<typeof buildEnvelope>[0]) =>
+    JSON.parse(buildEnvelope(r, { dsn: DSN, app: 'landing', platform: 'web' }, 1).body.split('\n')[2]).level;
+
+  it('is error for an uncaught error or rejection on a page that is still running', () => {
+    expect(level({ kind: 'crash', where: 'window.error', detail: {} })).toBe('error');
+    expect(level({ kind: 'crash', where: 'window.unhandledrejection', detail: {} })).toBe('error');
+  });
+
+  it('stays fatal when the whole app or page broke', () => {
+    expect(level({ kind: 'crash', where: 'page.crash', detail: {} })).toBe('fatal');
+    expect(level({ kind: 'crash', where: 'js.fatal', detail: {} })).toBe('fatal');
+    expect(isAppBreaking({ kind: 'toast', where: 'page.crash', detail: {} })).toBe(false);
+  });
+});

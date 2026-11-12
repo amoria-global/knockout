@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import ViewProfilePage from '../../../pages/photographer/view-profile';
 import {
-  fetchPhotographerForSeo, photographerDisplayName, clamp, absUrl,
+  fetchPhotographerForSeo, photographerUnavailableReason, photographerDisplayName, clamp, absUrl,
   SITE_URL, SITE_NAME,
 } from '@/lib/seo/seo';
 
@@ -21,7 +21,16 @@ export async function generateMetadata({ searchParams }: { searchParams: SP }): 
   if (!id) return { title: 'Photographer' };
 
   const p = await fetchPhotographerForSeo(id);
-  if (!p) return { title: 'Photographer', description: `Book photographers on ${SITE_NAME}.` };
+  if (!p) {
+    // A profile awaiting approval (or one that does not exist) must not be indexed. A passing outage returns null
+    // from the check, so it keeps the default robots rules and nothing drops out of search by accident.
+    const gone = await photographerUnavailableReason(id);
+    return {
+      title: gone === 'pending' ? 'Profile pending' : 'Photographer',
+      description: `Book photographers on ${SITE_NAME}.`,
+      ...(gone ? { robots: { index: false, follow: false } } : {}),
+    };
+  }
 
   const name = photographerDisplayName(p);            // e.g. "Legacy Studio"
   const title = `Book - ${name}`;                     // → "Book - Legacy Studio | Amoria Connekyt"

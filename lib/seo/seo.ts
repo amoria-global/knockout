@@ -94,6 +94,29 @@ export async function fetchPhotographerForSeo(id: string): Promise<SeoPhotograph
   return unwrap<SeoPhotographer>(await getJson(`/api/remote/public/photographers/list/${encodeURIComponent(id)}`));
 }
 
+/**
+ * Why a photographer page has nothing to show, when the backend says so plainly: `pending` (profile awaiting
+ * approval, HTTP 403 with code PROFILE_PENDING) or `missing` (404). Anything else, a timeout or a 5xx, returns null so
+ * a passing outage is never mistaken for a page that should drop out of search. Call it only after
+ * `fetchPhotographerForSeo` came back empty.
+ */
+export async function photographerUnavailableReason(id: string): Promise<'pending' | 'missing' | null> {
+  try {
+    const res = await fetch(backendUrl(`/api/remote/public/photographers/list/${encodeURIComponent(id)}`), {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (res.status === 404) return 'missing';
+    if (res.status === 403) {
+      const j = (await res.json().catch(() => null)) as { errorCode?: string; code?: string } | null;
+      return j && (j.errorCode === 'PROFILE_PENDING' || j.code === 'PROFILE_PENDING') ? 'pending' : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function listOf(j: unknown): Record<string, unknown>[] {
   const root = unwrap<Record<string, unknown>>(j) as Record<string, unknown> | null;
   if (!root) return [];
