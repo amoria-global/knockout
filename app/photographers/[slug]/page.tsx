@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { notFound, redirect } from 'next/navigation';
-import ViewProfilePage from '../../pages/photographer/view-profile';
+import ViewProfilePage, { ProfilePendingScreen } from '../../pages/photographer/view-profile';
 import {
   resolveSlug, fetchPhotographerForSeo, photographerUnavailableReason, photographerDisplayName,
   clamp, absUrl, photographerUrl, SITE_URL, SITE_NAME,
@@ -25,6 +25,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { slug } = await params;
   const r = await resolveSlug('photographer', slug);
   if (!r) return { title: 'Photographer', description: `Book photographers on ${SITE_NAME}.` };
+  // Awaiting approval: the backend sends no name, so there is nothing to show and nothing to index.
+  if (r.pending) return { title: 'Profile pending', robots: { index: false, follow: false } };
 
   const p = await fetchPhotographerForSeo(r.id);
   if (!p) {
@@ -71,6 +73,7 @@ export default async function Page({ params }: { params: Params }) {
   const { slug } = await params;
   const r = await resolveSlug('photographer', slug);
   if (!r) notFound();
+  if (r.pending) return <ProfilePendingScreen />;
   if (r.redirect) redirect(photographerUrl(r.redirect));
 
   const p = await fetchPhotographerForSeo(r.id);
