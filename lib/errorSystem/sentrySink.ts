@@ -42,6 +42,17 @@ function eventId(random: () => number = Math.random): string {
   return s;
 }
 
+/**
+ * `fatal` is kept for a failure that took the whole app or page down. An uncaught error from one component or script
+ * (`window.error`, `window.unhandledrejection`) is an ordinary `error`: the page is still running. A caller that knows
+ * the app broke reports `kind: 'crash'` with one of these `where` values.
+ */
+const APP_BREAKING_WHERE = new Set(['js.fatal', 'page.crash', 'app.crash']);
+
+export function isAppBreaking(report: ErrorReport): boolean {
+  return report.kind === 'crash' && report.where !== undefined && APP_BREAKING_WHERE.has(report.where);
+}
+
 /** The two-line-plus envelope Sentry's ingest takes. Exported for tests. */
 export function buildEnvelope(report: ErrorReport, o: SentryOptions, nowMs: number): { id: string; body: string } {
   const id = eventId();
@@ -59,7 +70,7 @@ export function buildEnvelope(report: ErrorReport, o: SentryOptions, nowMs: numb
     event_id: id,
     timestamp: nowMs / 1000,
     platform: 'javascript',
-    level: report.kind === 'crash' ? 'fatal' : 'error',
+    level: isAppBreaking(report) ? 'fatal' : 'error',
     logger: 'connekyt.errors',
     message,
     environment: o.environment ?? 'production',
