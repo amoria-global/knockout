@@ -2360,6 +2360,19 @@ function ProfileSkeleton({ loadingLabel }: { loadingLabel: string }) {
   );
 }
 
+/** Shown for a slug whose profile is awaiting approval. The backend sends no details, so this has nothing to load. */
+export function ProfilePendingScreen() {
+  return (
+    <>
+      <AmoriaKNavbar />
+      <ProfileError
+        pending
+        message="This photographer's profile is still being reviewed. Choose another photographer or check back soon."
+      />
+    </>
+  );
+}
+
 function ProfileError({ message, pending = false }: { message: string; pending?: boolean }) {
   return (
     <div className="vp-err-root">

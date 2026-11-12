@@ -144,6 +144,11 @@ export interface SlugResolution {
   type: string;
   title?: string | null;
   description?: string | null;
+  /**
+   * The slug belongs to a photographer whose profile is not approved. The backend sends nothing else about them, so
+   * `id` is empty and the page must show "Profile pending" (noindex) without fetching anything.
+   */
+  pending?: boolean;
 }
 
 export type SluggableType = 'event' | 'photographer' | 'stream' | 'gallery';
@@ -158,6 +163,9 @@ export async function resolveSlug(type: SluggableType, slug: string): Promise<Sl
   const r = await getJson(`/api/remote/public/seo/resolve?type=${encodeURIComponent(type)}&slug=${encodeURIComponent(slug)}`);
   if (!r || typeof r !== 'object') return null;
   const o = r as Record<string, unknown>;
+  if (o.status === 'PROFILE_PENDING') {
+    return { id: '', slug, redirect: null, type, title: null, description: null, pending: true };
+  }
   if (typeof o.id !== 'string' || typeof o.slug !== 'string') return null;
   return {
     id: o.id,
