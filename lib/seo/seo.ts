@@ -83,6 +83,8 @@ export interface SeoPhotographer {
   profilePicture?: string | null;
   coverPicture?: string | null;
   address?: string | null;
+  /** The town or area a photographer works in. The address text is no longer public, so SEO data uses this. */
+  city?: string | null;
   updatedAt?: string;
 }
 
