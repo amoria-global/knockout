@@ -2198,12 +2198,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                 }}
                                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: 'none', borderBottom: `1px solid ${INPUT_BORDER}`, background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
                               >
-                                <i className={`bi ${isFirst ? 'bi-stars' : 'bi-geo-alt-fill'}`} style={{ color: isFirst ? ACCENT : PINK }} />
+                                <i className={`bi ${isFirst ? 'bi-stars' : 'bi-geo-alt-fill'}`} style={{ color: isFirst ? ACCENT : '#F20C8F' }} />
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRIMARY }}>{loc.title}</div>
                                   <div style={{ fontSize: 11.5, color: TEXT_MUTED }}>{loc.subtitle}</div>
                                 </div>
-                                <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: isFirst ? 'rgba(8,58,133,0.10)' : 'rgba(242,12,143,0.10)', color: isFirst ? ACCENT : PINK }}>
+                                <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: isFirst ? 'rgba(8,58,133,0.10)' : 'rgba(242,12,143,0.10)', color: isFirst ? ACCENT : '#F20C8F' }}>
                                   {isFirst ? 'Suggestion' : 'Google Maps'}
                                 </span>
                               </button>
@@ -2931,12 +2931,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                               }}
                               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: 'none', borderBottom: `1px solid ${INPUT_BORDER}`, background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
                             >
-                              <i className={`bi ${isFirst ? 'bi-stars' : 'bi-geo-alt-fill'}`} style={{ color: isFirst ? ACCENT : PINK }} />
+                              <i className={`bi ${isFirst ? 'bi-stars' : 'bi-geo-alt-fill'}`} style={{ color: isFirst ? ACCENT : '#F20C8F' }} />
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRIMARY }}>{loc.title}</div>
                                 <div style={{ fontSize: 11.5, color: TEXT_MUTED }}>{loc.subtitle}</div>
                               </div>
-                              <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: isFirst ? 'rgba(8,58,133,0.10)' : 'rgba(242,12,143,0.10)', color: isFirst ? ACCENT : PINK }}>
+                              <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: isFirst ? 'rgba(8,58,133,0.10)' : 'rgba(242,12,143,0.10)', color: isFirst ? ACCENT : '#F20C8F' }}>
                                 {isFirst ? 'Suggestion' : 'Google Maps'}
                               </span>
                             </button>

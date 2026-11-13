@@ -1567,6 +1567,17 @@ const Photographers: React.FC = () => {
           outline-offset: 2px;
           border-radius: 8px;
         }
+        .ph-hero-btn-direct {
+          background: #ffffff !important;
+          color: #083A85 !important;
+          border: 2px solid #ffffff !important;
+        }
+        .ph-hero-btn-direct:hover {
+          background: #f8fafc !important;
+          color: #083A85 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 10px 26px rgba(0, 0, 0, 0.26) !important;
+        }
       `}</style>
 
       <AmoriaKNavbar />
@@ -1600,6 +1611,7 @@ const Photographers: React.FC = () => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 18, position: 'relative', zIndex: 2 }}>
           <button
             type="button"
+            className="ph-hero-btn-direct"
             onClick={() => {
               setWizardPhotographerId(undefined);
               setShowWizard(true);
@@ -1610,18 +1622,17 @@ const Photographers: React.FC = () => {
               gap: 8,
               padding: '9px 18px',
               borderRadius: 999,
-              background: 'rgba(255, 255, 255, 0.16)',
-              border: '1.5px solid rgba(255, 255, 255, 0.45)',
-              backdropFilter: 'blur(8px)',
-              color: '#ffffff',
+              background: '#ffffff',
+              border: '2px solid #ffffff',
+              color: '#083A85',
               fontWeight: 700,
               fontSize: 13.5,
               cursor: 'pointer',
-              boxShadow: '0 6px 18px rgba(0, 0, 0, 0.14)',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.20)',
               transition: 'all 0.18s ease',
             }}
           >
-            <i className="bi bi-search" aria-hidden="true" /> Find a Photographer: you choose and book directly
+            <i className="bi bi-search" aria-hidden="true" style={{ color: '#083A85' }} /> Find a Photographer: you choose and book directly
           </button>
           <button
             type="button"

@@ -702,7 +702,7 @@ export default function HybridOfferWizardModal({
         );
         await executePublish();
       } else {
-        const unverifiedId = unverifiedLoginCustomerId(res);
+        const unverifiedId = unverifiedLoginCustomerId(res.data);
         if (unverifiedId) {
           setOtpCustomerId(unverifiedId);
           setOtpEmail(loginEmail);
