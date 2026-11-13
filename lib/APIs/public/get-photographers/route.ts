@@ -33,6 +33,8 @@ export interface Photographer {
   profilePicture?: string | null;
   coverPicture?: string | null;
   address?: string | null;
+  /** The town or area a photographer works in. The address text is private and no longer sent on public profiles. */
+  city?: string | null;
   about?: string | null;
   joinedFrom?: string;
   professionalPhilosophy?: string | null;

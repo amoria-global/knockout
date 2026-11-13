@@ -1060,7 +1060,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       if (res.success && res.data) {
         const raw = res.data as unknown as Record<string, unknown>;
         const pData = (raw?.data ? raw.data : res.data) as Photographer;
-        if (pData.address) setEvtLocation(pData.address);
+        if (pData.city) setEvtLocation(pData.city);
       }
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2352,7 +2352,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                                 <i className="bi bi-star-fill" style={{ color: '#FBBF24', fontSize: 11 }}></i>
                                 <span style={{ color: TEXT_MUTED, fontSize: 12 }}>{p.rating?.toFixed(1) || '-'}</span>
-                                {p.address && <span style={{ color: TEXT_MUTED, fontSize: 12 }}> · {p.address}</span>}
+                                {p.city && <span style={{ color: TEXT_MUTED, fontSize: 12 }}> · {p.city}</span>}
                               </div>
                               {(() => {
                                 // Pricing shown in the card switches with the
@@ -3150,7 +3150,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 4px' }}>
                       {previewPhotographer.firstName} {previewPhotographer.lastName}
                     </h3>
-                    {previewPhotographer.address && <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}><i className="bi bi-geo-alt" style={{ marginRight: 4 }}></i>{previewPhotographer.address}</p>}
+                    {previewPhotographer.city && <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}><i className="bi bi-geo-alt" style={{ marginRight: 4 }}></i>{previewPhotographer.city}</p>}
                     <div style={{ display: 'flex', gap: 12, fontSize: 13 }}>
                       <span style={{ color: '#FBBF24' }}><i className="bi bi-star-fill" style={{ marginRight: 4 }}></i>{previewPhotographer.rating?.toFixed(1) || '-'}</span>
                       <span style={{ color: TEXT_SECONDARY }}>{previewPhotographer.completedEvents || 0} events</span>

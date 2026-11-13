@@ -71,7 +71,7 @@ export default async function Page({ searchParams }: { searchParams: SP }) {
     '@type': 'ProfessionalService',
     name: photographerDisplayName(p),
     description: clamp(p.about || p.professionalPhilosophy || `Book ${photographerDisplayName(p)} on ${SITE_NAME}.`),
-    ...(p.address ? { areaServed: p.address } : {}),
+    ...(p.city ? { areaServed: p.city } : {}),
     ...(p.profilePicture ? { image: absUrl(p.profilePicture) } : {}),
     url: `${SITE_URL}/user/photographers/view-profile?id=${encodeURIComponent(p.id)}`,
     provider: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },

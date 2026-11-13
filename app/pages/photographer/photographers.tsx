@@ -524,7 +524,7 @@ const Photographers: React.FC = () => {
     `${photographer.firstName} ${photographer.lastName}`;
 
   const getPhotographerLocation = (photographer: Photographer) =>
-    photographer.address || 'Location not specified';
+    photographer.city || 'Location not specified';
 
   const getProfileImage = (photographer: Photographer): string | null => {
     if (photographer.profilePicture && !photographer.profilePicture.includes('/null')) {

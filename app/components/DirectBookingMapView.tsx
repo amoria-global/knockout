@@ -161,7 +161,7 @@ export default function DirectBookingMapView({
             longitude: pLng,
             distanceKm: dist,
             distanceFormatted: `${dist.toFixed(1)} km away`,
-            city: p.address || 'Kigali',
+            city: p.city || 'Kigali',
             country: 'Rwanda',
             specialties: (p.specialties || []).map((s: any) => typeof s === 'string' ? s : s.name),
             rating: p.rating ?? 4.8,

@@ -272,9 +272,9 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
       : '',
     location: (() => {
       if (!photographer) return '';
-      if (photographer.address && cities.length > 0) {
+      if (photographer.city && cities.length > 0) {
         const matchedCity = cities.find((c) =>
-          photographer.address?.toLowerCase().includes(c.name.toLowerCase())
+          photographer.city?.toLowerCase().includes(c.name.toLowerCase())
         );
         if (matchedCity) {
           return matchedCity.country
@@ -282,7 +282,7 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
             : matchedCity.name;
         }
       }
-      return photographer.address || '';
+      return photographer.city || '';
     })(),
     eventsCompleted: photographer?.completedEvents ?? photographer?.projects?.length ?? 0,
     // Backend red-day model: 'booked' when today is at capacity or the
@@ -377,7 +377,7 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
               id: 1,
               position: photographer.customerType || 'Photographer',
               company: 'Self-employed',
-              location: photographer.address || '',
+              location: photographer.city || '',
               startDate: photographer.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
               endDate: 'Present',
               description: '',
