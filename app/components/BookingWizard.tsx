@@ -1836,8 +1836,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 360, margin: '0 auto' }}>
                   <button onClick={() => {
                     const dashboardUrl = (process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com').replace(/\/$/, '');
-                    const userType = (user?.customerType || 'Client')
-                      .replace(/([A-Z])/g, (_m: string, l: string, i: number) => (i > 0 ? '-' : '') + l.toLowerCase());
+                    const rawRole = (user?.customerType || 'client').trim().toLowerCase().replace(/_/g, '-');
+                    const userType =
+                      rawRole === 'photographer' || rawRole === 'videographer'
+                        ? 'photographer'
+                        : rawRole === 'event-coordinator' || rawRole === 'eventcoordinator' || rawRole === 'coordinator' || rawRole === 'ec'
+                          ? 'event-coordinator'
+                          : 'client';
                     const targetPath = state.createdEventId
                       ? `${dashboardUrl}/user/${userType}/events/${encodeURIComponent(state.createdEventId)}${paymentDeclarationId ? '' : '?pay=1'}`
                       : `${dashboardUrl}/user/${userType}/events`;
@@ -1847,8 +1852,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   </button>
                   <button onClick={() => {
                     const dashboardUrl = (process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com').replace(/\/$/, '');
-                    const userType = (user?.customerType || 'Client')
-                      .replace(/([A-Z])/g, (_m: string, l: string, i: number) => (i > 0 ? '-' : '') + l.toLowerCase());
+                    const rawRole = (user?.customerType || 'client').trim().toLowerCase().replace(/_/g, '-');
+                    const userType =
+                      rawRole === 'photographer' || rawRole === 'videographer'
+                        ? 'photographer'
+                        : rawRole === 'event-coordinator' || rawRole === 'eventcoordinator' || rawRole === 'coordinator' || rawRole === 'ec'
+                          ? 'event-coordinator'
+                          : 'client';
                     window.location.href = `${dashboardUrl}/user/${userType}/events`;
                   }} style={btnSecondary}>
                     View All My Events

@@ -931,8 +931,13 @@ export default function HybridOfferWizardModal({
 
   const redirectToDashboardCandidates = (eventId: string, directToDetail = true) => {
     const dashboardUrl = (process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com').replace(/\/$/, '');
-    const userRole = (user?.customerType || 'Client')
-      .replace(/([A-Z])/g, (_m: string, l: string, i: number) => (i > 0 ? '-' : '') + l.toLowerCase());
+    const rawRole = (user?.customerType || 'client').trim().toLowerCase().replace(/_/g, '-');
+    const userRole =
+      rawRole === 'photographer' || rawRole === 'videographer'
+        ? 'photographer'
+        : rawRole === 'event-coordinator' || rawRole === 'eventcoordinator' || rawRole === 'coordinator' || rawRole === 'ec'
+          ? 'event-coordinator'
+          : 'client';
     const targetUrl = directToDetail
       ? `${dashboardUrl}/user/${userRole}/events/${encodeURIComponent(eventId)}?candidates=1`
       : `${dashboardUrl}/user/${userRole}/events?candidates=${encodeURIComponent(eventId)}`;
