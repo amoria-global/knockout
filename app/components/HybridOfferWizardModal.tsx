@@ -245,6 +245,7 @@ export default function HybridOfferWizardModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [result, setResult] = useState<{ eventId: string; invited: number; status: string } | null>(null);
   const createdEventIdRef = useRef<string | null>(null);
+  const bodyScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Inline Auth states (when user clicks Publish while logged out)
   const [authStep, setAuthStep] = useState<'login' | 'signup' | 'otp'>('login');
@@ -270,6 +271,13 @@ export default function HybridOfferWizardModal({
   const updateDraft = useCallback((patch: Partial<HybridOfferDraft>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
   }, []);
+
+  // Always reset scroll position to the top when advancing or returning between slides/steps
+  useEffect(() => {
+    if (bodyScrollRef.current) {
+      bodyScrollRef.current.scrollTop = 0;
+    }
+  }, [step, authStep]);
 
   // Load options
   useEffect(() => {
@@ -980,6 +988,7 @@ export default function HybridOfferWizardModal({
       {/* Option 1: Browse Photographers (Direct) */}
       <button
         type="button"
+        data-ck-shape="card"
         onClick={() => {
           onClose();
           onChooseBrowse?.();
@@ -1033,6 +1042,7 @@ export default function HybridOfferWizardModal({
       {/* Option 2: Create Your Event Offer (Post My Event) */}
       <button
         type="button"
+        data-ck-shape="card"
         onClick={() => setStep('session')}
         style={{
           display: 'flex',
@@ -1092,6 +1102,7 @@ export default function HybridOfferWizardModal({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14 }}>
         <button
           type="button"
+          data-ck-shape="card"
           onClick={() => {
             const firstPreset = draft.clientType === 'ORGANIZATION' ? 'Corporate Headshots' : 'Studio Portrait';
             updateDraft({
@@ -1110,13 +1121,15 @@ export default function HybridOfferWizardModal({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 12,
             textAlign: 'left',
-            padding: 18,
+            padding: 20,
             borderRadius: 18,
-            border: `2px solid rgba(8,58,133,0.28)`,
+            border: `2px solid rgba(8,58,133,0.22)`,
             background: BG_CARD,
             cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(8,58,133,0.06)',
+            transition: 'all 0.18s ease',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -1140,6 +1153,7 @@ export default function HybridOfferWizardModal({
 
         <button
           type="button"
+          data-ck-shape="card"
           onClick={() => {
             const firstPreset = draft.clientType === 'ORGANIZATION' ? 'Conference' : 'Wedding';
             updateDraft({
@@ -1158,13 +1172,15 @@ export default function HybridOfferWizardModal({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 12,
             textAlign: 'left',
-            padding: 18,
+            padding: 20,
             borderRadius: 18,
-            border: `2px solid rgba(242,12,143,0.35)`,
+            border: `2px solid rgba(242,12,143,0.28)`,
             background: BG_CARD,
             cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(242,12,143,0.06)',
+            transition: 'all 0.18s ease',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -1217,6 +1233,7 @@ export default function HybridOfferWizardModal({
                 <button
                   key={sType}
                   type="button"
+                  data-ck-shape="card"
                   onClick={() => {
                     const presetsForNext = getEventTypePresetsForClient(draft.clientType, sType);
                     const stillValid = presetsForNext.some(
@@ -1266,6 +1283,7 @@ export default function HybridOfferWizardModal({
                 <button
                   key={type}
                   type="button"
+                  data-ck-shape="card"
                   onClick={() => {
                     const nextPresets = getEventTypePresetsForClient(type, draft.sessionType);
                     const existsInNext = nextPresets.some(
@@ -1324,6 +1342,7 @@ export default function HybridOfferWizardModal({
                 <button
                   key={preset.key}
                   type="button"
+                  data-ck-shape="card"
                   onClick={() => {
                     if (isOther) {
                       setShowOtherEventTypes(true);
@@ -1448,6 +1467,7 @@ export default function HybridOfferWizardModal({
                       <button
                         key={loc.id}
                         type="button"
+                        data-ck-shape="card"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           updateDraft({
@@ -1521,6 +1541,7 @@ export default function HybridOfferWizardModal({
                 <button
                   key={mode}
                   type="button"
+                  data-ck-shape="card"
                   onClick={() =>
                     updateDraft({
                       coverageMode: mode,
@@ -1898,6 +1919,7 @@ export default function HybridOfferWizardModal({
                       <button
                         key={loc.id}
                         type="button"
+                        data-ck-shape="card"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           updateDraft({ printDeliveryAddress: `${loc.title}, ${loc.subtitle}` });
@@ -2037,6 +2059,7 @@ export default function HybridOfferWizardModal({
               <button
                 key={pkg.tier}
                 type="button"
+                data-ck-shape="card"
                 onClick={() => updateDraft({ packageOption: pkg.tier })}
                 style={{
                   display: 'flex',
@@ -2370,6 +2393,7 @@ export default function HybridOfferWizardModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="knockout-hybrid-wiz-title"
+      className="ck-keep-radius"
       onClick={onClose}
       style={{
         position: 'fixed',
@@ -2383,6 +2407,11 @@ export default function HybridOfferWizardModal({
         padding: 16,
       }}
     >
+      <style>{`
+        .ck-keep-radius button[data-ck-shape="card"] {
+          border-radius: 16px !important;
+        }
+      `}</style>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -2458,18 +2487,10 @@ export default function HybridOfferWizardModal({
         </header>
 
         {/* Body */}
-        <div style={{ padding: '1.25rem 1.4rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 14, background: '#F8FAFC' }}>
-          {optionsError && (
-            <div style={{ padding: '10px 14px', borderRadius: 10, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '0.83rem' }}>
-              {optionsError}
-            </div>
-          )}
-          {errorMsg && (
-            <div style={{ padding: '10px 14px', borderRadius: 10, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '0.83rem' }}>
-              {errorMsg}
-            </div>
-          )}
-
+        <div
+          ref={bodyScrollRef}
+          style={{ padding: '1.25rem 1.4rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 14, background: '#F8FAFC' }}
+        >
           {step === 'select' && renderModeSelect()}
           {step === 'session' && renderSessionChoice()}
           {step === 1 && renderStep1()}
@@ -2549,58 +2570,96 @@ export default function HybridOfferWizardModal({
           )}
         </div>
 
-        {/* Footer */}
-        {typeof step === 'number' && (
-          <footer style={{ padding: '0.9rem 1.4rem', borderTop: `1px solid ${BORDER_COLOR}`, background: BG_CARD, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-            <button
-              type="button"
-              onClick={goBack}
-              disabled={submitting}
-              style={{
-                padding: '0.65rem 1.1rem',
-                borderRadius: 12,
-                border: `1.5px solid ${BORDER_COLOR}`,
-                background: BG_CARD,
-                color: TEXT_SECONDARY,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Back
-            </button>
-            {step < 5 ? (
-              <button
-                type="button"
-                onClick={goNext}
+        {/* Sticky Global Error & Buttons Footer */}
+        {(typeof step === 'number' || errorMsg || optionsError) && (
+          <footer style={{ padding: '0.9rem 1.4rem', borderTop: `1px solid ${BORDER_COLOR}`, background: BG_CARD, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(errorMsg || optionsError) && (
+              <div
+                role="alert"
                 style={{
-                  padding: '0.68rem 1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                  padding: '10px 14px',
                   borderRadius: 12,
-                  border: 'none',
-                  background: BRAND_BLUE,
-                  color: '#fff',
-                  fontWeight: 800,
-                  cursor: 'pointer',
+                  background: '#FEF2F2',
+                  border: '1.5px solid #FCA5A5',
+                  color: '#DC2626',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
                 }}
               >
-                Continue <i className="bi bi-arrow-right" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handlePublishClick}
-                disabled={submitting}
-                style={{
-                  padding: '0.72rem 1.6rem',
-                  borderRadius: 12,
-                  border: 'none',
-                  background: BRAND_PINK,
-                  color: '#fff',
-                  fontWeight: 800,
-                  cursor: submitting ? 'wait' : 'pointer',
-                }}
-              >
-                {submitting ? 'Publishing...' : 'PUBLISH EVENT OFFER'} <i className="bi bi-broadcast" />
-              </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <i className="bi bi-exclamation-octagon-fill" style={{ fontSize: 16, flexShrink: 0 }} />
+                  <span>{errorMsg || optionsError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg(null);
+                    setOptionsError(null);
+                  }}
+                  aria-label="Dismiss error"
+                  style={{ background: 'transparent', border: 'none', color: '#DC2626', cursor: 'pointer', padding: 4, fontSize: 16, lineHeight: 1 }}
+                >
+                  <i className="bi bi-x-lg" />
+                </button>
+              </div>
+            )}
+            {typeof step === 'number' && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={goBack}
+                  disabled={submitting}
+                  style={{
+                    padding: '0.65rem 1.1rem',
+                    borderRadius: 12,
+                    border: `1.5px solid ${BORDER_COLOR}`,
+                    background: BG_CARD,
+                    color: TEXT_SECONDARY,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Back
+                </button>
+                {step < 5 ? (
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    style={{
+                      padding: '0.68rem 1.5rem',
+                      borderRadius: 12,
+                      border: 'none',
+                      background: BRAND_BLUE,
+                      color: '#fff',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Continue <i className="bi bi-arrow-right" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handlePublishClick}
+                    disabled={submitting}
+                    style={{
+                      padding: '0.72rem 1.6rem',
+                      borderRadius: 12,
+                      border: 'none',
+                      background: BRAND_PINK,
+                      color: '#fff',
+                      fontWeight: 800,
+                      cursor: submitting ? 'wait' : 'pointer',
+                    }}
+                  >
+                    {submitting ? 'Publishing...' : 'PUBLISH EVENT OFFER'} <i className="bi bi-broadcast" />
+                  </button>
+                )}
+              </div>
             )}
           </footer>
         )}

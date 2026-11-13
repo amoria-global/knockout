@@ -552,6 +552,7 @@ function ServiceTypeChooser({
           <button
             key={opt.val}
             type="button"
+            data-ck-shape="card"
             role="radio"
             aria-checked={active}
             onClick={() => onChange(opt.val)}
@@ -1704,6 +1705,27 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     onError: () => { setGoogleLoading(false); setAuthError('Google sign-in cancelled.'); },
   });
 
+  const contentScrollRef = React.useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTop = 0;
+    }
+  }, [state.currentSlide, state.showAuthInline, state.showAvailabilityGate, state.bookingSuccess]);
+
+  const activeGlobalError =
+    (state.showAuthInline ? authError : '') ||
+    (state.currentSlide === 0 ? briefError : '') ||
+    (state.currentSlide === 2 ? customError : '') ||
+    (state.currentSlide === 4 ? submitError || evtError : '');
+
+  const clearActiveGlobalError = () => {
+    setAuthError('');
+    setBriefError('');
+    setCustomError('');
+    setSubmitError('');
+    setEvtError('');
+  };
+
   // ─── Helper: profile image ───
   const getProfileImg = (p: Photographer) => {
     const pic = p.profilePicture;
@@ -1720,7 +1742,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   return (
     <>
       <BookingWizardStyles />
-      <div className="bw-overlay">
+      <div className="bw-overlay ck-keep-radius">
         <div className={`bw-panel${showPaymentModal ? ' is-modal-active' : ''}`} role="dialog" aria-modal="true" aria-label="Book a photographer">
           {/* Branded header strip - back button (left) + eyebrow + close (right) */}
           <header className="bw-header">
@@ -1795,7 +1817,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
           )}
 
           {/* Content area (scrollable) */}
-          <div className="bw-content">
+          <div ref={contentScrollRef} className="bw-content">
 
             {/* ── Success state ── */}
             {state.bookingSuccess ? (
@@ -3050,6 +3072,37 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
               </div>
             ) : null}
           </div>
+          {activeGlobalError && (
+            <div
+              role="alert"
+              style={{
+                padding: '10px 18px',
+                borderTop: `1px solid #FECACA`,
+                background: '#FEF2F2',
+                color: '#DC2626',
+                fontSize: 13,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="bi bi-exclamation-octagon-fill" style={{ fontSize: 15, flexShrink: 0 }} />
+                <span>{activeGlobalError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={clearActiveGlobalError}
+                aria-label="Dismiss error"
+                style={{ background: 'transparent', border: 'none', color: '#DC2626', cursor: 'pointer', padding: 4, fontSize: 15, lineHeight: 1 }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

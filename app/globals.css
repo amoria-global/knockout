@@ -1305,8 +1305,8 @@ body {
    deliberately NOT [role="button"], which would turn clickable cards
    into pills.
    ============================================================ */
-button,
-.btn,
-.ap-btn {
+button:not([data-ck-shape="card"]):not(.ck-keep-radius *),
+.btn:not([data-ck-shape="card"]):not(.ck-keep-radius *),
+.ap-btn:not([data-ck-shape="card"]):not(.ck-keep-radius *) {
   border-radius: 9999px !important;
 }
