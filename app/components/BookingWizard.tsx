@@ -37,6 +37,7 @@ import OtpInput from '@/app/components/OtpInput';
 import { useOtpRefusal } from '@/lib/auth/useOtpRefusal';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { saveDraft, loadDraft, clearDraft, type BookingDraft } from '@/lib/utils/bookingDraft';
+import { useLocationSearch, type LocationSuggestion } from '@/lib/hybrid/locationSearch';
 
 // ─── Types ───
 
@@ -959,6 +960,18 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [briefLocFocused, setBriefLocFocused] = useState(false);
+  const [venueLocFocused, setVenueLocFocused] = useState(false);
+  const { results: briefLocSuggestions, loadingGoogle: loadingBriefLocGoogle } = useLocationSearch(
+    briefLocation,
+    'Kigali',
+    isOpen && state.currentSlide === 0 && briefLocFocused,
+  );
+  const { results: venueLocSuggestions, loadingGoogle: loadingVenueLocGoogle } = useLocationSearch(
+    evtVenueName,
+    'Kigali',
+    isOpen && state.currentSlide === 4 && venueLocFocused,
+  );
 
   // ── Fetch currencies + event types on mount ──
   useEffect(() => {
@@ -1786,30 +1799,39 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
             {/* ── Success state ── */}
             {state.bookingSuccess ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div style={{ textAlign: 'center', padding: '48px 20px' }}>
                 <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                   <i className="bi bi-check-lg" style={{ fontSize: 32, color: '#fff' }}></i>
                 </div>
                 <h2 style={{ color: '#111827', fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>
-                  {paymentDeclarationId ? 'Booking Confirmed!' : 'Booking Created!'}
+                  {paymentDeclarationId ? 'Booking Confirmed!' : 'Booking Reserved!'}
                 </h2>
-                <p style={{ color: '#40444d', fontSize: 14, margin: '0 0 24px' }}>
+                <p style={{ color: '#40444d', fontSize: 14, lineHeight: 1.55, maxWidth: 440, margin: '0 auto 24px' }}>
                   {paymentDeclarationId
-                    ? 'Your payment has been processed and the photographer has been notified. You can manage your booking from the dashboard.'
-                    : 'Your event has been created. You can assign a photographer and manage your booking from the dashboard.'}
+                    ? 'Your escrow deposit has been processed and the photographer has been notified. Open your Dashboard to view acceptance status, track deliverables, and manage your booking.'
+                    : 'Your booking has been created. Open your Dashboard to view photographer acceptance, confirm your booking, and complete your escrow payment.'}
                 </p>
-                <button onClick={() => {
-                  const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
-                  const userType = (user?.customerType || 'Client')
-                    .replace(/([A-Z])/g, (m: string, l: string, i: number) => (i > 0 ? '-' : '') + l.toLowerCase());
-                  const dest = new URL(`${dashboardUrl}/user/${userType}/events`);
-                  if (state.createdEventId) dest.searchParams.set('eventId', state.createdEventId);
-                  // Auth travels via the .connekyt.com HttpOnly session cookie;
-                  // no need to put the JWT in the URL.
-                  window.location.href = dest.toString();
-                }} style={btnPrimary}>
-                  Go to Dashboard <i className="bi bi-arrow-right"></i>
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 360, margin: '0 auto' }}>
+                  <button onClick={() => {
+                    const dashboardUrl = (process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com').replace(/\/$/, '');
+                    const userType = (user?.customerType || 'Client')
+                      .replace(/([A-Z])/g, (_m: string, l: string, i: number) => (i > 0 ? '-' : '') + l.toLowerCase());
+                    const targetPath = state.createdEventId
+                      ? `${dashboardUrl}/user/${userType}/events/${encodeURIComponent(state.createdEventId)}${paymentDeclarationId ? '' : '?pay=1'}`
+                      : `${dashboardUrl}/user/${userType}/events`;
+                    window.location.href = targetPath;
+                  }} style={btnPrimary}>
+                    View &amp; Confirm in Dashboard <i className="bi bi-arrow-right"></i>
+                  </button>
+                  <button onClick={() => {
+                    const dashboardUrl = (process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com').replace(/\/$/, '');
+                    const userType = (user?.customerType || 'Client')
+                      .replace(/([A-Z])/g, (_m: string, l: string, i: number) => (i > 0 ? '-' : '') + l.toLowerCase());
+                    window.location.href = `${dashboardUrl}/user/${userType}/events`;
+                  }} style={btnSecondary}>
+                    View All My Events
+                  </button>
+                </div>
               </div>
 
             /* ── Availability Gate (shown after a photographer is chosen, before packages) ── */
@@ -2150,9 +2172,48 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       </span>
                     </div>
                   ) : (
-                    <div>
+                    <div style={{ position: 'relative' }}>
                       <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Location *</label>
-                      <input type="text" value={briefLocation} onChange={e => setBriefLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
+                      <input
+                        type="text"
+                        value={briefLocation}
+                        onFocus={() => setBriefLocFocused(true)}
+                        onBlur={() => setTimeout(() => setBriefLocFocused(false), 200)}
+                        onChange={e => setBriefLocation(e.target.value)}
+                        placeholder="Type to search venue or area (e.g. Kigali Convention Centre)"
+                        style={inputStyle}
+                      />
+                      {briefLocFocused && briefLocation.trim().length > 0 && briefLocSuggestions.length > 0 && (
+                        <div style={{ marginTop: 6, borderRadius: 12, border: `1px solid ${INPUT_BORDER}`, background: '#ffffff', boxShadow: '0 12px 28px rgba(0,0,0,0.14)', overflow: 'hidden', zIndex: 30 }}>
+                          {briefLocSuggestions.map((loc: LocationSuggestion, idx: number) => {
+                            const isFirst = idx === 0;
+                            return (
+                              <button
+                                key={loc.id}
+                                type="button"
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={() => {
+                                  setBriefLocation(`${loc.title}${loc.subtitle ? `, ${loc.subtitle}` : ''}`);
+                                  setBriefLocFocused(false);
+                                }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: 'none', borderBottom: `1px solid ${INPUT_BORDER}`, background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
+                              >
+                                <i className={`bi ${isFirst ? 'bi-stars' : 'bi-geo-alt-fill'}`} style={{ color: isFirst ? ACCENT : PINK }} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRIMARY }}>{loc.title}</div>
+                                  <div style={{ fontSize: 11.5, color: TEXT_MUTED }}>{loc.subtitle}</div>
+                                </div>
+                                <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: isFirst ? 'rgba(8,58,133,0.10)' : 'rgba(242,12,143,0.10)', color: isFirst ? ACCENT : PINK }}>
+                                  {isFirst ? 'Suggestion' : 'Google Maps'}
+                                </span>
+                              </button>
+                            );
+                          })}
+                          {loadingBriefLocGoogle && (
+                            <div style={{ padding: '6px 12px', fontSize: 11.5, color: TEXT_MUTED }}>Searching Google Maps...</div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                   <div>
@@ -2844,9 +2905,48 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Guest Count</label>
                     <input type="number" min={1} value={evtGuests} onChange={e => setEvtGuests(parseInt(e.target.value) || '')} placeholder="Expected number of guests" style={inputStyle} />
                   </div>
-                  <div>
+                  <div style={{ position: 'relative' }}>
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Venue Name</label>
-                    <input type="text" value={evtVenueName} onChange={e => setEvtVenueName(e.target.value)} placeholder="e.g. Kigali Convention Centre" style={inputStyle} />
+                    <input
+                      type="text"
+                      value={evtVenueName}
+                      onFocus={() => setVenueLocFocused(true)}
+                      onBlur={() => setTimeout(() => setVenueLocFocused(false), 200)}
+                      onChange={e => setEvtVenueName(e.target.value)}
+                      placeholder="Type to search venue (e.g. Kigali Convention Centre)"
+                      style={inputStyle}
+                    />
+                    {venueLocFocused && evtVenueName.trim().length > 0 && venueLocSuggestions.length > 0 && (
+                      <div style={{ marginTop: 6, borderRadius: 12, border: `1px solid ${INPUT_BORDER}`, background: '#ffffff', boxShadow: '0 12px 28px rgba(0,0,0,0.14)', overflow: 'hidden', zIndex: 30 }}>
+                        {venueLocSuggestions.map((loc: LocationSuggestion, idx: number) => {
+                          const isFirst = idx === 0;
+                          return (
+                            <button
+                              key={loc.id}
+                              type="button"
+                              onMouseDown={e => e.preventDefault()}
+                              onClick={() => {
+                                setEvtVenueName(loc.fullText);
+                                setVenueLocFocused(false);
+                              }}
+                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: 'none', borderBottom: `1px solid ${INPUT_BORDER}`, background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
+                            >
+                              <i className={`bi ${isFirst ? 'bi-stars' : 'bi-geo-alt-fill'}`} style={{ color: isFirst ? ACCENT : PINK }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRIMARY }}>{loc.title}</div>
+                                <div style={{ fontSize: 11.5, color: TEXT_MUTED }}>{loc.subtitle}</div>
+                              </div>
+                              <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: isFirst ? 'rgba(8,58,133,0.10)' : 'rgba(242,12,143,0.10)', color: isFirst ? ACCENT : PINK }}>
+                                {isFirst ? 'Suggestion' : 'Google Maps'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                        {loadingVenueLocGoogle && (
+                          <div style={{ padding: '6px 12px', fontSize: 11.5, color: TEXT_MUTED }}>Searching Google Maps...</div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Coordinator-specific fields */}

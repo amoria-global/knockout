@@ -23,6 +23,7 @@ import { useToast } from '@/lib/notifications/ToastProvider';
 import dynamic from 'next/dynamic';
 
 const BookingWizard = dynamic(() => import('../../components/BookingWizard'), { ssr: false });
+const HybridOfferWizardModal = dynamic(() => import('../../components/HybridOfferWizardModal'), { ssr: false });
 const DirectBookingMapView = dynamic(() => import('../../components/DirectBookingMapView'), { ssr: false });
 
 const BRAND = '#083A85';
@@ -347,12 +348,32 @@ const Photographers: React.FC = () => {
   // Booking wizard state
   const [showWizard, setShowWizard] = useState(false);
   const [wizardPhotographerId, setWizardPhotographerId] = useState<string | undefined>();
+  const [showHybridWizard, setShowHybridWizard] = useState(false);
+  const [hybridInitialStep, setHybridInitialStep] = useState<'select' | 'session' | 1>('session');
+
+  // Support ?post=1 or ?mode=select query params to open the Hybrid Offer Wizard directly
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('post') === '1') {
+      setHybridInitialStep('session');
+      setShowHybridWizard(true);
+      sessionStorage.setItem('wizardDismissed', 'true');
+    } else if (params.get('mode') === 'select') {
+      setHybridInitialStep('select');
+      setShowHybridWizard(true);
+      sessionStorage.setItem('wizardDismissed', 'true');
+    }
+  }, []);
 
   // Auto-popup wizard after 5 seconds (once per session)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (sessionStorage.getItem('wizardDismissed')) return;
-    const timer = setTimeout(() => setShowWizard(true), 5000);
+    const timer = setTimeout(() => {
+      setHybridInitialStep('select');
+      setShowHybridWizard(true);
+    }, 5000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -1576,14 +1597,56 @@ const Photographers: React.FC = () => {
         <h1 id="ph-hero-title" className="ph-hero-title">{t('title')}</h1>
         <p className="ph-hero-sub">{t('subtitle')}</p>
         {/* The two ways to book, named as on the dashboard and in the app. */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginTop: 14 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: 'rgba(8,58,133,0.10)', color: '#083A85', fontWeight: 700, fontSize: 13 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 18, position: 'relative', zIndex: 2 }}>
+          <button
+            type="button"
+            onClick={() => {
+              setWizardPhotographerId(undefined);
+              setShowWizard(true);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 18px',
+              borderRadius: 999,
+              background: 'rgba(255, 255, 255, 0.16)',
+              border: '1.5px solid rgba(255, 255, 255, 0.45)',
+              backdropFilter: 'blur(8px)',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: 13.5,
+              cursor: 'pointer',
+              boxShadow: '0 6px 18px rgba(0, 0, 0, 0.14)',
+              transition: 'all 0.18s ease',
+            }}
+          >
             <i className="bi bi-search" aria-hidden="true" /> Find a Photographer: you choose and book directly
-          </span>
-          <a href={`${(process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com').replace(/\/$/, '')}/user/client/events?post=1`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: '#F20C8F', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setHybridInitialStep('session');
+              setShowHybridWizard(true);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 18px',
+              borderRadius: 999,
+              background: '#F20C8F',
+              border: '1.5px solid rgba(255, 255, 255, 0.25)',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: 13.5,
+              cursor: 'pointer',
+              boxShadow: '0 8px 22px rgba(242, 12, 143, 0.38)',
+              transition: 'all 0.18s ease',
+            }}
+          >
             <i className="bi bi-broadcast" aria-hidden="true" /> Rather not search? Post My Event and let photographers come to you
-          </a>
+          </button>
         </div>
       </section>
 
@@ -1702,6 +1765,74 @@ const Photographers: React.FC = () => {
 
       {/* Main */}
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '1rem clamp(0.75rem,2vw,1rem) 4rem' }}>
+        {/* Hybrid Matching Banner (matching mobile app photographers.tsx) */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 14,
+            padding: '14px 18px',
+            marginBottom: '1rem',
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(242,12,143,0.06) 0%, rgba(8,58,133,0.05) 100%)',
+            border: '1.5px solid rgba(242,12,143,0.25)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 240, flex: 1 }}>
+            <span
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: 'rgba(242,12,143,0.12)',
+                color: '#F20C8F',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+                flexShrink: 0,
+              }}
+            >
+              <i className="bi bi-stars" aria-hidden="true" />
+            </span>
+            <div>
+              <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#0f172a' }}>
+                Can&apos;t decide? Post your event
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: 2 }}>
+                Share your date, location, deliverables &amp; budget — we&apos;ll match you with available photographers
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setHybridInitialStep('session');
+                setShowHybridWizard(true);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '9px 16px',
+                borderRadius: 999,
+                border: 'none',
+                background: '#F20C8F',
+                color: '#fff',
+                fontWeight: 800,
+                fontSize: '0.84rem',
+                cursor: 'pointer',
+                boxShadow: '0 6px 16px -4px rgba(242,12,143,0.45)',
+              }}
+            >
+              Post Brief <i className="bi bi-arrow-right" />
+            </button>
+          </div>
+        </div>
+
         {/* Result strip */}
         <div className="ph-result">
           <p className="ph-result-count">
@@ -2039,6 +2170,21 @@ const Photographers: React.FC = () => {
           sessionStorage.setItem('wizardDismissed', 'true');
         }}
         preselectedPhotographerId={wizardPhotographerId}
+      />
+
+      <HybridOfferWizardModal
+        isOpen={showHybridWizard}
+        initialStep={hybridInitialStep}
+        onClose={() => {
+          setShowHybridWizard(false);
+          sessionStorage.setItem('wizardDismissed', 'true');
+        }}
+        onChooseBrowse={() => {
+          setShowHybridWizard(false);
+          sessionStorage.setItem('wizardDismissed', 'true');
+          setWizardPhotographerId(undefined);
+          setShowWizard(true);
+        }}
       />
     </div>
   );
