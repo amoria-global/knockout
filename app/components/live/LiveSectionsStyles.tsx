@@ -48,6 +48,23 @@ export const LIVE_SECTIONS_CSS = `
   background:var(--lv-card-2); border:1px solid var(--lv-line); }
 .lv-icon-btn:hover { background:var(--lv-line); }
 .lv-icon-btn .lv-label { font-weight:600; font-size:14px; }
+.lv-tv { position:relative; }
+.lv-tv-panel { position:absolute; right:0; top:calc(100% + 8px); z-index:40; width:min(320px, calc(100vw - 32px)); padding:14px; border-radius:16px;
+  background:var(--lv-dialog); border:1px solid var(--lv-line); box-shadow:0 12px 32px rgba(0,0,0,0.35); display:flex; flex-direction:column; gap:10px; }
+.lv-tv-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.lv-tv-x { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:999px; background:transparent; border:0; }
+.lv-tv-x:hover { background:var(--lv-line); }
+.lv-tv-note { margin:0; color:var(--lv-soft); font-size:14px; line-height:1.45; }
+.lv-tv-ok { margin:0; color:var(--lv-text); font-size:14px; line-height:1.45; }
+.lv-tv-err { margin:0 0 6px; color:var(--lv-pink); font-size:14px; line-height:1.45; }
+.lv-tv-link { display:inline-flex; align-items:center; min-height:40px; padding:0 2px; background:transparent; border:0; color:var(--lv-blue); font-weight:600; font-size:14px; text-decoration:none; }
+.lv-tv-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+.lv-tv-row { width:100%; display:flex; align-items:center; gap:10px; min-height:48px; padding:0 12px; border-radius:12px; background:var(--lv-card-2); border:1px solid var(--lv-line); text-align:left; }
+.lv-tv-row:hover, .lv-tv-row:focus-visible { border-color:var(--lv-blue); }
+.lv-tv-name { flex:1; min-width:0; font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lv-tv-on { font-size:12px; font-weight:700; color:var(--lv-blue); }
+.lv-tv-off { font-size:12px; color:var(--lv-mute); }
+@media (max-width:767px) { .lv-tv-panel { position:fixed; left:16px; right:16px; top:auto; bottom:16px; width:auto; } }
 @media (max-width:767px) { .lv-icon-btn .lv-label { display:none; } .lv-icon-btn { padding:0; } }
 
 /* 2 chips (shown over the player) */

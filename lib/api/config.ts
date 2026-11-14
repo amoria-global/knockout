@@ -253,6 +253,8 @@ export const API_ENDPOINTS = {
     PAIRING_CONFIRM: '/api/remote/tv/pairing/confirm',
     DEVICES: '/api/remote/customer/tv-devices',
     DEVICE_BY_ID: (id: string) => `/api/remote/customer/tv-devices/${id}`,
+    // Send to TV: the paired TV opens the event within a couple of seconds (TvCastController).
+    CAST: (id: string) => `/api/remote/customer/tv-devices/${id}/cast`,
   },
 
   // Stream endpoints (coordinator streams)

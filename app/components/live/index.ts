@@ -7,6 +7,7 @@
  *  9 the page's live chat, reactions and gifts
  */
 export { EventHeader } from './EventHeader';
+export { WatchOnTv } from './WatchOnTv';
 export { EventInfo, AccessChip, accessLabel } from './EventInfo';
 export { EventTabs } from './EventTabs';
 export { SendWishes } from './SendWishes';

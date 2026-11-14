@@ -31,7 +31,7 @@ import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/
 import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, blockUserInStream } from '@/lib/APIs/streams/route';
 import { getDeviceId } from '@/lib/fingerprint';
 import { invitesOn } from '@/lib/wishes/wishInvites';
-import { AccessChip, EventHeader, EventInfo, EventTabs, InviteOthers, LiveSectionsStyles, PrivacyNote, SendWishes, WishesFeed, WishVideoDialog, useWishFeed } from '../../components/live';
+import { AccessChip, EventHeader, EventInfo, WatchOnTv, EventTabs, InviteOthers, LiveSectionsStyles, PrivacyNote, SendWishes, WishesFeed, WishVideoDialog, useWishFeed } from '../../components/live';
 import type { LiveTab, Wish } from '@/lib/live/types';
 import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
 import ViewerInfoModal from '../../components/ViewerInfoModal';
@@ -7446,7 +7446,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         <div className="lv lv-page">
           <LiveSectionsStyles />
           <style>{LV_LANDING_OVERRIDES}</style>
-          <EventHeader title={mainEvent?.title || 'Live event'} onBack={handleLeaveStream} onShare={lvShare} />
+          <EventHeader title={mainEvent?.title || 'Live event'} onBack={handleLeaveStream} onShare={lvShare}
+            actions={<WatchOnTv eventId={mainEvent?.id || ''} enabled={isAuthenticated && !['COMPLETED', 'AWAITING_REVIEW', 'CANCELLED', 'ENDED'].includes(String(mainEvent?.eventStatus || '').toUpperCase())} />} />
           <div className="lv-grid">
           <div className="lv-left">
           <div className="lv-main">

@@ -22,6 +22,7 @@ const PATHS: Record<string, ReactNode> = {
   spark: <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />,
   pin: <><path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.3" /></>,
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  tv: <><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8M12 17v4" /></>,
   cloudOff: <path d="M3 3l18 18M7 17a4 4 0 01-.4-8A6 6 0 0117 8.5M18 17H9" />,
 };
 
