@@ -33,7 +33,7 @@ import { getDeviceId } from '@/lib/fingerprint';
 import { invitesOn } from '@/lib/wishes/wishInvites';
 import { AccessChip, EventHeader, EventInfo, WatchOnTv, EventTabs, InviteOthers, LiveSectionsStyles, PrivacyNote, SendWishes, WishesFeed, WishVideoDialog, useWishFeed } from '../../components/live';
 import type { LiveTab, Wish } from '@/lib/live/types';
-import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
+import { checkAnonymousAccessStatus, anonymousDeviceCheck, handAnonymousAccessToTv, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
 import ViewerInfoModal from '../../components/ViewerInfoModal';
 import type { ViewerInfoData } from '../../components/ViewerInfoModal';
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
@@ -417,6 +417,38 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     window.addEventListener('auth:session-expired', handleSessionExpired);
     return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
   }, [searchParams]);
+
+  // Continue on phone: the TV's "Continue on phone" QR carries the guest purchase it is playing
+  // (handoff = viewer id, from = the TV's device id). Moving it to this browser stops the TV (its next
+  // heartbeat is refused and it shows the usual notice) and unlocks the stream here, so it never plays
+  // on two screens and the viewer does not pay twice. The parameters are removed from the address once used.
+  const tvHandoffDone = useRef(false);
+  useEffect(() => {
+    const handoffId = searchParams.get('handoff');
+    const fromDevice = searchParams.get('from');
+    if (tvHandoffDone.current || isAuthenticated || !mainEvent?.id || !handoffId || !fromDevice) return;
+    tvHandoffDone.current = true;
+    (async () => {
+      try {
+        const res = await handAnonymousAccessToTv(mainEvent.id, handoffId, fromDevice, await getDeviceId());
+        if (res.success) {
+          localStorage.setItem(`anonymousViewer_${mainEvent.id}`, handoffId);
+          setAnonymousViewerId(handoffId);
+          setIsAnonymousViewer(true);
+          setAccessCheckLoading(true);
+        }
+      } catch {
+        // Not moved: the page falls back to its normal access checks.
+      }
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('handoff');
+        url.searchParams.delete('from');
+        window.history.replaceState(null, '', url.toString());
+      } catch { /* address left as is */ }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainEvent?.id, isAuthenticated]);
 
   // Restore anonymous viewer session from localStorage on mount.
   // Also pre-set accessCheckLoading so the "Stream is starting" overlay doesn't flash

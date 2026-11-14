@@ -111,6 +111,24 @@ export async function anonymousHeartbeat(
   );
 }
 
+/**
+ * Watch on this TV: moves this browser's guest purchase to the TV whose pay QR was scanned, so the viewer does not pay
+ * twice. Only works from the device that holds the purchase; afterwards this device's heartbeat is refused and the
+ * stream plays on the TV alone. Not retried: the move is not repeatable from this device once it has happened.
+ */
+export async function handAnonymousAccessToTv(
+  eventId: string,
+  viewerId: string,
+  deviceFingerprint: string,
+  tvFingerprint: string
+): Promise<ApiResponse<unknown>> {
+  return apiClient.post(
+    API_ENDPOINTS.PUBLIC.ANONYMOUS_VIEWER_HAND_TO_TV(eventId),
+    { viewerId, deviceFingerprint, tvFingerprint },
+    { skipAuth: true, retries: 0 }
+  );
+}
+
 export async function deactivateAnonymousSession(
   eventId: string,
   deviceFingerprint: string
