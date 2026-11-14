@@ -1483,6 +1483,11 @@
     "controller" : "AdminChatApiController#getViolations"
   }, {
     "method" : "GET",
+    "path" : "/api/admin/chats/violations/{id}/messages",
+    "controller" : "AdminChatApiController#getViolationMessages",
+    "pathVariables" : [ "id" ]
+  }, {
+    "method" : "GET",
     "path" : "/api/admin/contact-messages/all",
     "controller" : "AdminContactMessageApiController#getContactMessages"
   }, {
@@ -3088,6 +3093,11 @@
     "pathVariables" : [ "bookingId" ]
   }, {
     "method" : "GET",
+    "path" : "/api/remote/chat/albums/{albumId}/card",
+    "controller" : "ChatController#getAlbumCard",
+    "pathVariables" : [ "albumId" ]
+  }, {
+    "method" : "GET",
     "path" : "/api/remote/chat/conversations",
     "controller" : "ChatController#getConversations"
   }, {
@@ -3145,6 +3155,14 @@
       "file" : true
     } ],
     "consumes" : [ "multipart/form-data" ]
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/chat/send-albums",
+    "controller" : "ChatController#sendAlbums",
+    "body" : {
+      "type" : "SendAlbumsRequest",
+      "properties" : [ "albumIds", "note", "recipientId" ]
+    }
   }, {
     "method" : "GET",
     "path" : "/api/remote/chat/unread-count",
@@ -4944,6 +4962,14 @@
       "required" : false
     } ]
   }, {
+    "method" : "POST",
+    "path" : "/api/remote/direct-booking/map",
+    "controller" : "DirectBookingMapController#postNearbyPhotographersMap",
+    "body" : {
+      "type" : "MapSearchBody",
+      "properties" : [ "eventDate", "lat", "lng", "radiusKm", "search", "specialty" ]
+    }
+  }, {
     "method" : "GET",
     "path" : "/api/remote/donations",
     "controller" : "DonationController#getMyDonations",
@@ -6509,6 +6535,35 @@
       "properties" : [ "currencyId", "deliveryDays", "description", "durationHours", "extraPhotoPrice", "extraVideoPrice", "features", "hasLiveStream", "includedPhotos", "includedVideos", "isActive", "packageName", "photobookPhotos", "price", "priceUnit", "serviceType" ]
     }
   }, {
+    "method" : "POST",
+    "path" : "/api/remote/photographer/packages/ai-extract",
+    "controller" : "PhotographerPackageController#extractPackagesWithAi",
+    "params" : [ {
+      "name" : "rawText",
+      "required" : false
+    }, {
+      "name" : "defaultServiceType",
+      "required" : false
+    } ],
+    "parts" : [ {
+      "name" : "files",
+      "required" : false,
+      "file" : true
+    }, {
+      "name" : "file",
+      "required" : false,
+      "file" : true
+    } ],
+    "consumes" : [ "multipart/form-data", "application/json" ]
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/photographer/packages/bulk-publish",
+    "controller" : "PhotographerPackageController#bulkPublishPackages",
+    "body" : {
+      "type" : "BulkPublishPackagesRequestDTO",
+      "properties" : [ "deletePackageIds", "enforceTierPolicy", "mode", "packages", "sessionType" ]
+    }
+  }, {
     "method" : "GET",
     "path" : "/api/remote/photographer/packages/debug/duplicates",
     "controller" : "PhotographerPackageController#checkDuplicates"
@@ -6655,6 +6710,22 @@
     "method" : "GET",
     "path" : "/api/remote/photographer/profile-summary",
     "controller" : "PhotographerRemoteController#getPhotographerProfileSummary"
+  }, {
+    "method" : "DELETE",
+    "path" : "/api/remote/photographer/service-area",
+    "controller" : "ServiceAreaController#remove"
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/photographer/service-area",
+    "controller" : "ServiceAreaController#get"
+  }, {
+    "method" : "PUT",
+    "path" : "/api/remote/photographer/service-area",
+    "controller" : "ServiceAreaController#set",
+    "body" : {
+      "type" : "SetServiceAreaRequest",
+      "properties" : [ "placeId" ]
+    }
   }, {
     "method" : "DELETE",
     "path" : "/api/remote/photographer/studio-rate",
@@ -7100,6 +7171,14 @@
     "method" : "POST",
     "path" : "/api/remote/public/anonymous-viewer/{eventId}/gift",
     "controller" : "AnonymousViewerController#initiateGift",
+    "body" : {
+      "type" : "Map"
+    },
+    "pathVariables" : [ "eventId" ]
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/public/anonymous-viewer/{eventId}/hand-to-tv",
+    "controller" : "AnonymousViewerController#handToTv",
     "body" : {
       "type" : "Map"
     },
@@ -7738,6 +7817,14 @@
       "required" : false
     } ]
   }, {
+    "method" : "POST",
+    "path" : "/api/remote/public/photographers/map",
+    "controller" : "DirectBookingMapController#postNearbyPhotographersMap",
+    "body" : {
+      "type" : "MapSearchBody",
+      "properties" : [ "eventDate", "lat", "lng", "radiusKm", "search", "specialty" ]
+    }
+  }, {
     "method" : "GET",
     "path" : "/api/remote/public/photographers/{id}",
     "controller" : "PublicRemoteController#getPhotographerById",
@@ -7780,6 +7867,38 @@
       "type" : "Map"
     },
     "pathVariables" : [ "photoId" ]
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/public/places/area",
+    "controller" : "PlacesProxyController#area",
+    "params" : [ {
+      "name" : "placeId",
+      "required" : true
+    } ]
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/public/places/areas",
+    "controller" : "PlacesProxyController#areas",
+    "params" : [ {
+      "name" : "input",
+      "required" : true
+    } ]
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/public/places/autocomplete",
+    "controller" : "PlacesProxyController#autocomplete",
+    "params" : [ {
+      "name" : "input",
+      "required" : true
+    } ]
+  }, {
+    "method" : "GET",
+    "path" : "/api/remote/public/places/geocode",
+    "controller" : "PlacesProxyController#geocode",
+    "params" : [ {
+      "name" : "address",
+      "required" : true
+    } ]
   }, {
     "method" : "GET",
     "path" : "/api/remote/public/platform/config",
@@ -7879,6 +7998,11 @@
     "path" : "/api/remote/public/streams/{eventId}/group-code/{inviteCode}",
     "controller" : "PublicRemoteController#getGroupCodeStatus",
     "pathVariables" : [ "eventId", "inviteCode" ]
+  }, {
+    "method" : "POST",
+    "path" : "/api/remote/public/streams/{eventId}/handoff",
+    "controller" : "PublicRemoteController#streamHandoff",
+    "pathVariables" : [ "eventId" ]
   }, {
     "method" : "POST",
     "path" : "/api/remote/public/streams/{eventId}/heartbeat",
