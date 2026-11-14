@@ -26,6 +26,24 @@ describe('scrubSdkEvent: noise', () => {
   });
 });
 
+describe('scrubSdkEvent: scanner probes', () => {
+  const probe = (over: Partial<ErrorEvent> = {}) =>
+    event({ request: { method: 'POST', url: 'https://connekyt.com/' }, contexts: { nextjs: { route_type: 'action' } }, ...over }, 'useLanguage must be used within LanguageProvider');
+
+  it('drops a Server Action POST to a page that fails to render', () => {
+    expect(scrubSdkEvent(probe())).toBeNull();
+  });
+
+  it('keeps the same error on an ordinary page request, which would be a real bug', () => {
+    expect(scrubSdkEvent(probe({ request: { method: 'GET', url: 'https://connekyt.com/' } }))).not.toBeNull();
+    expect(scrubSdkEvent(probe({ contexts: { nextjs: { route_type: 'render' } } }))).not.toBeNull();
+  });
+
+  it('keeps any other error from a Server Action', () => {
+    expect(scrubSdkEvent(event({ request: { method: 'POST', url: 'https://connekyt.com/' }, contexts: { nextjs: { route_type: 'action' } } }, 'db is down'))).not.toBeNull();
+  });
+});
+
 describe('scrubSdkEvent: personal data', () => {
   it('removes the user, cookies, headers and the URL query, and scrubs emails and phone numbers in messages', () => {
     const e = scrubSdkEvent(
