@@ -11,6 +11,7 @@ describe('staticPageMetadata', () => {
     expect(m.description).toBe('Who we are.');
     expect(m.openGraph?.url).toMatch(/\/user\/about$/);
     expect(m.robots).toBeUndefined();
+    expect(JSON.stringify(m.openGraph?.images)).toContain('/opengraph-image');
   });
 
   it('keeps account pages out of search when asked', () => {
