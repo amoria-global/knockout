@@ -152,6 +152,8 @@ export const API_ENDPOINTS = {
     ANONYMOUS_VIEWER_CONFIRM_PAYMENT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/confirm-payment`,
     ANONYMOUS_VIEWER_DEVICE_CHECK: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/device-check`,
     ANONYMOUS_VIEWER_HEARTBEAT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/heartbeat`,
+    // Watch on this TV: the device holding a guest purchase moves it to the TV whose QR it scanned.
+    ANONYMOUS_VIEWER_HAND_TO_TV: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/hand-to-tv`,
     ANONYMOUS_VIEWER_DEACTIVATE: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/deactivate`,
     ANONYMOUS_VIEWER_SWITCH_DEVICE: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/switch-device`,
     ANONYMOUS_VIEWER_ACCESS_STATUS: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/access-status`,

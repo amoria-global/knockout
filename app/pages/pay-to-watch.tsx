@@ -9,7 +9,9 @@ import {
   confirmAnonymousPayment,
   resolveAnonymousViewerByFingerprint,
   checkAnonymousAccessStatus,
+  handAnonymousAccessToTv,
 } from '@/lib/APIs/streams/anonymous-viewer';
+import { getDeviceId } from '@/lib/fingerprint';
 import XentriPayModal from '../components/XentriPayModal';
 import InternationalPhoneInput, { type PhoneValue } from '../components/phone/InternationalPhoneInput';
 
@@ -42,7 +44,17 @@ import InternationalPhoneInput, { type PhoneValue } from '../components/phone/In
  * The only way here is scanning the TV's QR code.
  */
 
-type Step = 'loading' | 'invalid' | 'identity' | 'checking' | 'granted' | 'conflict' | 'success' | 'error';
+type Step = 'loading' | 'invalid' | 'identity' | 'checking' | 'granted' | 'conflict' | 'success' | 'error' | 'transfer' | 'moved';
+
+/** Where the live page keeps a guest's paid access for an event on this browser. */
+const localViewerKey = (eventId: string) => `anonymousViewer_${eventId}`;
+function readLocalViewer(eventId: string): string | null {
+  try {
+    return window.localStorage.getItem(localViewerKey(eventId));
+  } catch {
+    return null;
+  }
+}
 
 function PayToWatchContent(): React.JSX.Element {
   const searchParams = useSearchParams();
@@ -62,6 +74,10 @@ function PayToWatchContent(): React.JSX.Element {
 
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [showPayment, setShowPayment] = useState(false);
+  // A purchase this browser already holds for the event: offered to the TV instead of paying twice.
+  const [localViewerId, setLocalViewerId] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
+  const [moveError, setMoveError] = useState('');
 
   useEffect(() => {
     if (!eventId || !device) {
@@ -96,6 +112,14 @@ function PayToWatchContent(): React.JSX.Element {
           setStep('granted');
           return;
         }
+      }
+
+      // Paid for this stream on this phone or browser already? Offer to move that access to the TV.
+      const held = readLocalViewer(eventId);
+      if (held) {
+        setLocalViewerId(held);
+        setStep('transfer');
+        return;
       }
 
       setStep('identity');
@@ -161,6 +185,29 @@ function PayToWatchContent(): React.JSX.Element {
       } catch { /* backend can reconcile via payment ref later */ }
     }
     setStep('success');
+  };
+
+  /**
+   * Watch on this TV: moves the purchase this browser holds to the TV, so the viewer does not pay twice. The stream then
+   * stops here (this device's heartbeat is refused, which the live page shows as "watching on another device") and plays
+   * on the TV, which is already checking for access and starts on its own.
+   */
+  const moveToTv = async () => {
+    if (!event || !localViewerId) return;
+    setMoving(true);
+    setMoveError('');
+    try {
+      const res = await handAnonymousAccessToTv(event.id, localViewerId, await getDeviceId(), device);
+      if (res.success) {
+        setStep('moved');
+      } else {
+        setMoveError(res.error || res.message || 'Could not move your access to the TV.');
+      }
+    } catch {
+      setMoveError('Connection error. Please try again.');
+    } finally {
+      setMoving(false);
+    }
   };
 
   const posterUrl = event?.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80';
@@ -237,6 +284,43 @@ function PayToWatchContent(): React.JSX.Element {
                 icon="bi-check2"
                 title="Payment received"
                 body="Look back at your TV — it will start playing automatically in a few seconds."
+              />
+            )}
+
+            {step === 'transfer' && event && (
+              <>
+                <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0f172a' }}>Watch on this TV</h1>
+                <p style={{ margin: '6px 0 18px', fontSize: 13.5, color: '#6b7280', lineHeight: 1.5 }}>
+                  You already paid for this stream on this device. Move your access to the TV and keep watching there; no need to pay again. It stops on this device, because a stream plays on one screen at a time.
+                </p>
+                {moveError ? <ErrorText>{moveError}</ErrorText> : null}
+                <button
+                  onClick={moveToTv}
+                  disabled={moving}
+                  style={{
+                    width: '100%', marginTop: 6, padding: '13px 18px', borderRadius: 12, border: 'none',
+                    background: moving ? '#9ca3af' : 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                    color: '#fff', fontWeight: 800, fontSize: 14.5, cursor: moving ? 'wait' : 'pointer',
+                  }}
+                >
+                  {moving ? 'Moving your access…' : 'Watch on this TV'}
+                </button>
+                <button
+                  onClick={() => setStep('identity')}
+                  disabled={moving}
+                  style={{ width: '100%', marginTop: 10, padding: '11px 18px', borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff', color: '#083A85', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+                >
+                  Pay for the TV separately
+                </button>
+              </>
+            )}
+
+            {step === 'moved' && (
+              <StateBlock
+                tone="success"
+                icon="bi-tv"
+                title="Your access is on the TV"
+                body="Look at your TV. It starts playing in a few seconds. This device has stopped, so the stream only plays on one screen."
               />
             )}
 
