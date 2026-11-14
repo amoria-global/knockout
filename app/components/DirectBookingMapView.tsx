@@ -17,6 +17,8 @@ declare global {
   }
 }
 
+// CARTO draws an "API KEY REQUIRED" watermark on keyless tiles. The key is public by design and restricted to our own sites.
+const CARTO_TILE_KEY = process.env.NEXT_PUBLIC_CARTO_KEY ? `?key=${encodeURIComponent(process.env.NEXT_PUBLIC_CARTO_KEY)}` : '';
 const BRAND = '#083A85';
 const BRAND_PINK = '#F20C8F';
 const RADIUS_OPTIONS = [5, 10, 25, 50] as const;
@@ -229,7 +231,7 @@ export default function DirectBookingMapView({
         attributionControl: false,
       }).setView([client.latitude, client.longitude], 13);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      L.tileLayer(`https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png${CARTO_TILE_KEY}`, {
         maxZoom: 19,
         subdomains: 'abcd',
       }).addTo(map);
