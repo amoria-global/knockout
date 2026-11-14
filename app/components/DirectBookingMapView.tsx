@@ -231,7 +231,7 @@ export default function DirectBookingMapView({
         attributionControl: false,
       }).setView([client.latitude, client.longitude], 13);
 
-      L.tileLayer(`https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png${CARTO_TILE_KEY}`, {
+      L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png${CARTO_TILE_KEY}`, {
         maxZoom: 19,
         subdomains: 'abcd',
       }).addTo(map);
