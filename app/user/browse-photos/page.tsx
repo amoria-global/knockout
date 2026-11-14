@@ -3,6 +3,7 @@ import BrowsePhotos from "../../pages/browse-photos";
 
 export const metadata: Metadata = {
   title: "Browse Photos · Connekyt",
+  alternates: { canonical: "/user/browse-photos" },
   description: "Browse stock-style photography by category, price, and photographer. Per-photo paid download - photos arrive in your inbox.",
   openGraph: {
     title: "Browse Photos · Connekyt",

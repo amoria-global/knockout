@@ -287,3 +287,26 @@ export function eventSeoDescription(ev: SeoEvent): string {
   ].filter(Boolean).join(' ');
   return clamp(`${bits}. Book or watch live on ${SITE_NAME}.`);
 }
+
+/**
+ * Metadata for a static (non-entity) page. Every page needs its own canonical, title and description: without one it
+ * inherits the site defaults and search engines read it as a duplicate of the homepage. `path` is the canonical path.
+ * Pass `index: false` for account and tool pages that should stay out of search.
+ */
+export function staticPageMetadata(opts: {
+  title: string;
+  description: string;
+  path: string;
+  index?: boolean;
+}): import('next').Metadata {
+  const { title, description, path, index = true } = opts;
+  const fullTitle = `${title} | ${SITE_NAME}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: { type: 'website', siteName: SITE_NAME, title: fullTitle, description, url: `${SITE_URL}${path}` },
+    twitter: { card: 'summary_large_image', title: fullTitle, description },
+    ...(index ? {} : { robots: { index: false, follow: false } }),
+  };
+}

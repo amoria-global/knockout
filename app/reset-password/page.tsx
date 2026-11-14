@@ -1,4 +1,12 @@
 import { redirect } from 'next/navigation';
+import { staticPageMetadata } from "@/lib/seo/seo";
+
+export const metadata = staticPageMetadata({
+  title: "Reset Password",
+  description: "Choose a new password for your Amoria Connekyt account.",
+  path: "/reset-password",
+  index: false,
+});
 
 /**
  * Legacy redirect: pre-fix password-reset emails pointed at

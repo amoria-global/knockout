@@ -30,7 +30,6 @@ export const metadata: Metadata = {
     "Connekyt", "Amoria Connekyt", "event photography", "photographers",
     "live streaming events", "book photographer", "watch live event",
   ],
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
@@ -59,7 +58,7 @@ const SITE_JSONLD = {
       "@id": `${SITE_URL}/#org`,
       name: SITE_NAME,
       url: SITE_URL,
-      logo: `${SITE_URL}/favicon.ico`,
+      logo: `${SITE_URL}/connekytlogo.png`,
     },
     {
       "@type": "WebSite",
