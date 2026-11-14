@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import 'leaflet/dist/leaflet.css';
 import {
   getDirectBookingMap,
   calculateHaversineDistanceKm,
@@ -68,26 +69,22 @@ export default function DirectBookingMapView({
   const [selectedPhotographer, setSelectedPhotographer] =
     useState<NearbyPhotographerMapItem | null>(null);
 
-  // Load Leaflet dynamically
+  // Leaflet ships with the app. It used to come from unpkg, which the page's Content-Security-Policy refuses for scripts and
+  // styles, so the map never started and the box stayed empty.
   useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-
-    if (window.L) {
-      setLeafletLoaded(true);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.async = true;
-    script.onload = () => setLeafletLoaded(true);
-    document.body.appendChild(script);
+    let cancelled = false;
+    import('leaflet')
+      .then((mod) => {
+        if (cancelled) return;
+        window.L = (mod as { default?: unknown }).default ?? mod;
+        setLeafletLoaded(true);
+      })
+      .catch(() => {
+        // The map stays empty; the list view and the cards still work.
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Detect client position via HTML5 Geolocation
