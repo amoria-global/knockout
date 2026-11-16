@@ -31,6 +31,10 @@ import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/
 import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, blockUserInStream } from '@/lib/APIs/streams/route';
 import { getDeviceId } from '@/lib/fingerprint';
 import { invitesOn } from '@/lib/wishes/wishInvites';
+import { useLiveV2 } from '@/lib/live/useLiveV2';
+import { LiveV2Styles } from '@/app/components/live/v2/LiveV2Styles';
+import { LiveV2HostRow } from '@/app/components/live/v2/LiveV2HostRow';
+import { LiveV2Chrome } from '@/app/components/live/v2/LiveV2Chrome';
 import { AccessChip, EventHeader, EventInfo, WatchOnTv, EventTabs, InviteOthers, LiveSectionsStyles, PrivacyNote, SendWishes, WishesFeed, WishVideoDialog, useWishFeed } from '../../components/live';
 import type { LiveTab, Wish } from '@/lib/live/types';
 import { checkAnonymousAccessStatus, anonymousDeviceCheck, handAnonymousAccessToTv, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
@@ -220,6 +224,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isAuthenticated, login: authLogin, user } = useAuth();
+  const isV2 = useLiveV2();
   // Slug livestream route passes the resolved event id as a prop; the
   // legacy /live-stream?eventId= entry point still works via URL params.
   const initialId = eventIdProp || searchParams.get('eventId') || searchParams.get('id') || getInitialEventId();
@@ -7472,14 +7477,16 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       color: '#efeff1',
       overflow: 'hidden'
-    }} className="main-container">
+    }} className={`main-container${isV2 ? ' ls-v2' : ''}`}>
+
+        {isV2 ? <LiveV2Styles /> : null}
 
         {/* Main Layout Wrapper: header, then the grid of live-page sections (docs/LIVE_EVENT_STRUCTURE.md) */}
         <div className="lv lv-page">
           <LiveSectionsStyles />
           <style>{LV_LANDING_OVERRIDES}</style>
-          <EventHeader title={mainEvent?.title || 'Live event'} onBack={handleLeaveStream} onShare={lvShare}
-            actions={<WatchOnTv eventId={mainEvent?.id || ''} enabled={isAuthenticated && !['COMPLETED', 'AWAITING_REVIEW', 'CANCELLED', 'ENDED'].includes(String(mainEvent?.eventStatus || '').toUpperCase())} />} />
+          {!isV2 && <EventHeader title={mainEvent?.title || 'Live event'} onBack={handleLeaveStream} onShare={lvShare}
+            actions={<WatchOnTv eventId={mainEvent?.id || ''} enabled={isAuthenticated && !['COMPLETED', 'AWAITING_REVIEW', 'CANCELLED', 'ENDED'].includes(String(mainEvent?.eventStatus || '').toUpperCase())} />} />}
           <div className="lv-grid">
           <div className="lv-left">
           <div className="lv-main">
@@ -7502,7 +7509,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 Pure presentation: pulls from the existing mainEvent state,
                 no new backend calls. Sits at the top of the video-section so
                 viewers see what they're watching the moment the page paints. */}
-            {mainEvent && mainEvent.title && mainEvent.title !== 'Loading...' && (
+            {!isV2 && mainEvent && mainEvent.title && mainEvent.title !== 'Loading...' && (
               <div className="ls-hero" aria-label="Event details">
                 <div className="ls-hero-veil" aria-hidden="true" />
                 <div className="ls-hero-glow" aria-hidden="true" />
@@ -9040,7 +9047,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   })}
 
                   {/* Main Event Send Gift Button - Right side, extended full height */}
-                  {isGiftableEvent && (
+                  {!isV2 && isGiftableEvent && (
                     <div style={{
                       flex: '1 1 auto',
                       display: 'flex',
@@ -9082,6 +9089,32 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* New layout (switch on): host row, then the player's top bar, labelled actions and sheets. They call the
+                  page's own handlers (gift, reaction, back, rating) and hold no stream, payment, gift or wish logic. */}
+              {isV2 && mainEvent && mainEvent.title && mainEvent.title !== 'Loading...' && (
+                <>
+                  <LiveV2HostRow
+                    eventId={mainEvent.id}
+                    title={mainEvent.title}
+                    live={mainEvent.eventStatus === 'ONGOING'}
+                    showGift={isGiftableEvent && events.length === 1}
+                    onGift={() => openGiftModal(mainEvent)}
+                    onLike={() => { void handleEmojiReaction('❤️'); }}
+                  />
+                  <LiveV2Chrome
+                    eventId={mainEvent.id}
+                    title={mainEvent.title}
+                    live={mainEvent.eventStatus === 'ONGOING'}
+                    viewers={typeof mainEvent.viewers === 'number' ? mainEvent.viewers : null}
+                    isAuthenticated={isAuthenticated}
+                    invitesOn={!!mainEvent.id && invitesOn(lvWishes.allowInvites ?? mainEvent.allowWishInvites)}
+                    userHasRated={userHasRated}
+                    onBack={confirmLeaveStream}
+                    onRate={() => setShowRatingModal(true)}
+                  />
+                </>
               )}
 
               {/* Streaming Photographer + Buttons.
@@ -11128,7 +11161,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       )}
 
       {/* Mobile Floating Buttons - Portal to document.body to escape parent transforms/overflow */}
-      {!isChatOpen && typeof document !== 'undefined' && createPortal(
+      {!isV2 && !isChatOpen && typeof document !== 'undefined' && createPortal(
         <>
           <button
             onClick={() => canInteract ? setShowVideoMessageRecorder(true) : requireInteraction(() => {})}
