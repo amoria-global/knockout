@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import {
+  LIVE_V2_COOKIE,
+  LIVE_V2_VALUE,
+  emailFromToken,
+  isLivestreamPath,
+  liveV2EnabledFor,
+  parseAllowlist,
+  parseMode,
+  qaKeyMatches,
+} from '@/lib/live/viewerV2';
 
 /**
  * Home app proxy (Next.js 16 edge middleware).
@@ -81,6 +91,32 @@ async function seoRedirect(request: NextRequest): Promise<NextResponse | null> {
     url.origin,
   );
   return NextResponse.redirect(finalUrl, 301);
+}
+
+/**
+ * The new livestream layout switch (see lib/live/viewerV2.ts). Decided only on livestream page loads, from the server's
+ * LIVESTREAM_V2 settings, the signed-in account's email and an optional ?lv2=<QA key>, and written to a cookie the page
+ * reads. Any other answer clears the cookie, so setting LIVESTREAM_V2=off takes effect on the next page load.
+ */
+function withLiveFlag(request: NextRequest, response: NextResponse): NextResponse {
+  if (!isLivestreamPath(request.nextUrl.pathname)) return response;
+  const token = request.cookies.get('authToken')?.value;
+  const keyOk = qaKeyMatches(process.env.LIVESTREAM_V2_KEY, request.nextUrl.searchParams.get('lv2'));
+  // A browser that earlier presented the key keeps the layout while the mode allows it.
+  const had = request.cookies.get(LIVE_V2_COOKIE)?.value === LIVE_V2_VALUE;
+  const mode = parseMode(process.env.LIVESTREAM_V2);
+  const on = liveV2EnabledFor(mode, parseAllowlist(process.env.LIVESTREAM_V2_ALLOWLIST), emailFromToken(token), keyOk || (had && mode !== 'off' && !token));
+  if (on && !had) {
+    response.cookies.set(LIVE_V2_COOKIE, LIVE_V2_VALUE, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: 'lax',
+      secure: request.nextUrl.protocol === 'https:',
+    });
+  } else if (!on && had) {
+    response.cookies.delete(LIVE_V2_COOKIE);
+  }
+  return response;
 }
 
 export async function proxy(request: NextRequest) {
