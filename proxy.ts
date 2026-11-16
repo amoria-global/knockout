@@ -98,14 +98,20 @@ async function seoRedirect(request: NextRequest): Promise<NextResponse | null> {
  * LIVESTREAM_V2 settings, the signed-in account's email and an optional ?lv2=<QA key>, and written to a cookie the page
  * reads. Any other answer clears the cookie, so setting LIVESTREAM_V2=off takes effect on the next page load.
  */
+// Read at request time. A static process.env.NAME is replaced with the build's value when the proxy is compiled, which made
+// the switch ignore the server's setting until the next build; looking the name up by a variable is left alone.
+function runtimeEnv(name: string): string | undefined {
+  return process.env[name];
+}
+
 function withLiveFlag(request: NextRequest, response: NextResponse): NextResponse {
   if (!isLivestreamPath(request.nextUrl.pathname)) return response;
   const token = request.cookies.get('authToken')?.value;
-  const keyOk = qaKeyMatches(process.env.LIVESTREAM_V2_KEY, request.nextUrl.searchParams.get('lv2'));
+  const keyOk = qaKeyMatches(runtimeEnv('LIVESTREAM_V2_KEY'), request.nextUrl.searchParams.get('lv2'));
   // A browser that earlier presented the key keeps the layout while the mode allows it.
   const had = request.cookies.get(LIVE_V2_COOKIE)?.value === LIVE_V2_VALUE;
-  const mode = parseMode(process.env.LIVESTREAM_V2);
-  const on = liveV2EnabledFor(mode, parseAllowlist(process.env.LIVESTREAM_V2_ALLOWLIST), emailFromToken(token), keyOk || (had && mode !== 'off' && !token));
+  const mode = parseMode(runtimeEnv('LIVESTREAM_V2'));
+  const on = liveV2EnabledFor(mode, parseAllowlist(runtimeEnv('LIVESTREAM_V2_ALLOWLIST')), emailFromToken(token), keyOk || (had && mode !== 'off' && !token));
   if (on && !had) {
     response.cookies.set(LIVE_V2_COOKIE, LIVE_V2_VALUE, {
       path: '/',
