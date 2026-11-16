@@ -147,7 +147,7 @@ export async function proxy(request: NextRequest) {
   );
 
   if (!isProtectedRoute) {
-    return NextResponse.next();
+    return withLiveFlag(request, NextResponse.next());
   }
 
   // No token on a protected route → redirect to login with return URL
