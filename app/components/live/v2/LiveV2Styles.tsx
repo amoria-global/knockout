@@ -2,22 +2,22 @@
 
 /**
  * The new livestream layout. Every rule is scoped under `.ls-v2`, a class the page only gets while the switch is on
- * (lib/live/viewerV2.ts), so with the switch off none of this applies. Brand values are the same ones the dashboard's
- * Compact Glass tokens use (navy #083A85, pink #F20C8F, live red #FF0033); surfaces stay dark like the current page.
+ * (lib/live/viewerV2.ts), so with the switch off none of this applies. Colours are the mobile app's dark palette (src/theme/palettes.ts in the app repo): blue #3E6FD8 and #5B8CFF, magenta #EE0E8F,
+ * live red #FF0033, so the web and the app read as one product.
  */
 export const LIVE_V2_CSS = `
 .ls-v2 {
-  --v2-primary: #083A85;
-  --v2-primary-light: #2F64C8;
-  --v2-accent: #F20C8F;
-  --v2-accent-light: #ff4fae;
+  --v2-primary: #3E6FD8;
+  --v2-primary-light: #5B8CFF;
+  --v2-accent: #EE0E8F;
+  --v2-accent-light: #FF5DB8;
   --v2-live: #FF0033;
-  --v2-bg: #0b0d12;
-  --v2-surface: #141821;
-  --v2-surface-2: #1b2130;
-  --v2-border: rgba(255, 255, 255, 0.10);
-  --v2-text: #f2f4f8;
-  --v2-text-soft: #b6bcc9;
+  --v2-bg: #0A1220;
+  --v2-surface: #101B2E;
+  --v2-surface-2: #16243C;
+  --v2-border: #2A3B58;
+  --v2-text: #EAF0FA;
+  --v2-text-soft: #C9D5EA;
   --v2-safe-b: env(safe-area-inset-bottom, 0px);
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -63,6 +63,11 @@ export const LIVE_V2_CSS = `
 .ls-v2 .vjs-buttons-row { justify-content: flex-end; gap: 8px; }
 .ls-v2 .vjs-controls { border-bottom: 2px solid var(--v2-live); background: linear-gradient(transparent, rgba(0, 0, 0, 0.55)); }
 
+/* The player's own LIVE label and access chip are replaced by the top bar; the corner logo moves down, clear of it. */
+.ls-v2 #main-video-player .vjs-live-label,
+.ls-v2 #main-video-player .lv-chip { display: none !important; }
+.ls-v2 .ls-v2-wm { top: auto !important; bottom: 58px !important; }
+
 /* Top bar over the player. */
 .ls-v2-bar {
   position: absolute; top: 0; left: 0; right: 0; z-index: 6;
@@ -106,7 +111,7 @@ export const LIVE_V2_CSS = `
 .ls-v2-gift {
   display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 0; border-radius: 999px; cursor: pointer;
   color: #fff; font-weight: 700; font-size: 14px; background: linear-gradient(135deg, var(--v2-accent-light), var(--v2-accent));
-  box-shadow: 0 6px 18px rgba(242, 12, 143, 0.28);
+  box-shadow: 0 6px 18px rgba(238, 14, 143, 0.28);
 }
 .ls-v2-like {
   width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--v2-border); background: var(--v2-surface);
@@ -121,21 +126,50 @@ export const LIVE_V2_CSS = `
 }
 .ls-v2 .lv-panel { padding-bottom: calc(12px + var(--v2-safe-b)); }
 
-/* Desktop: player and actions left, tabs and chat in a fixed right column. */
+/* Layout. .lv-left is flattened (display: contents) so the player, the tabs, both panels and the wishes rail can be
+   placed directly: one column on phones, two from 1024px. Only the active tab shows; the chat stays mounted. The rail
+   (send a wish, invite, privacy note) belongs to the Wishes tab, so it shows only while that tab is active, and its
+   short preview list is dropped because the tab already lists every approved wish. */
+.ls-v2 .lv-grid { display: flex !important; flex-direction: column; }
+.ls-v2 .lv-left { display: contents !important; }
+.ls-v2 .lv-main { order: 1; min-width: 0; }
+.ls-v2 .lv-tabs-wrap { order: 2; }
+.ls-v2 #lv-panel-live { order: 3; }
+.ls-v2 .lv-side {
+  order: 4; display: flex !important; flex-direction: column; gap: 12px; padding: 0 16px 12px;
+  position: static !important; max-height: none !important; overflow: visible !important;
+}
+.ls-v2 #lv-panel-wishes { order: 5; }
+.ls-v2 .lv-side > .lv-feed--preview { display: none !important; }
+.ls-v2 .lv-panel[hidden], .ls-v2 .lv-panel--off { display: none !important; }
+.ls-v2 .lv-grid:has(#lv-panel-wishes[hidden]) .lv-side { display: none !important; }
+
 @media (min-width: 1024px) {
   .ls-v2 .lv-grid {
-    display: grid !important; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 0; align-items: start;
-    max-width: 1440px; margin: 0 auto;
+    display: grid !important; grid-template-columns: minmax(0, 1fr) 380px; grid-template-rows: auto auto auto 1fr;
+    align-items: start; max-width: 1600px; margin: 0 auto;
   }
-  .ls-v2 .lv-left { grid-column: 1; grid-row: 1 / span 6; min-width: 0; }
-  .ls-v2 .lv-tabs-wrap, .ls-v2 .lv-panel { grid-column: 2; }
-  .ls-v2 .lv-tabs-wrap { position: sticky; top: 0; z-index: 3; background: var(--v2-bg); padding-top: 12px; }
-  .ls-v2 .lv-panel { max-height: calc(100dvh - 64px); overflow-y: auto; }
+  .ls-v2 .lv-main { grid-column: 1; grid-row: 1 / span 4; }
+  .ls-v2 .lv-tabs-wrap {
+    grid-column: 2; grid-row: 1; position: sticky; top: 0; z-index: 3; background: var(--v2-bg); padding: 12px 16px 10px;
+    border-left: 1px solid var(--v2-border);
+  }
+  .ls-v2 #lv-panel-live { grid-column: 2; grid-row: 2 / span 3; }
+  .ls-v2 .lv-side { grid-column: 2; grid-row: 2; padding-top: 4px; }
+  .ls-v2 #lv-panel-wishes { grid-column: 2; grid-row: 3; }
+  .ls-v2 .lv-panel, .ls-v2 .lv-side { border-left: 1px solid var(--v2-border); }
+  .ls-v2 #lv-panel-live .chat-section { height: calc(100dvh - 96px) !important; border-radius: 0 !important; border: 0 !important; }
   .ls-v2 .ls-v2-bar { padding: 14px 16px; }
 }
-@media (max-width: 1023.98px) {
-  .ls-v2 .lv-grid { display: block !important; }
+
+/* Reactions row above the chat input. */
+.ls-v2-reacts { display: flex; justify-content: space-between; gap: 6px; padding: 0 2px 10px; }
+.ls-v2-react {
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--v2-border); background: var(--v2-surface-2);
+  font-size: 20px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
 }
+.ls-v2-react:active { transform: scale(0.94); }
+.ls-v2-react:focus-visible { outline: 2px solid var(--v2-accent-light); outline-offset: 2px; }
 
 /* Chips under the player on desktop. */
 .ls-v2-chips { display: none; flex-wrap: wrap; gap: 8px; padding: 0 16px 14px; }
@@ -159,7 +193,7 @@ export const LIVE_V2_CSS = `
   border: 1px solid var(--v2-border); background: var(--v2-surface-2); color: var(--v2-text); text-align: left; font-size: 14px; font-weight: 600;
 }
 .ls-v2-row small { display: block; margin-top: 2px; color: var(--v2-text-soft); font-weight: 400; font-size: 12px; }
-.ls-v2-ico { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: rgba(47, 100, 200, 0.2); color: #9db8f2; flex: 0 0 auto; }
+.ls-v2-ico { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: rgba(62, 111, 216, 0.2); color: #5B8CFF; flex: 0 0 auto; }
 
 .ls-v2-qr { text-align: center; }
 .ls-v2-qr-img { width: 220px; max-width: 70vw; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: 10px; margin: 6px auto 10px; display: block; }

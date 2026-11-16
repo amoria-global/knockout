@@ -26,9 +26,12 @@ const WM_Z = 999999;
 export function StreamWatermark({
   variant = 'full',
   position = 'top-left',
+  cornerClassName,
 }: {
   variant?: 'full' | 'mark';
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  /** Lets a page layout move the corner logo (for example clear of its own top bar). The logo itself is unchanged. */
+  cornerClassName?: string;
 }) {
   const mark = variant === 'mark';
   const pad = mark ? 6 : 14;
@@ -77,6 +80,7 @@ export function StreamWatermark({
           video. Low opacity, always on top. */}
       <div
         aria-hidden
+        className={cornerClassName}
         style={{
           position: 'absolute',
           ...vertical,

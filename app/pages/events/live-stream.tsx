@@ -35,6 +35,7 @@ import { useLiveV2 } from '@/lib/live/useLiveV2';
 import { LiveV2Styles } from '@/app/components/live/v2/LiveV2Styles';
 import { LiveV2HostRow } from '@/app/components/live/v2/LiveV2HostRow';
 import { LiveV2Chrome } from '@/app/components/live/v2/LiveV2Chrome';
+import { LiveV2Reactions } from '@/app/components/live/v2/LiveV2Reactions';
 import { AccessChip, EventHeader, EventInfo, WatchOnTv, EventTabs, InviteOthers, LiveSectionsStyles, PrivacyNote, SendWishes, WishesFeed, WishVideoDialog, useWishFeed } from '../../components/live';
 import type { LiveTab, Wish } from '@/lib/live/types';
 import { checkAnonymousAccessStatus, anonymousDeviceCheck, handAnonymousAccessToTv, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
@@ -7924,7 +7925,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               )}
 
               {/* ── Brand watermark (all viewers, low opacity) ── */}
-              <StreamWatermark variant="full" position="top-left" />
+              <StreamWatermark variant="full" position="top-left" cornerClassName={isV2 ? 'ls-v2-wm' : undefined} />
 
               {/* ── Live Stream Ad Banners ── */}
               {streamAds.length > 0 && (
@@ -9802,6 +9803,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   </button>
                 </div>
               )}
+
+              {isV2 ? <LiveV2Reactions onReact={(e) => { void handleEmojiReaction(e); }} /> : null}
 
               {canInteract ? (
                 <div className="ls-chat-input-row" style={{
