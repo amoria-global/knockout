@@ -235,7 +235,7 @@ export const LIVE_V2_CSS = `
 /* The chat is a fixed-height column on every width: the list scrolls inside it and the reactions and input stay at its
    bottom. On a phone it takes what is left under the player, host row and switch, so the whole screen fits the viewport
    (like the reference) and the input is in reach without scrolling. */
-.ls-v2 #lv-panel-live .chat-section { display: flex !important; flex-direction: column; height: max(280px, calc(100dvh - 380px)) !important; max-height: none !important; }
+.ls-v2 #lv-panel-live .chat-section { display: flex !important; flex-direction: column; height: max(280px, calc(100dvh - 390px)) !important; max-height: none !important; }
 .ls-v2 #lv-panel-live .chat-section > .custom-scrollbar { flex: 1 1 auto; min-height: 0; overflow-y: auto !important; }
 .ls-v2 #lv-panel-live .chat-section > div:last-child { flex: 0 0 auto; }
 @media (min-width: 1024px) { .ls-v2 #lv-panel-live .chat-section { height: calc(100dvh - 96px) !important; } }
@@ -283,12 +283,36 @@ export const LIVE_V2_CSS = `
   width: 36px !important; height: 36px !important; border-radius: 50% !important; flex: 0 0 auto;
   background: linear-gradient(135deg, var(--v2-primary-light), var(--v2-primary)) !important; color: #fff !important; box-shadow: none !important; border: 0 !important;
 }
-.ls-v2 .ls-chat-input-row > button.ls-chat-send:disabled { opacity: 0.45; }
+.ls-v2 .ls-chat-input-row > button.ls-chat-send:disabled { opacity: 0.75; }
+.ls-v2 .ls-chat-input-row input, .ls-v2 .ls-chat-input-row input::placeholder { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }
 /* A guest sees one pill in place of the field; it opens the same details form. */
 .ls-v2 #lv-panel-live .chat-section > div:last-child > button:not(.ls-v2-react):not(.ls-video-msg-cta) {
   order: 2; flex: 1 1 0; min-width: 0; height: 44px; padding: 0 16px !important; margin: 0 !important; border-radius: 999px !important; text-align: left;
   background: var(--v2-surface-2) !important; border: 1px solid var(--v2-border) !important; color: var(--v2-text-soft) !important; font-size: 14px !important; font-weight: 500 !important; box-shadow: none !important;
 }
+
+/* Leftovers of the old layout that still carried margins and padding under the host row. */
+.ls-v2 .ls-org-row { display: none !important; }
+.ls-v2 .stream-info-section { padding: 0 !important; margin: 0 !important; }
+
+/* The Wishes tab: the feed card lines up with the cards above it. */
+.ls-v2 .lv-left > #lv-panel-wishes { padding: 0 16px 16px; }
+.ls-v2 #lv-panel-wishes .lv-card { margin: 0 !important; }
+
+/* The guest "Your Details" popup sits outside the layout's wrapper (it is a page-level overlay), so it is found by its
+   own inline styles. This stylesheet exists only while the new layout is on, so these rules are gated with it. Colours
+   are the app's dark palette written out, since the layout's variables are not defined out here. */
+div[style*="inset: 0"][style*="rgba(8, 58, 133, 0.4)"][style*="z-index: 9999"] { background: rgba(6, 10, 20, 0.72) !important; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] { background: #101B2E !important; border: 1px solid #2A3B58 !important; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55) !important; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] * { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] :is(h1, h2, h3) { color: #EAF0FA !important; font-family: "Space Grotesk", Inter, sans-serif !important; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] :is(p, label, span, small, i) { color: #C9D5EA !important; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] span[style*="color: rgb(220, 38, 38)"], div[style*="max-width: 440px"][style*="border-radius: 20px"] span[style*="color: red"] { color: #FF8FA3 !important; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] input { background: #16243C !important; border: 1px solid #2A3B58 !important; color: #EAF0FA !important; border-radius: 12px !important; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] input::placeholder { color: #93A3BE !important; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] input:focus { border-color: #5B8CFF !important; outline: none; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] button[style*="width: 100%"] { background: linear-gradient(135deg, #5B8CFF, #3E6FD8) !important; color: #fff !important; border-radius: 999px !important; box-shadow: 0 8px 20px rgba(62, 111, 216, 0.35) !important; border: 0 !important; }
+div[style*="max-width: 440px"][style*="border-radius: 20px"] button[style*="width: 100%"] * { color: #fff !important; }
 
 @media (prefers-reduced-motion: reduce) { .ls-v2 * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 `;

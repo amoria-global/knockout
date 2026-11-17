@@ -7,7 +7,8 @@ export function EventTabs({ value, onChange, wishCount, v2 }: { value: LiveTab; 
   // The new layout's switch reads "Live chat" (with a live dot) and "Wishes & memories" with the count beside it, like the app.
   const tabs: { key: LiveTab; label: React.ReactNode }[] = v2
     ? [
-        { key: 'live', label: <>Live chat<span className="lv-tab-dot" aria-hidden="true" /></> },
+        // "chat" is its own element on purpose: the site rewrites the plain text "Live chat" to "Live Chat" after it renders.
+        { key: 'live', label: <>Live <span>chat</span><span className="lv-tab-dot" aria-hidden="true" /></> },
         { key: 'wishes', label: <>Wishes &amp; memories{wishCount ? <span className="lv-tab-count">{wishCount}</span> : null}</> },
       ]
     : [
