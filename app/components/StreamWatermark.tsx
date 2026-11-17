@@ -88,7 +88,8 @@ export function StreamWatermark({
           display: 'flex',
           alignItems: 'center',
           gap: mark ? 0 : 7,
-          opacity: mark ? 0.25 : 0.3,
+          // Kept faint so it does not compete with the picture (was 0.25 for the mark and 0.3 for the full logo and wordmark).
+          opacity: mark ? 0.15 : 0.12,
           pointerEvents: 'none',
           userSelect: 'none',
           zIndex: WM_Z,
