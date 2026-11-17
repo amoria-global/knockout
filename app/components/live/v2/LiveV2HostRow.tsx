@@ -89,7 +89,7 @@ export function LiveV2HostRow({
       {showGift ? (
         <button type="button" className="ls-v2-gift" onClick={onGift} aria-label="Send a gift">
           <i className="bi bi-gift-fill" aria-hidden="true" />
-          <span className="ls-v2-gift-long">Send gift</span><span className="ls-v2-gift-short">Gift</span>
+          {/* "gift" is its own element: the site rewrites the plain text "Send gift" to "Send Gift" after it renders. */}<span className="ls-v2-gift-long">Send <span>gift</span></span><span className="ls-v2-gift-short">Gift</span>
         </button>
       ) : null}
       <button type="button" className="ls-v2-like" onClick={onLike} aria-label="Like">
