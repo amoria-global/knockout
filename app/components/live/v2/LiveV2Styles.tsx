@@ -196,6 +196,12 @@ export const LIVE_V2_CSS = `
 .ls-v2-ico { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: rgba(62, 111, 216, 0.2); color: #5B8CFF; flex: 0 0 auto; }
 
 .ls-v2-qr { text-align: center; }
+.ls-v2-qr-cover {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 6px;
+  min-height: 104px; margin: 0 0 12px; padding: 12px; border-radius: 16px; text-align: left; overflow: hidden;
+  background: var(--v2-surface-2) center / cover no-repeat; box-shadow: inset 0 -60px 60px -20px rgba(10, 18, 32, 0.85);
+}
+.ls-v2-qr-cover strong { font-family: "Space Grotesk", Inter, sans-serif; font-size: 17px; color: var(--v2-text); }
 .ls-v2-qr-img { width: 220px; max-width: 70vw; aspect-ratio: 1; background: #fff; border-radius: 16px; padding: 10px; margin: 6px auto 10px; display: block; }
 .ls-v2-qr-link { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: var(--v2-surface-2); border: 1px solid var(--v2-border); font-size: 12px; word-break: break-all; text-align: left; }
 .ls-v2-qr-actions { display: flex; gap: 8px; margin-top: 12px; }

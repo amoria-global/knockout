@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { InviteOthers } from '../InviteOthers';
 import { WatchOnTv } from '../WatchOnTv';
 import { downloadQr, qrDataUrl } from '@/lib/live/qr';
+import { getPublicEventById } from '@/lib/APIs/public/get-events/route';
 
 type View = null | 'more' | 'qr' | 'invite';
 
@@ -39,6 +40,7 @@ export function LiveV2Chrome({
   const [view, setView] = useState<View>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [cover, setCover] = useState<string | null>(null);
   const tvSlot = useRef<HTMLSpanElement>(null);
   const [barHost, setBarHost] = useState<HTMLElement | null>(null);
   const pageUrl = typeof window !== 'undefined' ? window.location.href.split('#')[0] : '';
@@ -46,6 +48,19 @@ export function LiveV2Chrome({
 
   // The top bar sits over the player itself, so it is drawn into the player's element. The player mounts a moment after
   // the page, so look for it a few times.
+  // The QR card shows the event cover, read from the public event the first time the card opens.
+  useEffect(() => {
+    if (view !== 'qr' || cover !== null || !eventId) return;
+    let alive = true;
+    getPublicEventById(eventId)
+      .then((res) => {
+        const photo = (res?.data as { eventPhoto?: string } | undefined)?.eventPhoto;
+        if (alive) setCover(typeof photo === 'string' ? photo : '');
+      })
+      .catch(() => { if (alive) setCover(''); });
+    return () => { alive = false; };
+  }, [view, cover, eventId]);
+
   useEffect(() => {
     let tries = 0;
     let t: ReturnType<typeof setTimeout>;
@@ -210,6 +225,10 @@ export function LiveV2Chrome({
         <div className="ls-v2-sheet ls-v2-qr" role="dialog" aria-label="Share this live">
           <div className="ls-v2-grab" />
           <h3>Share this live</h3>
+          <div className="ls-v2-qr-cover" style={cover ? { backgroundImage: `url("${cover.replace(/"/g, '%22')}")` } : undefined}>
+            {live ? <span className="ls-v2-pill ls-v2-pill--live"><span className="ls-v2-dot" aria-hidden="true" />LIVE</span> : null}
+            <strong>{title}</strong>
+          </div>
           {qr ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img className="ls-v2-qr-img" src={qr} alt={`QR code for ${title}`} />
@@ -224,6 +243,13 @@ export function LiveV2Chrome({
             <a className="ls-v2-chip" href={whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp</a>
             <button type="button" className="ls-v2-chip" onClick={share}>More apps</button>
             <button type="button" className="ls-v2-chip" onClick={saveQr}>Save QR</button>
+            {tvAvailable ? (
+              isAuthenticated ? (
+                <button type="button" className="ls-v2-chip" onClick={openTv}>TV</button>
+              ) : (
+                <a className="ls-v2-chip" href={signInHref}>TV</a>
+              )
+            ) : null}
           </div>
           {note ? <p className="ls-v2-note" role="status">{note}</p> : null}
         </div>
