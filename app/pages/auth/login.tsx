@@ -22,6 +22,7 @@ import PostLoginModal from '@/app/components/PostLoginModal';
 import UserTypeModal from '@/app/components/UserTypeModal';
 import dynamic from 'next/dynamic';
 
+import ReferralCodeField from '@/app/components/ReferralCodeField';
 const PhotographerOnboarding = dynamic(() => import('@/app/components/PhotographerOnboarding'), { ssr: false });
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 import { resolvePostAuthDestination, goToPostAuthDestination } from '@/lib/utils/post-auth-destination';
@@ -592,6 +593,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
+  // Optional photographer referral code or link. Prefilled from ?ref= (connekyt.com/join?ref=CODE).
+  const [referralCode, setReferralCode] = useState(() => searchParams.get('ref') || '');
   const [signupPassword, setSignupPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -859,6 +862,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             firstName, lastName, email: signupEmail,
             phone: phoneDigits,
             customerType: signupUserType, password: signupPassword,
+            ...(referralCode.trim() ? { referralCode: referralCode.trim() } : {}),
           });
           if (!resp.success || !resp.data || !resp.data.customerId || !resp.data.token) {
             const msg = (resp.success ? '' : resp.error)
@@ -918,6 +922,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         firstName, lastName, email: signupEmail,
         phone: phoneDigits,
         customerType: signupUserType, password: signupPassword,
+        ...(referralCode.trim() ? { referralCode: referralCode.trim() } : {}),
       });
       if (!response.success || !response.data) {
         return { success: false, error: response.error || 'Signup failed. Please try again.' };
@@ -1445,6 +1450,11 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
               )}
               {signupErrors.confirmPassword && <p style={errorStyle}>{signupErrors.confirmPassword}</p>}
             </div>
+
+            {/* Referral code (photographers only, optional, never blocks sign-up) */}
+            {signupUserType.toLowerCase() === 'photographer' && (
+              <ReferralCodeField value={referralCode} onChange={setReferralCode} disabled={signupLoading} inputStyle={inputStyle} labelStyle={labelStyle} />
+            )}
           </div>
 
           {/* Terms */}

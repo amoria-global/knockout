@@ -523,5 +523,135 @@
     "filter": "Filtrer",
     "viewMore": "Voir Plus",
     "backToTop": "Retour en Haut"
+  },
+  "referral": {
+    "field": {
+      "label": "Code ou lien de parrainage (facultatif)",
+      "placeholder": "ex. ABCD2345",
+      "checking": "Vérification…",
+      "applied": "Code appliqué : parrainé par {name}",
+      "invalid": "Ce code n'est pas valide",
+      "limit": "Ce parrain a atteint sa limite",
+      "notEligible": "Ce parrain ne peut pas accepter de nouveaux filleuls pour le moment",
+      "self": "Vous ne pouvez pas utiliser votre propre code",
+      "mutual": "Ce code ne peut pas être utilisé",
+      "already": "Votre compte a déjà un parrain",
+      "tooMany": "Trop de tentatives. Veuillez patienter une minute.",
+      "error": "Impossible de vérifier le code. Vous pouvez continuer sans.",
+      "remove": "Retirer",
+      "policy": "Comment fonctionne le programme de parrainage"
+    },
+    "ui": {
+      "menuAlbum": "Partager votre album",
+      "menuProfile": "Partager le profil",
+      "menuReferral": "Partager le lien ou code de parrainage",
+      "shareTitle": "Partager",
+      "sheetTitle": "Programme de parrainage",
+      "yourCode": "Votre code",
+      "yourLink": "Votre lien",
+      "copy": "Copier",
+      "copied": "Copié",
+      "whatsapp": "WhatsApp",
+      "moreApps": "Plus d'applis",
+      "saveQr": "Enregistrer le QR",
+      "progressToUnlock": "{n} sur 5 pour débloquer 25 %",
+      "yourFee": "Vos frais : {fee} % · {n} filleuls sur 20",
+      "complete": "Programme terminé : 20/20 · vos frais : 10 %",
+      "referralsTitle": "Vos filleuls",
+      "statusPending": "En attente",
+      "statusUnderReview": "En vérification",
+      "statusQualified": "Qualifié",
+      "statusRevoked": "Révoqué",
+      "emptyTitle": "Aucun filleul pour le moment",
+      "emptyBody": "Partagez votre code. Un parrainage compte quand le photographe parrainé est approuvé et termine une mission payée.",
+      "loadError": "Impossible de charger vos filleuls",
+      "retry": "Réessayer",
+      "addCode": "Ajouter un code de parrainage",
+      "addCodeHelp": "Saisissez le code ou le lien du photographe qui vous a parrainé.",
+      "confirmTitle": "Confirmez votre parrain",
+      "referredBy": "Parrainé par {name}",
+      "confirmWarning": "Ceci ne pourra plus être modifié.",
+      "confirm": "Confirmer",
+      "cancel": "Annuler",
+      "saved": "Code de parrainage enregistré",
+      "shareMessage": "Rejoignez-moi sur Connekyt. Utilisez mon code de parrainage {code} : {link}"
+    },
+    "policy": {
+      "title": "Programme de parrainage des photographes Connekyt",
+      "updated": "Dernière mise à jour : novembre 2026",
+      "intro": "Parrainez d'autres photographes sur Connekyt et réduisez vos frais de plateforme à mesure qu'ils gagnent.",
+      "tableTitle": "Barème des frais",
+      "colRefs": "Parrainages qualifiés",
+      "colFee": "Vos frais de plateforme",
+      "rowDefault": "0 à 4",
+      "rowDefaultFee": "Vos frais habituels",
+      "rowFive": "5",
+      "rowStep": "6 à 19",
+      "rowStepFee": "30 % moins 1 point par parrainage (24 % à 6, jusqu’à 11 % à 19)",
+      "rowMax": "20 (maximum)",
+      "sections": [
+        {
+          "h": "Qui peut participer",
+          "p": [
+            "Le programme est ouvert aux photographes Connekyt dont le profil est accepté et actif. Chaque photographe éligible reçoit un code unique de 8 caractères et un lien : connekyt.com/join?ref=VOTRECODE."
+          ]
+        },
+        {
+          "h": "Comment parrainer",
+          "p": [
+            "Partagez votre code ou lien depuis le menu Partager de votre écran d'accueil. Un nouveau photographe peut le saisir à l'inscription (facultatif). Un photographe existant sans parrain peut ajouter un code dans Profil, Paramètres, Ajouter un code de parrainage."
+          ]
+        },
+        {
+          "h": "Photographes nouveaux et existants",
+          "p": [
+            "Chaque compte peut avoir un seul parrain. Il est défini une fois et ne peut jamais être modifié. Vous ne pouvez pas vous parrainer vous-même, et deux photographes ne peuvent pas se parrainer mutuellement."
+          ]
+        },
+        {
+          "h": "Quand un parrainage compte",
+          "p": [
+            "Un parrainage est qualifié lorsque le photographe parrainé est accepté et termine une mission payée (réservation, vente de photos ou d'album, billet de diffusion en direct ou cadeau) réglée après l'enregistrement du parrainage, par un vrai client, d'au moins 5 USD. Pour les photographes existants, les paiements antérieurs à l'ajout du code ne comptent jamais.",
+            "D'ici là, le parrainage est en attente. Un paiement remboursé ou contesté ne qualifie jamais, et le parrainage repasse en attente."
+          ]
+        },
+        {
+          "h": "Vos frais",
+          "p": [
+            "Vos frais de plateforme dépendent de vos parrainages qualifiés, selon le barème ci-dessus. Ils s'appliquent à vos réservations, ventes de photos et d'albums, billets de direct et cadeaux. Si l'un de vos frais est déjà inférieur au taux du programme, vous gardez le plus bas."
+          ]
+        },
+        {
+          "h": "La limite de 20 parrainages",
+          "p": [
+            "Le maximum est de 20 parrainages qualifiés, ce qui donne les frais les plus bas, 10 %. Une fois atteint, votre code n'accepte plus de nouveaux parrainages."
+          ]
+        },
+        {
+          "h": "Permanent et non rétroactif",
+          "p": [
+            "Un taux obtenu ne remonte pas, même si un filleul quitte la plateforme. Le nouveau taux s'applique aux transactions à partir du moment où un parrainage est qualifié et ne modifie jamais les transactions passées. La seule exception est un parrainage que Connekyt révoque pour fraude."
+          ]
+        },
+        {
+          "h": "Contrôles anti-fraude et vérification",
+          "p": [
+            "Nous vérifions chaque parrainage : auto-parrainage, numéros de téléphone, e-mails, comptes de paiement, appareils ou pièces d'identité identiques, paiements du même client aux deux photographes, vagues d'inscriptions inhabituelles et parrainages circulaires. Un parrainage suspect est mis en vérification et ne compte pas tant que notre équipe ne l'a pas validé. Lorsqu'un parrainage est révoqué, votre taux est recalculé à partir de ce moment, pas rétroactivement."
+          ]
+        },
+        {
+          "h": "Modifications du programme",
+          "p": [
+            "Connekyt peut modifier ou arrêter le programme pour les futurs parrainages. Les taux déjà obtenus sont conservés."
+          ]
+        },
+        {
+          "h": "Contact",
+          "p": [
+            "Questions sur le programme : info@connekyt.com."
+          ]
+        }
+      ]
+    }
   }
 }

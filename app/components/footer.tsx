@@ -18,6 +18,7 @@ import DotGrid from './DotGrid';
 
 export default function Footer() {
   const t = useTranslations('footer');
+  const tRef = useTranslations('referral');
   const pathname = usePathname();
   const isLandingPage = pathname === '/' || pathname === '';
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
@@ -303,6 +304,7 @@ export default function Footer() {
         { text: t('links.privacyPolicy'), href: '/user/privacy-policy' },
         { text: t('links.termsOfService'), href: '/user/terms-of-service' },
         { text: t('links.trustSafety'), href: '/user/trust-safety' },
+        { text: tRef('policy.title'), href: '/referral-program' },
         { text: t('links.deleteAccount'), href: '/user/delete-account' },
       ],
     },
