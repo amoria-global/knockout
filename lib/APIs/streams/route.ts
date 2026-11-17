@@ -42,10 +42,12 @@ export async function sendStreamChat(eventId: string, content: string): Promise<
   if (!isAuthenticated()) {
     return { success: false, error: 'Authentication required' };
   }
-  const queryParams = new URLSearchParams({ content });
+  // The signed-in viewer route: the message goes in the body and the server saves it for any signed-in viewer. The old
+  // call posted `?content=` to the coordinator route, which expects a body and only lets the event's owner post, so a
+  // viewer's message showed on their own screen and was never saved.
   return apiClient.post(
-    `${API_ENDPOINTS.STREAMS.CHATS(eventId)}?${queryParams.toString()}`,
-    undefined,
+    `/api/remote/customer/events/${encodeURIComponent(eventId)}/chats`,
+    { message: content },
     { retries: 1 }
   );
 }
