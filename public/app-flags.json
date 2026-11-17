@@ -1,4 +1,5 @@
 {
   "_comment": "Remote switches the mobile app reads (features/live/appFlags.ts). mode is off, allowlist or all. Anything unknown means off. Changing this file takes a website deploy, not an app update. Never put personal emails here: the file is public.",
-  "liveGuestWishes": { "mode": "all", "allowlist": [] }
+  "liveGuestWishes": { "mode": "all", "allowlist": [] },
+  "liveViewerV2": { "mode": "all", "allowlist": [] }
 }
