@@ -41,7 +41,30 @@ export async function getStreamChats(
     ? `${API_ENDPOINTS.STREAMS.CHATS(streamId)}?${queryString}`
     : API_ENDPOINTS.STREAMS.CHATS(streamId);
 
-  return apiClient.get<GetStreamChatsResponse>(endpoint, { retries: 1 });
+  const res = await apiClient.get<GetStreamChatsResponse>(endpoint, { retries: 1 });
+  if (res.success) res.data = normalizeChatList(res.data);
+  return res;
+}
+
+/**
+ * The chat list reply is { data: [messages], page, size, total }. The shared client merges the root fields (page, size,
+ * total) into the unwrapped data, and when that data is an array the merge spreads it into an object keyed 0, 1, 2 ...
+ * The live page then saw something that was not an array and showed no messages at all to a signed-in viewer. Rebuild
+ * the list from any of the shapes that can arrive: an array, the keyed object, or { data: [...] }.
+ */
+export function normalizeChatList(raw: unknown): GetStreamChatsResponse {
+  if (Array.isArray(raw)) return { data: raw as StreamChatMessage[] };
+  if (raw && typeof raw === 'object') {
+    const o = raw as Record<string, unknown>;
+    if (Array.isArray(o.data)) return { ...(o as object), data: o.data as StreamChatMessage[] } as GetStreamChatsResponse;
+    const keyed = Object.keys(o)
+      .filter((k) => /^\d+$/.test(k))
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => o[k] as StreamChatMessage);
+    const { page, size, total } = o as { page?: number; size?: number; total?: number };
+    return { data: keyed, ...(page !== undefined ? { page } : {}), ...(size !== undefined ? { size } : {}), ...(total !== undefined ? { total } : {}) } as GetStreamChatsResponse;
+  }
+  return { data: [] };
 }
 
 /**

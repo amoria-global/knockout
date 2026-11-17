@@ -36,6 +36,8 @@ import { LiveV2Styles } from '@/app/components/live/v2/LiveV2Styles';
 import { LiveV2HostRow } from '@/app/components/live/v2/LiveV2HostRow';
 import { LiveV2Chrome } from '@/app/components/live/v2/LiveV2Chrome';
 import { LiveV2Reactions } from '@/app/components/live/v2/LiveV2Reactions';
+import { LiveV2Initial } from '@/app/components/live/v2/LiveV2Initial';
+import { nameColor } from '@/lib/live/nameColor';
 import { AccessChip, EventHeader, EventInfo, WatchOnTv, EventTabs, InviteOthers, LiveSectionsStyles, PrivacyNote, SendWishes, WishesFeed, WishVideoDialog, useWishFeed } from '../../components/live';
 import type { LiveTab, Wish } from '@/lib/live/types';
 import { checkAnonymousAccessStatus, anonymousDeviceCheck, handAnonymousAccessToTv, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
@@ -299,27 +301,6 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const [isAnonymousViewer, setIsAnonymousViewer] = useState(false);
   const [anonymousViewerName, setAnonymousViewerName] = useState('');
 
-  // ── Welcome splash ──
-  // Replaces the generic preloader with a cinematic "you're in" message
-  // for viewers redirected here. Dismisses on a timer (default 2.6s) or on
-  // user interaction. The splash also hides early when the video element
-  // signals it's ready to play, so users with fast streams skip it.
-  const [showWelcomeSplash, setShowWelcomeSplash] = useState(true);
-  const [welcomeSplashFadingOut, setWelcomeSplashFadingOut] = useState(false);
-  const dismissWelcomeSplash = useCallback(() => {
-    setWelcomeSplashFadingOut(true);
-    window.setTimeout(() => setShowWelcomeSplash(false), 320);
-  }, []);
-  useEffect(() => {
-    if (!showWelcomeSplash) return;
-    // Auto-dismiss after 2.6s - long enough to read "Welcome, you're in!"
-    // but short enough not to delay the actual stream meaningfully.
-    const t = window.setTimeout(() => {
-      setWelcomeSplashFadingOut(true);
-      window.setTimeout(() => setShowWelcomeSplash(false), 320);
-    }, 2600);
-    return () => window.clearTimeout(t);
-  }, [showWelcomeSplash]);
   const [showViewerInfoModal, setShowViewerInfoModal] = useState(false);
   const [viewerInfoLoading, setViewerInfoLoading] = useState(false);
   const [viewerInfoError, setViewerInfoError] = useState('');
@@ -3796,59 +3777,6 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   // Main component render
   return (
     <>
-      {/* ── WELCOME SPLASH ──
-          Cinematic "you're in" message that replaces the preloader for
-          users redirected from view-event after payment. Auto-dismisses
-          after 2.6 s OR on tap; fades out smoothly. The blurred event
-          poster behind the message ties the visual back to view-event so
-          it feels like a continuation, not a new page. */}
-      {showWelcomeSplash && (
-        <div
-          className={`ls-welcome ${welcomeSplashFadingOut ? 'is-leaving' : ''}`}
-          role="status"
-          aria-live="polite"
-          onClick={dismissWelcomeSplash}
-        >
-          <div className="ls-welcome-veil" aria-hidden="true" />
-          <div className="ls-welcome-grain" aria-hidden="true" />
-          <div className="ls-welcome-content">
-            {/* Animated check icon */}
-            <div className="ls-welcome-check" aria-hidden="true">
-              <svg viewBox="0 0 52 52" width="64" height="64">
-                <circle className="ls-welcome-check-circle" cx="26" cy="26" r="24" fill="none" stroke="#6ee7b7" strokeWidth="2.5" />
-                <path className="ls-welcome-check-tick" d="M14 27 l8 8 l16-16" fill="none" stroke="#6ee7b7" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-
-            {/* Status pill */}
-            <span className="ls-welcome-tag">
-              <span className="ls-welcome-pulse" aria-hidden="true" />
-              LIVE STREAM READY
-            </span>
-
-            <h1 className="ls-welcome-title">You&apos;re in!</h1>
-            <p className="ls-welcome-sub">
-              {mainEvent?.title && mainEvent.title !== 'Loading...'
-                ? <>Connecting you to <strong>{mainEvent.title}</strong>…</>
-                : <>Connecting you to the live stream…</>}
-            </p>
-
-            <div className="ls-welcome-progress" aria-hidden="true">
-              <span />
-            </div>
-
-            <button
-              type="button"
-              className="ls-welcome-skip"
-              onClick={(e) => { e.stopPropagation(); dismissWelcomeSplash(); }}
-              aria-label="Skip welcome and go to stream"
-            >
-              Skip <i className="bi bi-arrow-right" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* ═══════════════════════════════════════════════════════════════════
           GOODBYE SPLASH - appears for ~2.4s after the user confirms leaving.
           Cinematic farewell with a heartbeat icon, message, and progress
@@ -3883,215 +3811,6 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       )}
 
       <style>{`
-        /* ── Welcome splash styles ─────────────────────────────────── */
-        .ls-welcome {
-          position: fixed;
-          inset: 0;
-          z-index: 99999;
-          background:
-            radial-gradient(80% 60% at 50% 0%, rgba(8,58,133,0.30) 0%, rgba(8,58,133,0) 60%),
-            linear-gradient(180deg, #07080d 0%, #0c0e15 60%, #11141d 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 24px;
-          font-family: 'Pragati Narrow', system-ui, -apple-system, 'Segoe UI', sans-serif;
-          color: #f4f6fb;
-          overflow: hidden;
-          cursor: pointer;
-          animation: ls-welcome-in 320ms ease-out;
-        }
-        .ls-welcome.is-leaving { animation: ls-welcome-out 320ms ease-in forwards; }
-        @keyframes ls-welcome-in {
-          from { opacity: 0; transform: scale(1.04); }
-          to   { opacity: 1; transform: scale(1); }
-        }
-        @keyframes ls-welcome-out {
-          from { opacity: 1; transform: scale(1); }
-          to   { opacity: 0; transform: scale(1.06); }
-        }
-        .ls-welcome-veil {
-          position: absolute; inset: 0; z-index: 1;
-          background:
-            radial-gradient(90% 70% at 50% 50%, rgba(7,8,13,0.55) 0%, rgba(7,8,13,0.92) 100%),
-            radial-gradient(70% 50% at 50% 100%, rgba(220,38,38,0.18) 0%, rgba(220,38,38,0) 60%),
-            radial-gradient(60% 40% at 50% 0%, rgba(31,107,255,0.22) 0%, rgba(31,107,255,0) 60%);
-        }
-        .ls-welcome-grain {
-          position: absolute; inset: 0; z-index: 2;
-          opacity: 0.16;
-          mix-blend-mode: overlay;
-          pointer-events: none;
-          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
-        }
-        .ls-welcome-content {
-          position: relative; z-index: 3;
-          text-align: center;
-          max-width: 460px;
-          width: 100%;
-        }
-        /* Animated check inside an emerald glass disc */
-        .ls-welcome-check {
-          width: 100px; height: 100px;
-          border-radius: 50%;
-          background: rgba(16,185,129,0.10);
-          border: 2px solid rgba(16,185,129,0.45);
-          display: inline-flex; align-items: center; justify-content: center;
-          margin-bottom: 22px;
-          box-shadow:
-            0 18px 50px -8px rgba(16,185,129,0.45),
-            0 0 0 6px rgba(16,185,129,0.05),
-            inset 0 1px 0 rgba(255,255,255,0.10);
-          animation: ls-welcome-check-pop 540ms cubic-bezier(0.34, 1.56, 0.64, 1) 80ms backwards;
-        }
-        @keyframes ls-welcome-check-pop {
-          from { opacity: 0; transform: scale(0.5) rotate(-20deg); }
-          to   { opacity: 1; transform: scale(1) rotate(0deg); }
-        }
-        /* SVG check stroke draw-on animation */
-        .ls-welcome-check-circle {
-          stroke-dasharray: 151;
-          stroke-dashoffset: 151;
-          animation: ls-welcome-circle-draw 700ms ease-out 280ms forwards;
-        }
-        .ls-welcome-check-tick {
-          stroke-dasharray: 50;
-          stroke-dashoffset: 50;
-          animation: ls-welcome-tick-draw 380ms ease-out 720ms forwards;
-        }
-        @keyframes ls-welcome-circle-draw { to { stroke-dashoffset: 0; } }
-        @keyframes ls-welcome-tick-draw   { to { stroke-dashoffset: 0; } }
-
-        .ls-welcome-tag {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 6px 14px;
-          margin-bottom: 14px;
-          border-radius: 999px;
-          background: linear-gradient(135deg, rgba(239,68,68,0.92) 0%, rgba(220,38,38,0.92) 100%);
-          color: #fff;
-          font-size: 11px;
-          font-weight: 900;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          border: 1px solid rgba(255,255,255,0.22);
-          box-shadow: 0 10px 24px -6px rgba(220,38,38,0.55), inset 0 1px 0 rgba(255,255,255,0.20);
-          text-shadow: 0 1px 2px rgba(0,0,0,0.30);
-          animation: ls-welcome-tag-fade 600ms ease-out 1100ms backwards;
-        }
-        @keyframes ls-welcome-tag-fade {
-          from { opacity: 0; transform: translateY(-6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .ls-welcome-pulse {
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          background: #fff;
-          box-shadow: 0 0 0 0 rgba(255,255,255,0.7);
-          animation: ls-welcome-pulse 1.4s ease-out infinite;
-        }
-        @keyframes ls-welcome-pulse {
-          0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
-          70%  { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
-          100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
-        }
-        .ls-welcome-title {
-          font-size: clamp(36px, 6vw, 56px);
-          font-weight: 800;
-          line-height: 1.05;
-          letter-spacing: -0.025em;
-          margin: 0 0 10px;
-          color: #ffffff;
-          text-shadow: 0 8px 36px rgba(0,0,0,0.55);
-          animation: ls-welcome-title-fade 600ms ease-out 1200ms backwards;
-        }
-        @keyframes ls-welcome-title-fade {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .ls-welcome-sub {
-          font-size: clamp(14px, 1.6vw, 17px);
-          color: #b8bdca;
-          line-height: 1.5;
-          margin: 0 auto 26px;
-          max-width: 380px;
-          animation: ls-welcome-title-fade 600ms ease-out 1320ms backwards;
-        }
-        .ls-welcome-sub strong { color: #f4f6fb; font-weight: 700; }
-
-        /* Indeterminate progress bar - slides a brand-blue chunk across */
-        .ls-welcome-progress {
-          width: 200px;
-          height: 4px;
-          margin: 0 auto;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.08);
-          overflow: hidden;
-          position: relative;
-        }
-        .ls-welcome-progress span {
-          position: absolute;
-          top: 0; left: 0;
-          height: 100%;
-          width: 50%;
-          border-radius: 999px;
-          background: linear-gradient(90deg, rgba(31,107,255,0) 0%, #1f6bff 30%, #1f6bff 70%, rgba(31,107,255,0) 100%);
-          animation: ls-welcome-progress 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        }
-        @keyframes ls-welcome-progress {
-          0%   { left: -50%; }
-          100% { left: 100%; }
-        }
-
-        .ls-welcome-skip {
-          position: absolute;
-          top: max(16px, env(safe-area-inset-top, 0px));
-          right: 16px;
-          z-index: 4;
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 8px 14px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.18);
-          color: #b8bdca;
-          font-family: inherit;
-          font-size: 12.5px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          cursor: pointer;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
-        }
-        .ls-welcome-skip:hover {
-          background: rgba(255,255,255,0.12);
-          color: #ffffff;
-          border-color: rgba(255,255,255,0.34);
-        }
-        .ls-welcome-skip i { font-size: 12px; }
-
-        @media (max-width: 540px) {
-          .ls-welcome-check { width: 84px; height: 84px; margin-bottom: 18px; }
-          .ls-welcome-check svg { width: 52px; height: 52px; }
-          .ls-welcome-title { font-size: 34px; }
-          .ls-welcome-sub { font-size: 14px; max-width: 320px; }
-          .ls-welcome-progress { width: 160px; }
-          .ls-welcome-skip { font-size: 11.5px; padding: 7px 12px; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .ls-welcome,
-          .ls-welcome-check,
-          .ls-welcome-check-circle,
-          .ls-welcome-check-tick,
-          .ls-welcome-tag,
-          .ls-welcome-pulse,
-          .ls-welcome-title,
-          .ls-welcome-sub,
-          .ls-welcome-progress span {
-            animation: none !important;
-          }
-          .ls-welcome-check-circle, .ls-welcome-check-tick { stroke-dashoffset: 0; }
-        }
-
         /* ── Goodbye splash styles ─────────────────────────────────── */
         .ls-goodbye {
           position: fixed;
@@ -9101,6 +8820,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     title={mainEvent.title}
                     live={mainEvent.eventStatus === 'ONGOING'}
                     showGift={isGiftableEvent && events.length === 1}
+                    viewers={typeof mainEvent.viewers === 'number' ? mainEvent.viewers : null}
                     onGift={() => openGiftModal(mainEvent)}
                     onLike={() => { void handleEmojiReaction('❤️'); }}
                   />
@@ -9328,7 +9048,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           </div>
 
           <div className="lv-tabs-wrap">
-            <EventTabs value={lvTab} onChange={setLvTab} wishCount={lvWishes.total || undefined} />
+            <EventTabs value={lvTab} onChange={setLvTab} wishCount={lvWishes.total || undefined} v2={isV2} />
           </div>
 
           <div className={`lv-panel lv-panel--live${lvTab !== 'live' ? ' lv-panel--off' : ''}`} id="lv-panel-live" role="tabpanel" aria-labelledby="lv-tab-live">
@@ -9447,6 +9167,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  {isV2 && (!message.avatar || message.avatar === DEFAULT_USER_AVATAR) ? (
+                    <LiveV2Initial name={message.sender} />
+                  ) : (
                   <img
                     src={message.avatar || DEFAULT_USER_AVATAR}
                     alt={message.sender}
@@ -9460,6 +9183,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                       marginTop: '2px'
                     }}
                   />
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       display: 'flex',
@@ -9470,7 +9194,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                       <span style={{
                         fontSize: '12px',
                         fontWeight: '600',
-                        color: '#efeff1',
+                        color: isV2 ? nameColor(message.sender).text : '#efeff1',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -9852,7 +9576,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                    placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
+                    placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : (isV2 ? "Say something..." : "Send a message...")}
                     style={{
                       flex: 1,
                       backgroundColor: 'transparent',

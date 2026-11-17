@@ -6,6 +6,7 @@
  * live red #FF0033, so the web and the app read as one product.
  */
 export const LIVE_V2_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 .ls-v2 {
   --v2-primary: #3E6FD8;
   --v2-primary-light: #5B8CFF;
@@ -158,7 +159,7 @@ export const LIVE_V2_CSS = `
   .ls-v2 .lv-side { grid-column: 2; grid-row: 2; padding-top: 4px; }
   .ls-v2 #lv-panel-wishes { grid-column: 2; grid-row: 3; }
   .ls-v2 .lv-panel, .ls-v2 .lv-side { border-left: 1px solid var(--v2-border); }
-  .ls-v2 #lv-panel-live .chat-section { height: calc(100dvh - 96px) !important; border-radius: 0 !important; border: 0 !important; }
+  
   .ls-v2 .ls-v2-bar { padding: 14px 16px; }
 }
 
@@ -207,6 +208,87 @@ export const LIVE_V2_CSS = `
 .ls-v2-qr-actions { display: flex; gap: 8px; margin-top: 12px; }
 .ls-v2-qr-actions .ls-v2-chip { flex: 1; justify-content: center; }
 .ls-v2-note { margin: 8px 4px 0; font-size: 12px; color: var(--v2-text-soft); }
+
+/* Type: Space Grotesk for titles, Inter for everything else (icons keep their own font). */
+.ls-v2 *:not(i):not(svg):not(svg *) { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }
+.ls-v2 :is(h1, h2, h3, h4, .ls-v2-title, .lv-tab, .ls-v2-sheet h3, .ls-v2-qr-cover strong) { font-family: "Space Grotesk", Inter, sans-serif !important; letter-spacing: -0.005em; }
+
+/* The switch: one segmented control, "Live chat" and "Wishes & memories", the active half filled blue. */
+.ls-v2 .lv-tabs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px;
+  background: var(--v2-surface); border: 1px solid var(--v2-border);
+}
+.ls-v2 .lv-tab {
+  text-transform: none !important; letter-spacing: 0 !important;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 8px 10px;
+  border: 0; border-radius: 11px; background: transparent; color: var(--v2-text-soft); font-size: 13.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.ls-v2 .lv-tab[aria-selected="true"] { color: #fff; background: linear-gradient(135deg, var(--v2-primary-light), var(--v2-primary)); box-shadow: 0 4px 14px rgba(62, 111, 216, 0.35); }
+.ls-v2 .lv-tab:focus-visible { outline: 2px solid var(--v2-accent-light); outline-offset: 2px; }
+.ls-v2 .lv-tab-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--v2-live); box-shadow: 0 0 0 3px rgba(255, 0, 51, 0.25); }
+.ls-v2 .lv-tab-count { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); }
+.ls-v2 .lv-tab:not([aria-selected="true"]) .lv-tab-count { background: var(--v2-surface-2); color: var(--v2-text-soft); }
+
+/* Host row line: name, live minutes, watching. */
+.ls-v2 .ls-v2-livetime { color: #FF8FA3; font-weight: 600; }
+
+/* The chat is a fixed-height column on every width: the list scrolls inside it and the reactions and input stay at its
+   bottom. On a phone it takes what is left under the player, host row and switch, so the whole screen fits the viewport
+   (like the reference) and the input is in reach without scrolling. */
+.ls-v2 #lv-panel-live .chat-section { display: flex !important; flex-direction: column; height: max(280px, calc(100dvh - 380px)) !important; max-height: none !important; }
+.ls-v2 #lv-panel-live .chat-section > .custom-scrollbar { flex: 1 1 auto; min-height: 0; overflow-y: auto !important; }
+.ls-v2 #lv-panel-live .chat-section > div:last-child { flex: 0 0 auto; }
+@media (min-width: 1024px) { .ls-v2 #lv-panel-live .chat-section { height: calc(100dvh - 96px) !important; } }
+.ls-v2 .ls-v2-gift, .ls-v2 .ls-v2-like { flex: 0 0 auto; }
+.ls-v2 #lv-panel-live .custom-scrollbar > div button { opacity: 0.55; }
+.ls-v2 .lv-card .lv-btn { white-space: nowrap; padding-left: 10px; padding-right: 10px; font-size: 13px; }
+
+/* Chat messages: a 32px picture or coloured initial, then the name and time, then the text, with room to breathe. */
+.ls-v2-initial { flex: 0 0 auto; width: 32px; height: 32px; margin-top: 1px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; }
+.ls-v2 #lv-panel-live .custom-scrollbar > div { padding: 6px 4px !important; gap: 10px !important; align-items: flex-start !important; }
+.ls-v2 #lv-panel-live .custom-scrollbar > div > img { width: 32px !important; height: 32px !important; }
+.ls-v2 #lv-panel-live .custom-scrollbar p { font-size: 14px !important; line-height: 1.35 !important; color: var(--v2-text) !important; margin: 0 !important; }
+.ls-v2 #lv-panel-live .custom-scrollbar > div span { font-size: 13px !important; }
+.ls-v2 #lv-panel-live .custom-scrollbar > div span + span { font-size: 11px !important; color: var(--v2-text-soft) !important; opacity: 0.7; }
+
+/* The chat: no header (the switch above says what it is), the list straight under it, then reactions and the input row. */
+.ls-v2 #lv-panel-live .chat-section { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.ls-v2 #lv-panel-live .chat-section > div:first-child { display: none !important; }
+.ls-v2 #lv-panel-live .chat-section > .custom-scrollbar, .ls-v2 #lv-panel-live .custom-scrollbar { background: transparent !important; padding: 10px 14px !important; }
+.ls-v2 .ls-chat-empty-orb, .ls-v2 .ls-chat-empty-bubbles { display: none !important; }
+.ls-v2 .ls-chat-empty { padding: 28px 16px !important; text-align: center; }
+.ls-v2 .ls-chat-empty-title { font-size: 14.5px !important; color: var(--v2-text) !important; margin: 0 0 4px !important; }
+.ls-v2 .ls-chat-empty-sub { font-size: 12.5px !important; color: var(--v2-text-soft) !important; margin: 0 !important; }
+
+.ls-v2 #lv-panel-live .chat-section > div:last-child {
+  display: flex !important; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 12px calc(12px + var(--v2-safe-b)) !important; background: transparent !important; border-top: 1px solid var(--v2-border) !important;
+}
+.ls-v2 .ls-v2-reacts { order: 0; flex: 1 0 100%; padding: 0 0 2px; }
+.ls-v2 .ls-video-msg-cta {
+  order: 1; flex: 0 0 44px !important; width: 44px !important; min-width: 44px; max-width: 44px; height: 44px !important; padding: 0 !important; margin: 0 !important; border-radius: 50% !important; font-size: 0 !important; line-height: 0;
+  background: var(--v2-surface-2) !important; border: 1px solid var(--v2-border) !important; box-shadow: none !important;
+  display: inline-flex !important; align-items: center; justify-content: center; color: var(--v2-text) !important;
+}
+.ls-v2 .ls-video-msg-cta i { font-size: 18px !important; margin: 0 !important; color: var(--v2-text) !important; }
+.ls-v2 .ls-chat-input-row {
+  order: 2; flex: 1 1 0; min-width: 0; margin: 0 !important; padding: 0 5px 0 14px !important; height: 44px; border-radius: 999px !important;
+  background: var(--v2-surface-2) !important; border: 1px solid var(--v2-border) !important;
+}
+.ls-v2 .ls-chat-input-row:focus-within { border-color: var(--v2-primary-light) !important; }
+.ls-v2 .ls-chat-input-row input[type="text"] { background: transparent !important; color: var(--v2-text) !important; font-size: 14px !important; }
+.ls-v2 .ls-chat-input-row input[type="text"]::placeholder { color: var(--v2-text-soft) !important; opacity: 0.8; }
+.ls-v2 .ls-chat-input-row > button.ls-chat-emoji { display: none !important; }
+.ls-v2 .ls-chat-input-row > button.ls-chat-send {
+  width: 36px !important; height: 36px !important; border-radius: 50% !important; flex: 0 0 auto;
+  background: linear-gradient(135deg, var(--v2-primary-light), var(--v2-primary)) !important; color: #fff !important; box-shadow: none !important; border: 0 !important;
+}
+.ls-v2 .ls-chat-input-row > button.ls-chat-send:disabled { opacity: 0.45; }
+/* A guest sees one pill in place of the field; it opens the same details form. */
+.ls-v2 #lv-panel-live .chat-section > div:last-child > button:not(.ls-v2-react):not(.ls-video-msg-cta) {
+  order: 2; flex: 1 1 0; min-width: 0; height: 44px; padding: 0 16px !important; margin: 0 !important; border-radius: 999px !important; text-align: left;
+  background: var(--v2-surface-2) !important; border: 1px solid var(--v2-border) !important; color: var(--v2-text-soft) !important; font-size: 14px !important; font-weight: 500 !important; box-shadow: none !important;
+}
 
 @media (prefers-reduced-motion: reduce) { .ls-v2 * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 `;
