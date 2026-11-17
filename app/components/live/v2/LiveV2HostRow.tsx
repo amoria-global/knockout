@@ -64,11 +64,9 @@ export function LiveV2HostRow({
   const avatar = resolveHostAvatar(host);
   const name = host ? resolveHostName(host) : '';
   const minutes = live && liveBase ? Math.max(0, Math.floor((liveBase.seconds + (now - liveBase.readAt) / 1000) / 60)) : null;
-  const subParts = [
-    name,
-    minutes !== null ? `Live ${minutes < 1 ? 'just now' : `${minutes} min`}` : null,
-    live && typeof viewers === 'number' && viewers > 0 ? `${viewers.toLocaleString()} watching` : null,
-  ].filter(Boolean) as string[];
+  const liveLong = minutes !== null ? `Live ${minutes < 1 ? 'just now' : `${minutes} min`}` : null;
+  const liveShort = minutes !== null ? (minutes < 1 ? 'now' : `${minutes}m`) : null;
+  const watching = live && typeof viewers === 'number' && viewers > 0 ? `${viewers.toLocaleString()} watching` : null;
 
   return (
     <div className="ls-v2-host">
@@ -82,14 +80,16 @@ export function LiveV2HostRow({
       )}
       <div className="ls-v2-host-meta">
         <h1 className="ls-v2-title">{title}</h1>
-        <p className="ls-v2-sub">{subParts.length ? subParts.map((part, i) => (
-          <span key={i}>{i > 0 ? ' · ' : ''}{part.startsWith('Live') ? <b className="ls-v2-livetime">{part}</b> : part}</span>
-        )) : ' '}</p>
+        <p className="ls-v2-sub">
+          <span className="ls-v2-sub-name">{name || ' '}</span>
+          {liveLong ? <span className="ls-v2-sub-live"> {'·'} <b className="ls-v2-livetime"><span className="ls-v2-long">{liveLong}</span><span className="ls-v2-short">{liveShort}</span></b></span> : null}
+          {watching ? <span className="ls-v2-sub-watching"> {'·'} {watching}</span> : null}
+        </p>
       </div>
       {showGift ? (
         <button type="button" className="ls-v2-gift" onClick={onGift} aria-label="Send a gift">
           <i className="bi bi-gift-fill" aria-hidden="true" />
-          Gift
+          <span className="ls-v2-gift-long">Send gift</span><span className="ls-v2-gift-short">Gift</span>
         </button>
       ) : null}
       <button type="button" className="ls-v2-like" onClick={onLike} aria-label="Like">

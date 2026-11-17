@@ -229,8 +229,24 @@ export const LIVE_V2_CSS = `
 .ls-v2 .lv-tab-count { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); }
 .ls-v2 .lv-tab:not([aria-selected="true"]) .lv-tab-count { background: var(--v2-surface-2); color: var(--v2-text-soft); }
 
-/* Host row line: name, live minutes, watching. */
+/* Host row line: name, live minutes, watching. The name gives way first (ellipsis); on phones the minutes are short ("42m")
+   and the watching count is left out, like the app. */
+.ls-v2 .ls-v2-sub { display: flex; align-items: baseline; min-width: 0; }
+.ls-v2 .ls-v2-sub-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ls-v2 .ls-v2-sub-live, .ls-v2 .ls-v2-sub-watching { flex: 0 0 auto; white-space: pre; }
 .ls-v2 .ls-v2-livetime { color: #FF8FA3; font-weight: 600; }
+.ls-v2 .ls-v2-short, .ls-v2 .ls-v2-gift-short { display: inline; }
+.ls-v2 .ls-v2-long, .ls-v2 .ls-v2-gift-long { display: none; }
+@media (min-width: 640px) {
+  .ls-v2 .ls-v2-short { display: none; }
+  .ls-v2 .ls-v2-long { display: inline; }
+}
+@media (max-width: 639.98px) { .ls-v2 .ls-v2-sub-watching { display: none; } }
+@media (min-width: 1024px) {
+  .ls-v2 .ls-v2-gift-short { display: none; }
+  .ls-v2 .ls-v2-gift-long { display: inline; }
+}
+.ls-v2 .ls-v2-chip i { color: var(--v2-primary-light); }
 
 /* The chat is a fixed-height column on every width: the list scrolls inside it and the reactions and input stay at its
    bottom. On a phone it takes what is left under the player, host row and switch, so the whole screen fits the viewport
