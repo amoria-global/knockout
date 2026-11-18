@@ -21,6 +21,7 @@ export interface SignupRequest {
   customerType: string; // Backend expects 'customerType', not 'userType'
   password: string;
   invitedBy?: string; // Inviter's customer ID (photographer invite flow)
+  referralCode?: string; // Optional photographer referral code or link (server validates, never blocks)
 }
 
 export interface SignupResponse {

@@ -523,5 +523,135 @@
     "filter": "Filtrar",
     "viewMore": "Ver Más",
     "backToTop": "Volver Arriba"
+  },
+  "referral": {
+    "field": {
+      "label": "Código o enlace de referido (opcional)",
+      "placeholder": "p. ej. ABCD2345",
+      "checking": "Comprobando…",
+      "applied": "Código aplicado: referido por {name}",
+      "invalid": "Este código no es válido",
+      "limit": "Este referidor alcanzó su límite",
+      "notEligible": "Este referidor no puede aceptar nuevos referidos ahora",
+      "self": "No puedes usar tu propio código",
+      "mutual": "Este código no se puede usar",
+      "already": "Tu cuenta ya tiene un referidor",
+      "tooMany": "Demasiados intentos. Espera un minuto.",
+      "error": "No se pudo comprobar el código. Puedes continuar sin él.",
+      "remove": "Quitar",
+      "policy": "Cómo funciona el programa de referidos"
+    },
+    "ui": {
+      "menuAlbum": "Compartir tu álbum",
+      "menuProfile": "Compartir perfil",
+      "menuReferral": "Compartir enlace o código de referido",
+      "shareTitle": "Compartir",
+      "sheetTitle": "Programa de referidos",
+      "yourCode": "Tu código",
+      "yourLink": "Tu enlace",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "whatsapp": "WhatsApp",
+      "moreApps": "Más apps",
+      "saveQr": "Guardar QR",
+      "progressToUnlock": "{n} de 5 para desbloquear 25 %",
+      "yourFee": "Tu comisión: {fee} % · {n} de 20 referidos",
+      "complete": "Programa completo: 20/20 · tu comisión: 10 %",
+      "referralsTitle": "Tus referidos",
+      "statusPending": "Pendiente",
+      "statusUnderReview": "En revisión",
+      "statusQualified": "Calificado",
+      "statusRevoked": "Revocado",
+      "emptyTitle": "Aún no hay referidos",
+      "emptyBody": "Comparte tu código. Un referido cuenta cuando el fotógrafo que invitas es aprobado y completa un trabajo pagado.",
+      "loadError": "No se pudieron cargar tus referidos",
+      "retry": "Reintentar",
+      "addCode": "Añadir un código de referido",
+      "addCodeHelp": "Introduce el código o enlace del fotógrafo que te refirió.",
+      "confirmTitle": "Confirma a tu referidor",
+      "referredBy": "Referido por {name}",
+      "confirmWarning": "Esto no se podrá cambiar después.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "saved": "Código de referido guardado",
+      "shareMessage": "Únete a mí en Connekyt. Usa mi código de referido {code}: {link}"
+    },
+    "policy": {
+      "title": "Programa de referidos para fotógrafos de Connekyt",
+      "updated": "Última actualización: noviembre de 2026",
+      "intro": "Refiere a otros fotógrafos a Connekyt y reduce tu comisión de plataforma a medida que empiecen a ganar.",
+      "tableTitle": "Tabla de comisiones",
+      "colRefs": "Referidos calificados",
+      "colFee": "Tu comisión de plataforma",
+      "rowDefault": "0 a 4",
+      "rowDefaultFee": "Tu comisión habitual",
+      "rowFive": "5",
+      "rowStep": "6 a 19",
+      "rowStepFee": "30 % menos 1 punto por referido (24 % con 6, hasta 11 % con 19)",
+      "rowMax": "20 (máximo)",
+      "sections": [
+        {
+          "h": "Quién puede participar",
+          "p": [
+            "El programa está abierto a fotógrafos de Connekyt con el perfil aceptado y activo. Cada fotógrafo elegible recibe un código único de 8 caracteres y un enlace: connekyt.com/join?ref=TUCODIGO."
+          ]
+        },
+        {
+          "h": "Cómo referir",
+          "p": [
+            "Comparte tu código o enlace desde el menú Compartir de tu pantalla de inicio. Un fotógrafo nuevo puede introducirlo al registrarse (es opcional). Un fotógrafo existente sin referidor puede añadir un código en Perfil, Ajustes, Añadir un código de referido."
+          ]
+        },
+        {
+          "h": "Fotógrafos nuevos y existentes",
+          "p": [
+            "Cada cuenta puede tener un solo referidor. Se fija una vez y nunca se puede cambiar. No puedes referirte a ti mismo y dos fotógrafos no pueden referirse entre sí."
+          ]
+        },
+        {
+          "h": "Cuándo cuenta un referido",
+          "p": [
+            "Un referido califica cuando el fotógrafo referido es aceptado y completa un trabajo pagado (una reserva, una venta de fotos o álbum, una entrada de transmisión en vivo o un regalo) liquidado después de registrar el referido, de un cliente real y de al menos 5 USD. Para fotógrafos existentes, los pagos anteriores a añadir el código nunca cuentan.",
+            "Hasta entonces el referido está pendiente. Un pago reembolsado o con contracargo nunca califica y el referido vuelve a pendiente."
+          ]
+        },
+        {
+          "h": "Tu comisión",
+          "p": [
+            "Tu comisión de plataforma depende de tus referidos calificados, según la tabla anterior. Se aplica a tus reservas, ventas de fotos y álbumes, entradas de transmisión y regalos. Si alguna de tus comisiones ya es menor que la del programa, conservas la menor."
+          ]
+        },
+        {
+          "h": "El límite de 20 referidos",
+          "p": [
+            "El máximo es de 20 referidos calificados, que dan la comisión más baja, 10 %. Al alcanzarlo, tu código deja de aceptar nuevos referidos."
+          ]
+        },
+        {
+          "h": "Permanente y no retroactivo",
+          "p": [
+            "Una tarifa ganada no vuelve a subir, aunque un referido se vaya después. La nueva tarifa se aplica a las transacciones desde el momento en que un referido califica y nunca cambia las transacciones pasadas. La única excepción es un referido que Connekyt revoque por fraude."
+          ]
+        },
+        {
+          "h": "Controles antifraude y revisión",
+          "p": [
+            "Revisamos cada referido por autorreferencia, teléfonos, correos, cuentas de pago, dispositivos o datos de identidad compartidos, pagos del mismo cliente a ambos, ráfagas inusuales de registros y referidos circulares. Un referido sospechoso queda en revisión y no cuenta hasta que nuestro equipo lo apruebe. Cuando revocamos un referido, tu tarifa se recalcula desde ese momento, no hacia atrás."
+          ]
+        },
+        {
+          "h": "Cambios en el programa",
+          "p": [
+            "Connekyt puede cambiar o terminar el programa para futuros referidos. Las tarifas ya ganadas se conservan."
+          ]
+        },
+        {
+          "h": "Contacto",
+          "p": [
+            "Preguntas sobre el programa: info@connekyt.com."
+          ]
+        }
+      ]
+    }
   }
 }
