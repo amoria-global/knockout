@@ -98,13 +98,13 @@ export default function LoginCode(): React.JSX.Element {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl px-6 py-8 sm:px-9">
         <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: PINK, textTransform: 'uppercase', marginBottom: 6 }}>Sign in</p>
         <h1 style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
-          {step === 'email' ? 'Email me a code' : 'Enter your code'}
+          {step === 'email' ? 'Sign in with an email code' : 'Enter your code'}
         </h1>
 
         {step === 'email' ? (
           <form onSubmit={send} noValidate>
             <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.5, marginBottom: 16 }}>
-              We will send a six-digit code to your email. It expires in 5 minutes.
+              For invited team members. We will send a six-digit code to your email. It expires in 5 minutes.
             </p>
             <label htmlFor="lc-email" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>Email</label>
             <input
@@ -115,6 +115,12 @@ export default function LoginCode(): React.JSX.Element {
             <button type="submit" disabled={busy || !email.trim()} style={buttonStyle(busy || !email.trim())}>
               {busy ? 'Sending…' : 'Send code'}
             </button>
+            <p style={{ fontSize: 13, color: '#64748b', textAlign: 'center', marginTop: 14 }}>
+              This is only for invited team members. If you forgot your password, reset it instead.
+            </p>
+            <Link href="/user/auth/forgotpswd" style={{ display: 'block', textAlign: 'center', marginTop: 8, fontSize: 14, color: NAVY, fontWeight: 600, textDecoration: 'none' }}>
+              Forgot your password?
+            </Link>
           </form>
         ) : (
           <div>

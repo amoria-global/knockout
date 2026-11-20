@@ -30,6 +30,7 @@ import { buildVerifyOtpUrl } from '@/lib/utils/otp-handoff';
 import { planForInvite, workspaceInviteIdFromUrl, type WorkspaceInvitePreview } from '@/lib/utils/workspace-invite';
 import { getWorkspaceInvitePreview } from '@/lib/APIs/public/workspace-invitation/route';
 import WorkspaceInviteBanner from '@/app/components/auth/WorkspaceInviteBanner';
+import { codeSignInRemembered } from '@/lib/utils/code-signin';
 import InternationalPhoneInput, { type PhoneValue } from '@/app/components/phone/InternationalPhoneInput';
 
 // ─── Google Login Button ────────────────────────────────────────────
@@ -334,6 +335,9 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const [showPassword, setShowPassword] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  // Only a team-member login can use an emailed code, so the link shows in browsers where one has signed in before.
+  const [codeSignInOffered, setCodeSignInOffered] = useState(false);
+  useEffect(() => { setCodeSignInOffered(codeSignInRemembered()); }, []);
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [showPostLoginModal, setShowPostLoginModal] = useState(false);
@@ -1263,9 +1267,6 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             </label>
             <Link href="/user/auth/forgotpswd" style={{ fontSize: '13px', color: '#083A85', textDecoration: 'none', fontWeight: '600' }}>{t('forgotPasswordLink')}</Link>
           </div>
-          <div style={{ marginTop: isMobile ? '8px' : '10px', textAlign: 'right' }}>
-            <Link href="/user/auth/login-code" style={{ fontSize: '13px', color: '#083A85', textDecoration: 'none', fontWeight: '600' }}>Email me a code instead</Link>
-          </div>
 
           <div style={{ marginTop: isMobile ? '12px' : '16px' }}>
             <button type="submit" disabled={loginIsDisabled || loginLoading} style={{ width: '100%', padding: isMobile ? '14px' : '12px', fontSize: '16px', borderRadius: '10px', fontWeight: '600', transition: 'all 0.3s', cursor: (loginIsDisabled || loginLoading) ? 'not-allowed' : 'pointer', background: (loginIsDisabled || loginLoading) ? '#94a3b8' : 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)', color: '#fff', border: 'none', letterSpacing: '0.5px', minHeight: isMobile ? '50px' : undefined, boxShadow: (loginIsDisabled || loginLoading) ? 'none' : '0 4px 12px rgba(8,58,133,0.25)' }}
@@ -1274,6 +1275,11 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
               {loginLoading ? 'Signing in...' : t('loginButton')}
             </button>
           </div>
+          {codeSignInOffered && (
+            <div style={{ marginTop: isMobile ? '10px' : '12px', textAlign: 'center' }}>
+              <Link href="/user/auth/login-code" style={{ fontSize: '13px', color: '#083A85', textDecoration: 'none', fontWeight: '600' }}>Team member? Sign in with an email code</Link>
+            </div>
+          )}
         </form>
 
         {/* Social sign-in. Apple is always offered (the button explains itself until the

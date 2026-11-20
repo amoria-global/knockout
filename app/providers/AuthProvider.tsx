@@ -5,6 +5,8 @@ import { apiClient, getAuthToken, getRefreshToken, setAuthToken, removeAuthToken
 import { API_ENDPOINTS } from '@/lib/api/config';
 import { logout as logoutFromBackend } from '@/lib/APIs/auth/logout/route';
 import { setAuthCookies, clearAuthCookies } from '@/lib/utils/cookies';
+import { isCollaboratorType } from '@/lib/utils/workspace-entry';
+import { rememberCodeSignIn } from '@/lib/utils/code-signin';
 
 /**
  * User data stored in auth context
@@ -296,6 +298,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     // Store user data
     storeUser(userData);
+    // A team-member login can sign in with an emailed code; remember that in this browser so the login page offers it.
+    if (isCollaboratorType(userData.customerType)) rememberCodeSignIn();
     // Update state
     setUser(userData);
     // Fetch real profile to get customerType and profilePicture

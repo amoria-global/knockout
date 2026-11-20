@@ -86,6 +86,12 @@ describe('workspace setup page', () => {
     expect(host.textContent).toContain('Open workspace');
   });
 
+  it('tells a new team member about the emailed-code route, where they set up their access', async () => {
+    previewSetup.mockResolvedValueOnce({ success: true, data: { found: true, open: true, ownerName: 'Aline', email: 'g@x.co', account: 'none' } });
+    await mount();
+    expect(host.textContent).toContain('choose Team member on the login page');
+  });
+
   it('keeps Open workspace off until the password is acceptable and both match', async () => {
     previewSetup.mockResolvedValue({ success: true, data: { found: true, open: true, ownerName: 'Eric N.', email: 'new@example.com', account: 'none' } });
     await mount();
