@@ -246,6 +246,9 @@ export default function WorkspaceSetup(): React.JSX.Element {
         <p style={{ fontSize: 12, color: '#64748b', textAlign: 'center', marginTop: 14 }}>
           Next time, sign in on the normal login page with this email and your password.
         </p>
+        <p style={{ fontSize: 12, color: '#64748b', textAlign: 'center', marginTop: 8 }}>
+          If you forget your password later, choose Team member on the login page to get a six-digit code by email.
+        </p>
         {/* On a phone with the Connekyt app, the same setup can happen there. */}
         <a href={`connekt://workspace-setup?invite=${encodeURIComponent(invitationId)}&t=${encodeURIComponent(token)}`}
           style={{ display: 'block', textAlign: 'center', marginTop: 8, fontSize: 13, fontWeight: 600, color: NAVY, textDecoration: 'none' }}>
