@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { referralCopy } from '@/lib/referral/copy';
 import { parseReferralCode } from '@/lib/referral/parseCode';
 import { validateReferralCode, type ReferralProblem } from '@/lib/APIs/referral/route';
 
@@ -33,6 +34,7 @@ interface Props {
  */
 export default function ReferralCodeField({ value, onChange, disabled, inputStyle, labelStyle }: Props): React.JSX.Element {
   const t = useTranslations('referral.field');
+  const helper = referralCopy(useLocale()).fieldHelper;
   const [state, setState] = useState<State>({ kind: 'idle' });
   const seq = useRef(0);
 
@@ -86,7 +88,7 @@ export default function ReferralCodeField({ value, onChange, disabled, inputStyl
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           placeholder={t('placeholder')}
-          aria-describedby="referralCodeStatus"
+          aria-describedby="referralCodeHelper referralCodeStatus"
           style={{ ...inputStyle, paddingRight: value ? 84 : undefined }}
         />
         {value && (
@@ -99,6 +101,7 @@ export default function ReferralCodeField({ value, onChange, disabled, inputStyl
           </button>
         )}
       </div>
+      <p id="referralCodeHelper" style={{ fontSize: 12, marginTop: 4, color: '#475569', lineHeight: 1.4 }}>{helper}</p>
       <p id="referralCodeStatus" role="status" aria-live="polite" style={{ fontSize: 12, marginTop: 4, minHeight: 16, color }}>
         {message}
       </p>
