@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { referralCopy } from '@/lib/referral/copy';
 import React, { useState, useEffect } from 'react';
 import {
   FaFacebookF,
@@ -18,7 +19,7 @@ import DotGrid from './DotGrid';
 
 export default function Footer() {
   const t = useTranslations('footer');
-  const tRef = useTranslations('referral');
+  const referralTitle = referralCopy(useLocale()).policyTitle;
   const pathname = usePathname();
   const isLandingPage = pathname === '/' || pathname === '';
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
@@ -304,7 +305,7 @@ export default function Footer() {
         { text: t('links.privacyPolicy'), href: '/user/privacy-policy' },
         { text: t('links.termsOfService'), href: '/user/terms-of-service' },
         { text: t('links.trustSafety'), href: '/user/trust-safety' },
-        { text: tRef('policy.title'), href: '/referral-program' },
+        { text: referralTitle, href: '/referral-program' },
         { text: t('links.deleteAccount'), href: '/user/delete-account' },
       ],
     },
