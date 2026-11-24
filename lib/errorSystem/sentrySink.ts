@@ -96,6 +96,9 @@ export function isNoise(report: ErrorReport): boolean {
   const stack = typeof d.stack === 'string' ? d.stack : '';
   // Injected by an in-app browser (Facebook, Instagram, ...) or an extension, never by our bundle.
   if (/iabjs:\/\/|(?:chrome|moz|safari|safari-web)-extension:\/\//.test(stack)) return true;
+  // Scripts injected by a reader or "declutter" extension (frames on an `app://` URL) and the in-app browser frame probe
+  // (`window._META.IABInnerFrame`), neither of which comes from our bundle.
+  if (/(^|\n)app:\/\/(?!\/)/.test(stack) || /_META\.IABInnerFrame/.test(message)) return true;
   // Cross-origin script failure: the browser hides the message and the stack, so there is nothing to act on.
   if (message === 'Script error.' || message === 'Script error') return true;
   // The iOS in-app browser's bridge missing from a page it did not inject into, with no frame from our bundle.

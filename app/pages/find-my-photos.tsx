@@ -1024,7 +1024,7 @@ const FindMyPhotos = () => {
       }
     };
     const blockKeys = (e: KeyboardEvent) => {
-      const k = e.key.toLowerCase();
+      const k = (e.key ?? '').toLowerCase();
       // Ctrl/Cmd + S  → Save page
       // Ctrl/Cmd + P  → Print
       // Ctrl/Cmd + Shift + S → Firefox "Take Screenshot"

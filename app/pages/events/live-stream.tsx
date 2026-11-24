@@ -3518,7 +3518,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       const mainState = playbackState[mainEvent.id];
       const mainVideo = videoRefs.current[mainEvent.id];
 
-      switch (e.key.toLowerCase()) {
+      switch ((e.key ?? '').toLowerCase()) {
         case ' ':
         case 'k':
           e.preventDefault();
