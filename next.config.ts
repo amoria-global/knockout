@@ -103,6 +103,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // "Browse Photos" became "Explore"; old links and bookmarks land on the new page.
+  async redirects() {
+    return [
+      { source: "/user/browse-photos", destination: "/explore", permanent: false },
+      { source: "/user/browse-photos/recover", destination: "/explore?recover=1", permanent: false },
+    ];
+  },
+
   async headers() {
     return [
       {
