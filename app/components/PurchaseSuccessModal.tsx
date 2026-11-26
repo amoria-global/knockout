@@ -38,6 +38,10 @@ export default function PurchaseSuccessModal({
   const [status, setStatus] = useState<'PENDING' | 'COMPLETED' | 'FAILED'>('PENDING');
   const [unlockCode, setUnlockCode] = useState<string | undefined>(undefined);
   const [timedOut, setTimedOut] = useState(false);
+  // Signed, expiring links the server hands out (a bare purchase reference opens nothing any more).
+  const [zipUrl, setZipUrl] = useState<string | undefined>(undefined);
+  const [ownUrls, setOwnUrls] = useState<Record<string, string>>({});
+  const [clipLinks, setClipLinks] = useState<{ id: string; title?: string; downloadUrl: string }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(items.map(i => i.imageId)));
   const didAutoDownloadRef = useRef(false);
 
@@ -56,6 +60,8 @@ export default function PurchaseSuccessModal({
         if (stopped) return;
         setStatus(j.data.status);
         if (j.data.unlockCode) setUnlockCode(j.data.unlockCode);
+        if (j.data.downloadUrl) setZipUrl(j.data.downloadUrl);
+        if (Array.isArray(j.data.clips)) setClipLinks(j.data.clips);
         if (j.data.status === 'COMPLETED' || j.data.status === 'FAILED') return;
         if (Date.now() - start > TIMEOUT_MS) { setTimedOut(true); return; }
         timer = setTimeout(poll, POLL_MS);
@@ -68,17 +74,37 @@ export default function PurchaseSuccessModal({
     return () => { stopped = true; if (timer) clearTimeout(timer); };
   }, [refid]);
 
-  // Trigger ZIP auto-download exactly once when COMPLETED.
+  // With the unlock code, ask for a viewing link per photo: the original of a photo you own, for you only.
   useEffect(() => {
-    if (status !== 'COMPLETED' || didAutoDownloadRef.current) return;
+    if (status !== 'COMPLETED' || !unlockCode) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${BACKEND_BASE}/api/public/content/unlock`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: unlockCode }),
+        });
+        const j = await res.json();
+        if (cancelled || j?.action !== 1) return;
+        const map: Record<string, string> = {};
+        for (const it of (j.data?.items || [])) if (it.viewUrl) map[it.id] = it.viewUrl;
+        setOwnUrls(map);
+        if (j.data?.zipUrl) setZipUrl(prev => prev || j.data.zipUrl);
+      } catch { /* the emailed link still works */ }
+    })();
+    return () => { cancelled = true; };
+  }, [status, unlockCode]);
+
+  // Trigger ZIP auto-download exactly once when COMPLETED and a signed link is available.
+  useEffect(() => {
+    if (status !== 'COMPLETED' || didAutoDownloadRef.current || !zipUrl) return;
     didAutoDownloadRef.current = true;
     const a = document.createElement('a');
-    a.href = `${BACKEND_BASE}/api/public/content/purchase/${refid}/download`;
+    a.href = zipUrl;
     a.download = `connekyt-photos-${refid}.zip`;
     document.body.appendChild(a);
     a.click();
     a.remove();
-  }, [status, refid]);
+  }, [status, zipUrl, refid]);
 
   /**
    * Originals of sold-per-photo albums are gated server-side
@@ -89,8 +115,10 @@ export default function PurchaseSuccessModal({
     !url || url.includes('refid=') ? url : `${url}${url.includes('?') ? '&' : '?'}refid=${encodeURIComponent(refid)}`;
 
   const downloadOne = (it: PurchasedItem) => {
+    const own = ownUrls[it.imageId];
+    if (!own) return; // not ready yet: the ZIP and the email carry the same files
     const a = document.createElement('a');
-    a.href = withRefid(it.fileUrl);
+    a.href = own;
     a.download = '';
     a.target = '_blank';
     a.rel = 'noopener';
@@ -200,7 +228,7 @@ export default function PurchaseSuccessModal({
                     }}>
                     <i className="bi bi-download" style={{ marginRight: 6 }} /> Download selected
                   </button>
-                  <a href={`${BACKEND_BASE}/api/public/content/purchase/${refid}/download`}
+                  {zipUrl && <a href={zipUrl}
                     download={`connekyt-photos-${refid}.zip`}
                     style={{
                       padding: '8px 14px', borderRadius: 10,
@@ -209,7 +237,12 @@ export default function PurchaseSuccessModal({
                       fontWeight: 700, fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6,
                     }}>
                     <i className="bi bi-file-zip" /> ZIP again
-                  </a>
+                  </a>}
+                  {clipLinks.map(c => (
+                    <a key={c.id} href={c.downloadUrl} style={{ padding: "8px 14px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.16)", color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <i className="bi bi-camera-video" /> {c.title || "Clip"}
+                    </a>
+                  ))}
                 </span>
               </div>
 
