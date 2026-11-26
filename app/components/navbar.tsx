@@ -1515,13 +1515,13 @@ const AmoriaKNavbar = () => {
                     </Link>
                     <div style={{ height: 1, background: '#f0f2f5' }} />
                     <Link
-                      href={getLocalePath('/user/browse-photos')}
+                      href={getLocalePath('/explore')}
                       onClick={() => setIsFindMyPhotosDropdownOpen(false)}
                       style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', textDecoration: 'none', color: '#1a2332' }}
                     >
                       <i className="bi bi-grid-3x3-gap-fill" style={{ fontSize: 18, color: '#F20C8F', marginTop: 2 }} />
                       <span>
-                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{tl('Browse Photos')}</span>
+                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{tl('Explore')}</span>
                         <span style={{ display: 'block', fontSize: 11.5, color: '#6b7280' }}>{tl('Stock photos by category, paid per photo')}</span>
                       </span>
                     </Link>
@@ -2184,8 +2184,8 @@ const AmoriaKNavbar = () => {
             <Link href={getLocalePath('/user/find-my-photos')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: '0.5rem 1.25rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>
               <i className="bi bi-person-bounding-box mr-2" /> {tl('Get Your Photos')}
             </Link>
-            <Link href={getLocalePath('/user/browse-photos')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: '0.5rem 1.25rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>
-              <i className="bi bi-grid-3x3-gap-fill mr-2" /> {tl('Browse Photos')}
+            <Link href={getLocalePath('/explore')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: '0.5rem 1.25rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>
+              <i className="bi bi-grid-3x3-gap-fill mr-2" /> {tl('Explore')}
             </Link>
 
             {/* Location Section (Mobile) - Hidden but location detection still active */}

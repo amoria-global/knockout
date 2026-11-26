@@ -2586,7 +2586,7 @@ const FindMyPhotos = () => {
             </div>
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 26, flexWrap: 'wrap' }}>
-              <a href="/user/browse-photos" style={{ display: 'inline-flex', alignItems: 'center', padding: '11px 20px', borderRadius: 999, color: 'rgba(255,255,255,0.6)', fontSize: 13.5, fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>
+              <a href="/explore" style={{ display: 'inline-flex', alignItems: 'center', padding: '11px 20px', borderRadius: 999, color: 'rgba(255,255,255,0.6)', fontSize: 13.5, fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>
                 Just browsing? Visit the print shop →
               </a>
             </div>
@@ -3447,7 +3447,7 @@ const FindMyPhotos = () => {
 
                 <p style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 12.5, color: 'rgba(255,255,255,0.45)' }}>
                   Just browsing?{' '}
-                  <a href="/user/browse-photos" style={{ color: '#ff7ec4', fontWeight: 700, textDecoration: 'none' }}>
+                  <a href="/explore" style={{ color: '#ff7ec4', fontWeight: 700, textDecoration: 'none' }}>
                     Visit the print shop →
                   </a>
                 </p>
