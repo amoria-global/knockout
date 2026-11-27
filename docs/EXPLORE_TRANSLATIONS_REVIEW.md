@@ -9,3 +9,9 @@ page; the mobile app and the dashboard copy these keys from here.
   serves en, fr and es today (see i18n.ts: rw and sw are paused), so these two are stored but not yet shown.
   Please check especially: the licence line, the "already bought" flow (codeHint, codeInvalid, recoverBody), the
   15 second preview wording (previewEnds, buyFullHint) and the price words.
+
+## Redesign keys (2026-11-27)
+New keys under `explore` in all five locales: filtersWith, showResults, reset, type, priceLabel, sortLabel, moreLikeThis, viewProfile,
+boughtShort, searchShort, subtitleShort, subtitle2, dims, savedEmpty, seeAll, cartCount, approx, loadingMore, priceUpShort, priceDownShort,
+min, max, linkCopied, typeLabel. English is the source. Spanish and French are machine drafted. Swahili and Kinyarwanda are best effort and
+still need a native read before they are treated as final (same status as the earlier Explore strings).

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "../explore.css";
+import Navbar from "../../components/navbar";
+import Footer from "../../components/footer";
 
 export const metadata: Metadata = {
   title: "Standard license · Connekyt Explore",
@@ -10,11 +12,13 @@ export const metadata: Metadata = {
 
 export default function LicensePage() {
   return (
+    <>
+    <Navbar />
     <main className="xp">
-      <div className="xp-wrap" style={{ maxWidth: 760, paddingTop: 72 }}>
+      <div className="xp-wrap" style={{ maxWidth: 760, paddingTop: 24 }}>
         <p className="xp-meta"><Link href="/explore" style={{ color: "var(--xp-pink-text)" }}>Explore</Link></p>
         <h1 style={{ fontSize: 36, margin: "0 0 8px" }}>Standard license</h1>
-        <p className="xp-meta" role="note" style={{ border: "1px solid var(--xp-line)", borderRadius: 12, padding: 12, background: "var(--xp-glass)" }}>
+        <p className="xp-meta" role="note" style={{ border: "1px solid var(--xp-line)", borderRadius: 12, padding: 12, background: "var(--xp-input)" }}>
           Draft text, pending legal review. It describes how Explore purchases are meant to be used and does not replace the
           Terms of Service.
         </p>
@@ -39,5 +43,7 @@ export default function LicensePage() {
         <p>Write to <a href="mailto:support@connekyt.com" style={{ color: "var(--xp-pink-text)" }}>support@connekyt.com</a>.</p>
       </div>
     </main>
+    <Footer />
+    </>
   );
 }
