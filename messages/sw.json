@@ -626,6 +626,20 @@
     "min": "Chini",
     "max": "Juu",
     "linkCopied": "Kiungo kimenakiliwa",
-    "typeLabel": "Picha au klipu"
+    "typeLabel": "Picha au klipu",
+    "heroEyebrow": "Connekyt Explore",
+    "heroTitle": "Picha na klipu za wabunifu",
+    "heroTitleShort": "Picha na klipu",
+    "heroSub": "Kazi za angani, mazingira na sanaa. Tazama onyesho la awali, nunua asili.",
+    "heroSubShort": "Tazama onyesho la awali, nunua asili.",
+    "sellCta": "Uza picha na klipu zako",
+    "allTypes": "Aina zote",
+    "allCategories": "Kategoria zote",
+    "anyPrice": "Bei yoyote",
+    "itemsFound": "Vitu {n} vimepatikana",
+    "apply": "Tumia",
+    "clearPrice": "Futa",
+    "resultsBar": "Matokeo",
+    "itemsFoundMore": "Vitu {n}+ vimepatikana"
   }
 }

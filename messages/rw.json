@@ -626,6 +626,20 @@
     "min": "Ntoya",
     "max": "Nini",
     "linkCopied": "Ihuza ryakopowe",
-    "typeLabel": "Amafoto cyangwa amashusho"
+    "typeLabel": "Amafoto cyangwa amashusho",
+    "heroEyebrow": "Connekyt Explore",
+    "heroTitle": "Amafoto n'amashusho by'abahanzi",
+    "heroTitleShort": "Amafoto n'amashusho",
+    "heroSub": "Ibikorwa byo mu kirere, byo muri kamere n'ubuhanzi. Reba icyitegererezo, ugure umwimerere.",
+    "heroSubShort": "Reba icyitegererezo, ugure umwimerere.",
+    "sellCta": "Gurisha amafoto n'amashusho yawe",
+    "allTypes": "Ubwoko bwose",
+    "allCategories": "Ibyiciro byose",
+    "anyPrice": "Igiciro icyo ari cyo cyose",
+    "itemsFound": "Habonetse ibintu {n}",
+    "apply": "Emeza",
+    "clearPrice": "Siba",
+    "resultsBar": "Ibisubizo",
+    "itemsFoundMore": "Habonetse ibintu {n}+"
   }
 }
