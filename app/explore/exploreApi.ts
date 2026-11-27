@@ -121,17 +121,11 @@ export const recoverByEmail = (email: string) =>
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
   });
 
-/** Format a price the way the rest of the product does: whole units for RWF-like currencies, cents for the rest. */
+/** Prices read the same everywhere: ISO code, thousands separators, cents only for currencies that have them. */
 export function money(amount: number | null | undefined, currency: string): string {
   if (amount == null) return "";
   const cents = ["USD", "EUR", "GBP"].includes(currency);
-  try {
-    return new Intl.NumberFormat("en", {
-      style: "currency", currency, minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0,
-    }).format(amount);
-  } catch {
-    return `${currency} ${amount.toLocaleString("en")}`;
-  }
+  return `${currency} ${amount.toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 })}`;
 }
 
 export function clock(seconds?: number): string {
