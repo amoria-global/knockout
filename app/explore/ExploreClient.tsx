@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import "../components/landing-search.css";
 import "./explore.css";
+import FilterSelect from "../components/FilterSelect";
 import Navbar from "../components/navbar";
 import XentriPayModal from "../components/XentriPayModal";
 import PurchaseSuccessModal from "../components/PurchaseSuccessModal";
@@ -21,7 +23,8 @@ const CART_KEY = "connekyt:explore:cart:v1";
 const SAVES_KEY = "connekyt:explore:saves:v1";
 const GAP_DESKTOP = 16;
 const GAP_PHONE = 10;
-const CAPTION_PX = 36;
+const CAPTION_DESK = 74; // card body: title, creator and price (fixed so the masonry can be computed)
+const CAPTION_PHONE = 62;
 
 type CartSnap = { id: string; title: string | null; thumbnailUrl: string | null; mediaType: string };
 type T = ReturnType<typeof useTranslations>;
@@ -94,7 +97,6 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
   const [maxPrice, setMaxPrice] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [anchor, setAnchor] = useState<{ top: number; right: number }>({ top: 120, right: 20 });
   useEffect(() => { const h = setTimeout(() => setQDebounced(q.trim()), 300); return () => clearTimeout(h); }, [q]);
 
   // ── feed ────────────────────────────────────────────────────────────
@@ -323,11 +325,8 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
   const resetFilters = () => { setCategory(""); setType(""); setTag(""); setMinPrice(""); setMaxPrice(""); setSort("newest"); setCurrency("USD"); };
   const clearFilters = () => { setQ(""); resetFilters(); };
   const cartCount = cart.length;
-  const openFilters = (e: React.MouseEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    setAnchor({ top: Math.round(r.bottom + 8), right: Math.max(12, Math.round(window.innerWidth - r.right)) });
-    setFiltersOpen(true);
-  };
+  const openFilters = () => setFiltersOpen(true);
+
   useEffect(() => {
     if (!filtersOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFiltersOpen(false); };
@@ -341,7 +340,7 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
   const skeletonCount = list.length === 0 ? cols * 3 : cols;
   const skeletonHeights = useMemo(() => Array.from({ length: skeletonCount }, (_, i) => Math.round(colW * (0.7 + ((i * 37) % 80) / 100))), [skeletonCount, colW]);
   const entries = useMemo(() => {
-    const real = list.map(it => colW / ratioOf(it) + (phone ? CAPTION_PX : 0));
+    const real = list.map(it => colW / ratioOf(it) + (phone ? CAPTION_PHONE : CAPTION_DESK) + 2);
     return showSkeleton ? [...real, ...skeletonHeights] : real;
   }, [list, colW, phone, showSkeleton, skeletonHeights]);
   const columns = useMemo(() => layoutColumns(entries, cols, gap), [entries, cols, gap]);
@@ -367,22 +366,21 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
             <iframe title={it.title || t("clip")} src={`${it.previewIframeUrl}?autoplay=true&muted=true&loop=true&controls=false`} allow="autoplay" tabIndex={-1} />
           )}
           {video && <span className="xp-badge"><i className="bi bi-play-fill" aria-hidden /> {clock(it.durationSeconds) || t("clip")}</span>}
-          <div className="xp-info">
-            <div><b>{it.title || (video ? t("clip") : t("photo"))}</b><small>{it.creator.name}</small></div>
-            <span className="xp-pricechip">{money(it.price.amount, it.price.currency)}</span>
-          </div>
         </div>
         <div className="xp-tileacts">
+          <button className="xp-round on-media cartbtn" aria-pressed={inCart(it.id)} aria-label={inCart(it.id) ? t("removeFromCart") : t("addToCart")} onClick={() => toggleCart(it)}>
+            <i className={`bi ${inCart(it.id) ? "bi-check-lg" : "bi-bag-plus"}`} aria-hidden />
+          </button>
           <button className="xp-round on-media" aria-pressed={isSaved} aria-label={isSaved ? t("saved") : t("save")} onClick={() => toggleSave(it.id)}>
             <i className={`bi ${isSaved ? "bi-heart-fill" : "bi-heart"}`} aria-hidden />
           </button>
-          <button className="xp-round on-media cartbtn" aria-pressed={inCart(it.id)} aria-label={inCart(it.id) ? t("removeFromCart") : t("addToCart")} onClick={() => toggleCart(it)}>
-            <i className={`bi ${inCart(it.id) ? "bi-check-lg" : "bi-plus-lg"}`} aria-hidden />
-          </button>
         </div>
         <div className="xp-cap">
-          <span><span className="xp-av" aria-hidden>{initialOf(it.creator.name)}</span>{it.creator.name}</span>
-          <b>{money(it.price.amount, it.price.currency)}</b>
+          <b className="xp-title">{it.title || (video ? t("clip") : t("photo"))}</b>
+          <div className="xp-caprow">
+            <span><span className="xp-av" aria-hidden>{initialOf(it.creator.name)}</span><span className="xp-cname">{it.creator.name}</span></span>
+            <b className="xp-cprice">{money(it.price.amount, it.price.currency)}</b>
+          </div>
         </div>
       </article>
     );
@@ -398,56 +396,105 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
     </>
   );
 
-  const searchBox = (id: string) => (
-    <label className="xp-search" role="search">
-      <i className="bi bi-search" aria-hidden />
-      <span className="xp-sr">{t("searchPlaceholder")}</span>
-      <input id={id} value={q} onChange={e => setQ(e.target.value)} placeholder={compact ? t("searchShort") : t("searchPlaceholder")} />
-    </label>
+  // The count in "N items found": exact when the facets know it, a running "N+" while the feed is still loading.
+  const found = (() => {
+    if (savedOnly) return list.length;
+    const plain = !qDebounced && !tag && !minPrice && !maxPrice;
+    if (plain && facets) {
+      const cat = category ? facets.categories.find(c => c.name === category) : null;
+      if (!category) return type === "VIDEO" ? facets.clips : type === "PHOTO" ? facets.total - facets.clips : facets.total;
+      if (cat) return type === "VIDEO" ? cat.clips : type === "PHOTO" ? cat.count - cat.clips : cat.count;
+    }
+    return done ? list.length : null;
+  })();
+  const foundLabel = found !== null ? t("itemsFound", { n: found }) : t("itemsFoundMore", { n: list.length });
+
+  const chips = (
+    <div className="xp-chips" role="group" aria-label={t("filters")}>
+      <button className="xp-chip" aria-pressed={!category && !tag && (phone ? type === "" : true)} onClick={() => { setCategory(""); setTag(""); if (phone) setType(""); setSavedOnly(false); }}>{t("all")}</button>
+      {phone && <button className="xp-chip" aria-pressed={type === "PHOTO"} onClick={() => { setSavedOnly(false); setType(type === "PHOTO" ? "" : "PHOTO"); }}>{t("photos")}</button>}
+      {phone && <button className="xp-chip" aria-pressed={type === "VIDEO"} onClick={() => { setSavedOnly(false); setType(type === "VIDEO" ? "" : "VIDEO"); }}>{t("clips")}</button>}
+      {facets?.categories.map(c => (
+        <button key={c.name} className="xp-chip" aria-pressed={category === c.name} onClick={() => { setSavedOnly(false); setCategory(category === c.name ? "" : c.name); }}>
+          {c.label}<small>{c.count}</small>
+        </button>
+      ))}
+      {facets?.tags.slice(0, 8).map(g => (
+        <button key={g.name} className="xp-chip" aria-pressed={tag === g.name} onClick={() => { setSavedOnly(false); setTag(tag === g.name ? "" : g.name); }}>#{g.name}</button>
+      ))}
+    </div>
+  );
+
+  const searchRow = (
+    <div className="xp-searchrow">
+      <div className="ph-search">
+        <i className="bi bi-search ph-search-icon" aria-hidden="true" />
+        <input id="xp-q" className="ph-search-input" type="search" value={q} onChange={e => setQ(e.target.value)} aria-label={t("searchPlaceholder")}
+          placeholder={compact ? t("searchShort") : t("searchPlaceholder")} />
+        {q && <button type="button" className="ph-search-clear" aria-label={t("clearFilters")} onClick={() => setQ("")}><i className="bi bi-x-lg" aria-hidden="true" /></button>}
+      </div>
+      {phone && (
+        <button className="xp-sqbtn" aria-label={activeCount ? t("filtersWith", { n: activeCount }) : t("filters")} aria-haspopup="dialog" onClick={openFilters}>
+          <i className="bi bi-sliders" aria-hidden />{activeCount > 0 && <span>{activeCount}</span>}
+        </button>
+      )}
+    </div>
   );
 
   return (
     <>
       <Navbar />
       <main className="xp" ref={rootRef}>
-        <div className="xp-wrap xp-top">
-          <div className="xp-head">
-            <h1>{t("title")}</h1>
-            <p>{phone ? t("subtitleShort") : t("subtitle2")}</p>
+        <section className="ph-hero xp-hero" aria-labelledby="xp-title">
+          <span className="ph-hero-eyebrow"><i className="bi bi-stars" aria-hidden="true" /> {t("heroEyebrow")}</span>
+          <h1 id="xp-title" className="ph-hero-title">{phone ? t("heroTitleShort") : t("heroTitle")}</h1>
+          <p className="ph-hero-sub">{phone ? t("heroSubShort") : t("heroSub")}</p>
+          {!phone && (
+            <div className="xp-heroacts">
+              <button className="xp-hbtn white" onClick={() => setOwnOpen(true)}><i className="bi bi-key" aria-hidden /> {t("alreadyBought")}</button>
+              <Link className="xp-hbtn pink" href="/user/auth/signup?userType=Photographer"><i className="bi bi-camera" aria-hidden /> {t("sellCta")}</Link>
+            </div>
+          )}
+        </section>
+
+        <div className="ph-control xp-control">
+          <div className="ph-control-card xp-ccard">
+            {searchRow}
+            {!phone && (
+              <div className="ph-filters xp-filtersrow">
+                <FilterSelect icon="bi-grid" ariaLabel={t("typeLabel")} value={type} onChange={v => { setSavedOnly(false); setType(v as "" | "PHOTO" | "VIDEO"); }}
+                  options={[{ value: "", label: t("allTypes") }, { value: "PHOTO", label: t("photos") }, { value: "VIDEO", label: t("clips") }]} />
+                <FilterSelect icon="bi-tag" ariaLabel={t("allCategories")} value={category} onChange={v => { setSavedOnly(false); setCategory(v); }}
+                  options={[{ value: "", label: t("allCategories") }, ...(facets?.categories.map(c => ({ value: c.name, label: c.label })) ?? [])]} />
+                <PriceSelect currency={currency} min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} t={t} maxHint={facets?.maxPrice ? String(Math.round(facets.maxPrice)) : "50"} />
+                <FilterSelect icon="bi-globe2" ariaLabel={t("currency")} value={currency} onChange={setCurrency} options={CURRENCIES.map(c => ({ value: c, label: c }))} />
+                <FilterSelect icon="bi-sort-down" ariaLabel={t("sortLabel")} value={sort} onChange={v => setSort(v as NonNullable<FeedQuery["sort"]>)}
+                  options={[{ value: "newest", label: t("sortNewest") }, { value: "popular", label: t("sortPopular") }, { value: "price_asc", label: t("priceUpShort") }, { value: "price_desc", label: t("priceDownShort") }]} />
+              </div>
+            )}
+            {phone && chips}
           </div>
-          {!phone && searchBox("xp-q-desktop")}
-          {!phone && <div className="xp-acts">{actions}</div>}
         </div>
 
-        {phone && (
-          <div className="xp-mbar">
-            {searchBox("xp-q-phone")}
-            <button className="xp-round" aria-label={activeCount ? t("filtersWith", { n: activeCount }) : t("filters")} onClick={openFilters}><i className="bi bi-sliders" aria-hidden /></button>
+        {!phone && (
+          <div className="xp-resbar">
+            <div className="xp-wrap xp-resin">
+              <span className="xp-count" role="status">{foundLabel}</span>
+              {chips}
+              <div className="xp-resacts">
+                <div className="xp-seg" role="group" aria-label={t("typeLabel")}>
+                  <button aria-pressed={type === ""} onClick={() => { setSavedOnly(false); setType(""); }}>{t("all")}</button>
+                  <button aria-pressed={type === "PHOTO"} onClick={() => { setSavedOnly(false); setType("PHOTO"); }}>{t("photos")}</button>
+                  <button aria-pressed={type === "VIDEO"} onClick={() => { setSavedOnly(false); setType("VIDEO"); }}>{t("clips")}</button>
+                </div>
+                <button className="xp-pill" aria-pressed={savedOnly} onClick={() => setSavedOnly(v => !v)}><i className="bi bi-bookmark" aria-hidden /> {t("saved")}{saves.length > 0 ? ` · ${saves.length}` : ""}</button>
+                <button className="xp-pill primary" onClick={() => setDrawer(true)} aria-label={cartCount > 0 ? t("cartCount", { n: cartCount }) : t("cart")}>
+                  <i className="bi bi-bag" aria-hidden /> {cartCount > 0 ? t("cartCount", { n: cartCount }) : t("cart")}
+                </button>
+              </div>
+            </div>
           </div>
         )}
-
-        <div className="xp-stripwrap">
-          <div className="xp-wrap xp-strip">
-            <div className="xp-chips" role="group" aria-label={t("filters")}>
-              <button className="xp-chip" aria-pressed={type === "" && !category && !tag} onClick={() => { setType(""); setCategory(""); setTag(""); setSavedOnly(false); }}>{t("all")}</button>
-              <button className="xp-chip" aria-pressed={type === "PHOTO"} onClick={() => { setSavedOnly(false); setType(type === "PHOTO" ? "" : "PHOTO"); }}>{t("photos")}</button>
-              <button className="xp-chip" aria-pressed={type === "VIDEO"} onClick={() => { setSavedOnly(false); setType(type === "VIDEO" ? "" : "VIDEO"); }}>
-                {t("clips")}{facets && facets.clips > 0 && <small>{facets.clips}</small>}
-              </button>
-              {facets?.categories.map(c => (
-                <button key={c.name} className="xp-chip" aria-pressed={category === c.name} onClick={() => { setSavedOnly(false); setCategory(category === c.name ? "" : c.name); }}>
-                  {c.label}<small>{c.count}</small>
-                </button>
-              ))}
-              {facets?.tags.slice(0, 8).map(g => (
-                <button key={g.name} className="xp-chip" aria-pressed={tag === g.name} onClick={() => { setSavedOnly(false); setTag(tag === g.name ? "" : g.name); }}>#{g.name}</button>
-              ))}
-            </div>
-            <button className="xp-btn fbtn" style={{ borderRadius: 999, minHeight: 40 }} aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={openFilters}>
-              <i className="bi bi-sliders" aria-hidden /> {activeCount ? t("filtersWith", { n: activeCount }) : t("filters")}
-            </button>
-          </div>
-        </div>
 
         <div className={`xp-wrap xp-feed${ready ? "" : " xp-prep"}`} aria-live="polite">
           {failed && (
@@ -480,10 +527,10 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
 
         {phone && <div className="xp-dock" role="group" aria-label={t("cart")}>{actions}</div>}
 
-        {filtersOpen && (
+        {filtersOpen && phone && (
           <>
             <div className="xp-fscrim" onClick={() => setFiltersOpen(false)} aria-hidden />
-            <div className="xp-filters" role="dialog" aria-label={t("filters")} style={phone ? undefined : { top: anchor.top, right: anchor.right }}>
+            <div className="xp-filters" role="dialog" aria-label={t("filters")}>
               <div className="xp-fhead">
                 <h2>{t("filters")}</h2>
                 <button className="xp-linkbtn" onClick={resetFilters}>{t("reset")}</button>
@@ -519,7 +566,7 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
               </div>
               <div className="xp-ffoot">
                 <button className="xp-btn" onClick={resetFilters}>{t("reset")}</button>
-                <button className="xp-btn xp-primary" onClick={() => setFiltersOpen(false)}>{t("showResults", { n: resultsLabel })}</button>
+                <button className="xp-btn xp-primary" onClick={() => setFiltersOpen(false)}>{t("showResults", { n: found !== null ? String(found) : resultsLabel })}</button>
               </div>
             </div>
           </>
@@ -632,6 +679,44 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
         )}
       </main>
     </>
+  );
+}
+
+/** "Any price" dropdown: the same trigger and popover classes as the other search-card dropdowns, with a min and max field inside. */
+function PriceSelect({ currency, min, max, setMin, setMax, t, maxHint }: {
+  currency: string; min: string; max: string; setMin: (v: string) => void; setMax: (v: string) => void; t: T; maxHint: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (!wrapRef.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const label = min || max ? `${currency} ${min || "0"}${max ? ` - ${max}` : "+"}` : t("anyPrice");
+  return (
+    <div className="ph-select-wrap" ref={wrapRef}>
+      <button type="button" className="ph-select-trigger" aria-haspopup="dialog" aria-expanded={open} aria-label={t("priceLabel")} onClick={() => setOpen(o => !o)}>
+        <i className="bi bi-cash-coin ph-select-icon" aria-hidden="true" />
+        <span className="ph-select-value">{label}</span>
+        <i className={`bi bi-chevron-up ph-select-caret ${open ? "is-open" : ""}`} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="ph-select-list xp-pricepop" role="dialog" aria-label={t("priceLabel")}>
+          <div className="xp-prices">
+            <label className="xp-pin"><span>{currency}</span><input inputMode="decimal" aria-label={t("minPrice")} placeholder="0" value={min} onChange={e => setMin(e.target.value.replace(/[^\d.]/g, ""))} /></label>
+            <label className="xp-pin"><span>{currency}</span><input inputMode="decimal" aria-label={t("maxPrice")} placeholder={maxHint} value={max} onChange={e => setMax(e.target.value.replace(/[^\d.]/g, ""))} /></label>
+          </div>
+          <div className="xp-popfoot">
+            <button className="xp-btn" onClick={() => { setMin(""); setMax(""); }}>{t("clearPrice")}</button>
+            <button className="xp-btn xp-primary" onClick={() => setOpen(false)}>{t("apply")}</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

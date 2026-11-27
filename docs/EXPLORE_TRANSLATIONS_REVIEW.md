@@ -15,3 +15,6 @@ New keys under `explore` in all five locales: filtersWith, showResults, reset, t
 boughtShort, searchShort, subtitleShort, subtitle2, dims, savedEmpty, seeAll, cartCount, approx, loadingMore, priceUpShort, priceDownShort,
 min, max, linkCopied, typeLabel. English is the source. Spanish and French are machine drafted. Swahili and Kinyarwanda are best effort and
 still need a native read before they are treated as final (same status as the earlier Explore strings).
+
+## Landing-style rebuild (2026-11-28)
+New explore.* keys: heroEyebrow, heroTitle, heroTitleShort, heroSub, heroSubShort, sellCta, allTypes, allCategories, anyPrice, itemsFound, itemsFoundMore, apply, clearPrice, resultsBar. es and fr are machine drafted; sw and rw need a native read (itemsFound has no plural form in sw and rw).

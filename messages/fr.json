@@ -626,6 +626,20 @@
     "min": "Min",
     "max": "Max",
     "linkCopied": "Lien copié",
-    "typeLabel": "Photos ou clips"
+    "typeLabel": "Photos ou clips",
+    "heroEyebrow": "Connekyt Explore",
+    "heroTitle": "Photos et clips de créateurs",
+    "heroTitleShort": "Photos et clips",
+    "heroSub": "Travaux aériens, nature et artistiques. Regardez un aperçu, achetez l'original.",
+    "heroSubShort": "Regardez un aperçu, achetez l'original.",
+    "sellCta": "Vendez vos photos et clips",
+    "allTypes": "Tous les types",
+    "allCategories": "Toutes les catégories",
+    "anyPrice": "Tous les prix",
+    "itemsFound": "{n, plural, one {# élément trouvé} other {# éléments trouvés}}",
+    "apply": "Appliquer",
+    "clearPrice": "Effacer",
+    "resultsBar": "Résultats",
+    "itemsFoundMore": "{n}+ éléments trouvés"
   }
 }

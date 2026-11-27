@@ -41,7 +41,9 @@ for (const [enKey, trans] of Object.entries(domTranslations)) {
   for (const t of trans) {
     if (t && typeof t === 'string') {
       const normTrans = t.trim().toLowerCase();
-      if (normTrans && normTrans !== normEn) {
+      // Lone letters (the French and Spanish "s" for seconds) must never be read back as English,
+      // or a plural "s" node turns into "sec" ("83 Photographersec found").
+      if (normTrans && normTrans.length > 2 && normTrans !== normEn) {
         reverseDict.set(normTrans, enKey);
       }
     }

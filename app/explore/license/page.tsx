@@ -14,11 +14,11 @@ export default function LicensePage() {
   return (
     <>
     <Navbar />
-    <main className="xp">
+    <main className="xp" style={{ paddingTop: "var(--xp-nav)" }}>
       <div className="xp-wrap" style={{ maxWidth: 760, paddingTop: 24 }}>
-        <p className="xp-meta"><Link href="/explore" style={{ color: "var(--xp-pink-text)" }}>Explore</Link></p>
+        <p className="xp-meta"><Link href="/explore" style={{ color: "var(--xp-navy)" }}>Explore</Link></p>
         <h1 style={{ fontSize: 36, margin: "0 0 8px" }}>Standard license</h1>
-        <p className="xp-meta" role="note" style={{ border: "1px solid var(--xp-line)", borderRadius: 12, padding: 12, background: "var(--xp-input)" }}>
+        <p className="xp-meta" role="note" style={{ border: "1px solid var(--xp-line)", borderRadius: 12, padding: 12, background: "#f8fafc" }}>
           Draft text, pending legal review. It describes how Explore purchases are meant to be used and does not replace the
           Terms of Service.
         </p>
@@ -40,7 +40,7 @@ export default function LicensePage() {
         <h2>Downloads</h2>
         <p>Your download link works for 7 days and up to 5 downloads. If it expires, use &ldquo;I already bought this&rdquo; or Recover purchases on Explore to get a new one.</p>
         <h2>Questions</h2>
-        <p>Write to <a href="mailto:support@connekyt.com" style={{ color: "var(--xp-pink-text)" }}>support@connekyt.com</a>.</p>
+        <p>Write to <a href="mailto:support@connekyt.com" style={{ color: "var(--xp-navy)" }}>support@connekyt.com</a>.</p>
       </div>
     </main>
     <Footer />

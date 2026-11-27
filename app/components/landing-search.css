@@ -1,0 +1,307 @@
+/* Shared by /user/photographers and /explore: hero band, floating search card, filter dropdowns.
+   Moved verbatim from the photographers page so both pages use one definition. */
+/* Hero */
+.ph-hero {
+  position: relative;
+  background: linear-gradient(135deg, #083A85 0%, #062a63 100%);
+  color: #fff;
+  padding: clamp(2rem, 5vw, 3.5rem) 1.25rem clamp(5rem, 10vw, 7rem);
+  overflow: hidden;
+  text-align: center;
+}
+.ph-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.10) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(circle at 50% 0%, #000 60%, transparent 90%);
+          mask-image: radial-gradient(circle at 50% 0%, #000 60%, transparent 90%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ph-hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.22);
+  font-size: 0.72rem; letter-spacing: 1.2px; font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.ph-hero-title {
+  font-size: clamp(1.85rem, 4.5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+}
+.ph-hero-sub {
+  font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+  color: rgba(255,255,255,0.82);
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+/* Control card - floats over hero */
+.ph-control {
+  position: relative;
+  z-index: 3;
+  margin: -4rem auto 0;
+  max-width: 1200px;
+  padding: 0 1rem;
+}
+.ph-control-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px -25px rgba(8,58,133,0.30), 0 4px 12px rgba(8,58,133,0.05);
+  border: 1px solid rgba(8,58,133,0.06);
+  padding: clamp(1rem, 2vw, 1.25rem);
+}
+.ph-search {
+  position: relative;
+  margin-bottom: 0.85rem;
+  width: 100%;
+}
+.ph-search-icon {
+  position: absolute;
+  left: 16px; top: 50%; transform: translateY(-50%);
+  color: #94a3b8; font-size: 1.05rem; pointer-events: none;
+  z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ph-search-icon.ph-spin {
+  animation: ph-spin 0.9s linear infinite;
+}
+@keyframes ph-spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to   { transform: translateY(-50%) rotate(360deg); }
+}
+.ph-search-input {
+  width: 100%;
+  height: 48px;
+  padding: 0.75rem 2.75rem 0.75rem 44px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff !important;
+  /* 16px font-size prevents iOS Safari from automatically zooming into the field */
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #083A85;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  font-family: inherit;
+}
+.ph-search-input::-webkit-search-decoration,
+.ph-search-input::-webkit-search-cancel-button,
+.ph-search-input::-webkit-search-results-button,
+.ph-search-input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  display: none;
+}
+.ph-search-input::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+  opacity: 1;
+}
+.ph-search-input:focus {
+  border-color: #083A85;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(8,58,133,0.10);
+}
+.ph-search-clear {
+  position: absolute;
+  right: 12px; top: 50%; transform: translateY(-50%);
+  background: transparent; border: none; cursor: pointer;
+  color: #94a3b8; padding: 6px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  z-index: 2;
+  transition: color 0.18s, background 0.18s;
+}
+.ph-search-clear:hover,
+.ph-search-clear:active {
+  color: #083A85;
+  background: rgba(8,58,133,0.08);
+}
+
+.ph-filters {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.6rem;
+}
+@media (max-width: 900px) { .ph-filters { grid-template-columns: repeat(2, 1fr); } }
+
+/* Date input wrapper (kept native - OS pickers are good) */
+.ph-filter {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.ph-filter:hover, .ph-filter:focus-within {
+  border-color: #083A85;
+  box-shadow: 0 0 0 3px rgba(8,58,133,0.06);
+}
+.ph-filter > i {
+  color: #083A85;
+  font-size: 0.9rem;
+  flex: none;
+}
+.ph-filter > input[type="date"] {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #0f172a;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 0;
+}
+
+/* ----------------------------------------------------------
+   Custom select (FilterSelect component)
+   ---------------------------------------------------------- */
+.ph-select-wrap { position: relative; }
+.ph-select-wrap--compact { display: inline-block; }
+
+.ph-select-trigger {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+/* Compact variant - used by Sort in the result strip */
+.ph-select-trigger--compact {
+  width: auto;
+  padding: 0.5rem 0.85rem;
+}
+.ph-select-prefix {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.85rem;
+  flex: none;
+  white-space: nowrap;
+}
+.ph-select-trigger:hover,
+.ph-select-trigger[aria-expanded="true"] {
+  border-color: #083A85;
+  box-shadow: 0 0 0 3px rgba(8,58,133,0.06);
+}
+.ph-select-icon {
+  color: #083A85;
+  font-size: 0.9rem;
+  flex: none;
+}
+.ph-select-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ph-select-caret {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  flex: none;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ph-select-caret.is-open { transform: rotate(180deg); color: #083A85; }
+
+.ph-select-list {
+  /* Drop-up: anchor to the bottom of the trigger, popover grows upward */
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(8,58,133,0.10);
+  box-shadow: 0 18px 44px -14px rgba(8,58,133,0.22),
+              0 6px 14px rgba(0,0,0,0.06);
+  max-height: 280px;
+  overflow-y: auto;
+  outline: none;
+  animation: ph-select-pop 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Brand-tint scrollbar so the popover feels native to the page */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(8,58,133,0.25) transparent;
+}
+/* Compact wraps size-to-content - let the popover grow up to a sensible max */
+.ph-select-wrap--compact .ph-select-list {
+  left: 0;
+  right: auto;
+  min-width: 220px;
+  max-width: 280px;
+}
+/* Right-anchored popover - anchors the dropdown to the trigger's right edge */
+.ph-select-wrap--align-right .ph-select-list {
+  left: auto;
+  right: 0;
+}
+.ph-select-list::-webkit-scrollbar { width: 6px; }
+.ph-select-list::-webkit-scrollbar-track { background: transparent; }
+.ph-select-list::-webkit-scrollbar-thumb {
+  background: rgba(8,58,133,0.25); border-radius: 3px;
+}
+/* Drop-up entry: slide up from below into final position */
+@keyframes ph-select-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ph-select-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s, color 0.12s;
+}
+.ph-select-option.is-active {
+  background: rgba(8,58,133,0.06);
+  color: #083A85;
+}
+.ph-select-option.is-selected {
+  color: #083A85;
+  font-weight: 700;
+}
+.ph-select-option.is-selected.is-active {
+  background: rgba(8,58,133,0.10);
+}
+.ph-select-check {
+  color: #083A85;
+  font-size: 0.95rem;
+  flex: none;
+}
+.ph-select-check--hidden { visibility: hidden; }
+
+/* Bigger touch targets on mobile */
+@media (max-width: 640px) {
+  .ph-select-option { padding: 0.65rem 0.65rem; font-size: 0.82rem; }
+  .ph-select-list   { max-height: 60vh; }
+}
+
