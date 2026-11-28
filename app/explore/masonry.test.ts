@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { columnsFor, layoutColumns } from "./masonry";
 
 describe("explore masonry", () => {
-  it("uses 2, 3, 4, 5 and 6 columns at the agreed widths", () => {
+  it("uses 2, 3, 4 and 5 columns at the agreed widths", () => {
     expect([360, 390, 639].map(columnsFor)).toEqual([2, 2, 2]);
     expect([640, 768, 1023].map(columnsFor)).toEqual([3, 3, 3]);
     expect([1024, 1279].map(columnsFor)).toEqual([4, 4]);
     expect(columnsFor(1280)).toBe(5);
     expect(columnsFor(1439)).toBe(5);
-    expect(columnsFor(1440)).toBe(6);
+    expect([1440, 1920, 2560].map(columnsFor)).toEqual([5, 5, 5]);
   });
 
   it("never leaves a column empty when there are at least as many items as columns", () => {

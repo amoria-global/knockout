@@ -33,13 +33,13 @@ async function firstFacets(): Promise<Facets | null> {
 
 export default async function Page() {
   const [initial, facets] = await Promise.all([firstPage(), firstFacets()]);
-  const lead = initial?.items[0];
-  if (lead?.thumbnailUrl) {
-    // The first photo is the largest paint on the page, so the browser is told about it before any script runs.
-    const s640 = lead.srcset?.["640"]; const s1600 = lead.srcset?.["1600"];
-    preload(lead.thumbnailUrl, {
+  // The hero picture is the largest paint on the page, so the browser is told about it before any script runs.
+  const hero = initial?.items.find(i => i.previewUrl && i.mediaType === "PHOTO" && (i.aspectRatio || 1) >= 1.2) || initial?.items.find(i => i.previewUrl);
+  if (hero?.previewUrl) {
+    const s640 = hero.srcset?.["640"]; const s1600 = hero.srcset?.["1600"];
+    preload(hero.previewUrl, {
       as: "image", fetchPriority: "high",
-      ...(s640 && s1600 ? { imageSrcSet: `${s640} 640w, ${s1600} 1600w`, imageSizes: "(min-width: 1440px) 17vw, (min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" } : {}),
+      ...(s640 && s1600 ? { imageSrcSet: `${s640} 640w, ${s1600} 1600w`, imageSizes: "100vw" } : {}),
     });
   }
   return <ExploreClient initial={initial} initialFacets={facets} />;

@@ -4,9 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import "../components/landing-search.css";
 import "./explore.css";
-import FilterSelect from "../components/FilterSelect";
 import Navbar from "../components/navbar";
 import XentriPayModal from "../components/XentriPayModal";
 import PurchaseSuccessModal from "../components/PurchaseSuccessModal";
@@ -16,21 +14,56 @@ import {
   type ExploreItem, type Facets, type FeedQuery, type Quote, type Unlocked,
 } from "./exploreApi";
 import { columnsFor, layoutColumns } from "./masonry";
+import { cardTitles, normalizeItem, shortAlbum } from "./exploreTitles";
+import ExploreViewer from "./ExploreViewer";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "RWF", "KES"];
 const PREVIEW_CCYS = ["USD", "RWF", "EUR", "KES", "UGX", "TZS"];
 const CART_KEY = "connekyt:explore:cart:v1";
 const SAVES_KEY = "connekyt:explore:saves:v1";
-const GAP_DESKTOP = 16;
+const GAP_DESKTOP = 14;
 const GAP_PHONE = 10;
-const CAPTION_DESK = 74; // card body: title, creator and price (fixed so the masonry can be computed)
-const CAPTION_PHONE = 62;
+const CAPTION_PHONE = 62; // phone tile caption: title, creator and price (fixed so the masonry can be computed)
 
 type CartSnap = { id: string; title: string | null; thumbnailUrl: string | null; mediaType: string };
 type T = ReturnType<typeof useTranslations>;
+type Sort = NonNullable<FeedQuery["sort"]>;
+type Orient = "" | "landscape" | "portrait" | "square";
 
-function readJson<T>(key: string, fallback: T): T {
-  try { const raw = window.localStorage.getItem(key); return raw ? (JSON.parse(raw) as T) : fallback; } catch { return fallback; }
+/** Everything the viewer can choose. All of it lives in the URL query, so a result can be shared and Back works. */
+interface F {
+  q: string; type: "" | "PHOTO" | "VIDEO"; category: string; tag: string; sort: Sort; min: string; max: string; cur: string;
+  orient: Orient; creator: string; album: string; view: "" | "collections"; saved: boolean;
+}
+const DEFAULTS: F = { q: "", type: "", category: "", tag: "", sort: "newest", min: "", max: "", cur: "USD", orient: "", creator: "", album: "", view: "", saved: false };
+
+function parseQuery(search: string): F {
+  const p = new URLSearchParams(search);
+  const pick = <K extends keyof F>(k: K, key: string, ok?: (v: string) => boolean): F[K] => {
+    const v = p.get(key);
+    return (v && (!ok || ok(v)) ? v : DEFAULTS[k]) as F[K];
+  };
+  return {
+    q: pick("q", "q"), type: pick("type", "type", v => v === "PHOTO" || v === "VIDEO"), category: pick("category", "category"), tag: pick("tag", "tag"),
+    sort: pick("sort", "sort", v => ["newest", "popular", "price_asc", "price_desc"].includes(v)), min: pick("min", "min", v => /^[\d.]+$/.test(v)),
+    max: pick("max", "max", v => /^[\d.]+$/.test(v)), cur: pick("cur", "cur", v => CURRENCIES.includes(v)),
+    orient: pick("orient", "orient", v => ["landscape", "portrait", "square"].includes(v)), creator: pick("creator", "creator"), album: pick("album", "album"),
+    view: pick("view", "view", v => v === "collections"), saved: p.get("saved") === "1",
+  };
+}
+function toQuery(f: F): string {
+  const p = new URLSearchParams();
+  (Object.keys(DEFAULTS) as (keyof F)[]).forEach(k => {
+    const v = f[k];
+    if (v === DEFAULTS[k] || v === "" || v === false) return;
+    p.set(k, v === true ? "1" : String(v));
+  });
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}
+
+function readJson<V>(key: string, fallback: V): V {
+  try { const raw = window.localStorage.getItem(key); return raw ? (JSON.parse(raw) as V) : fallback; } catch { return fallback; }
 }
 function writeJson(key: string, value: unknown) {
   try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* private mode: the page still works */ }
@@ -38,8 +71,13 @@ function writeJson(key: string, value: unknown) {
 
 const ratioOf = (it: ExploreItem) => Math.min(2.2, Math.max(0.5, it.aspectRatio || (it.width && it.height ? it.width / it.height : 4 / 3)));
 const initialOf = (name: string) => (name.trim()[0] || "C").toUpperCase();
+const orientOf = (it: ExploreItem): Orient => { const r = ratioOf(it); return r > 1.15 ? "landscape" : r < 0.87 ? "portrait" : "square"; };
+const SIZES = "(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw";
+const srcsetOf = (it: ExploreItem) => (it.srcset?.["640"] && it.srcset?.["1600"] ? `${it.srcset["640"]} 640w, ${it.srcset["1600"]} 1600w` : undefined);
 
-export default function ExploreClient({ initial = null, initialFacets = null }: { initial?: { items: ExploreItem[]; nextCursor: string | null } | null; initialFacets?: Facets | null }) {
+export default function ExploreClient({ initial = null, initialFacets = null, initialItemId = null }: {
+  initial?: { items: ExploreItem[]; nextCursor: string | null } | null; initialFacets?: Facets | null; initialItemId?: string | null;
+}) {
   const t = useTranslations("explore");
   const rootRef = useRef<HTMLElement | null>(null);
 
@@ -48,8 +86,9 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
   const [cols, setCols] = useState(4);
   const [colW, setColW] = useState(280);
   const [phone, setPhone] = useState(false);
-  const [compact, setCompact] = useState(false);
+  const [stuck, setStuck] = useState(false); // phone: the hero has scrolled away, so only the slim search bar stays
   const feedRef = useRef<HTMLDivElement | null>(null);
+  const heroRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     document.body.classList.add("xp-page");
     const measure = () => {
@@ -65,10 +104,11 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
       const n = columnsFor(window.innerWidth);
       setCols(n);
       setPhone(window.innerWidth < 640);
-      setCompact(window.innerWidth < 1100);
       const w = feedRef.current?.clientWidth || window.innerWidth - 24;
       const gap = window.innerWidth < 640 ? GAP_PHONE : GAP_DESKTOP;
       setColW(Math.max(80, (w - gap * (n - 1)) / n));
+      const hero = heroRef.current;
+      setStuck(!!hero && hero.getBoundingClientRect().bottom < ((bar?.getBoundingClientRect().height) || 64) + 4);
       setReady(true);
     };
     measure();
@@ -86,34 +126,35 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
     return () => { clearTimeout(late); window.removeEventListener("resize", measure); window.removeEventListener("scroll", onScroll); document.body.classList.remove("xp-page"); };
   }, []);
 
-  // ── filters ─────────────────────────────────────────────────────────
-  const [q, setQ] = useState("");
-  const [qDebounced, setQDebounced] = useState("");
-  const [category, setCategory] = useState("");
-  const [type, setType] = useState<"" | "PHOTO" | "VIDEO">("");
-  const [tag, setTag] = useState("");
-  const [sort, setSort] = useState<NonNullable<FeedQuery["sort"]>>("newest");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  // ── filters, kept in the URL ────────────────────────────────────────
+  const [f, setF] = useState<F>(DEFAULTS);
+  const [qLive, setQLive] = useState("");
+  const [urlReady, setUrlReady] = useState(false);
+  const fRef = useRef(f);
+  fRef.current = f;
+  const basePath = useRef("/explore");
+  const patch = useCallback((p: Partial<F>) => setF(prev => ({ ...prev, ...p })), []);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  useEffect(() => { const h = setTimeout(() => setQDebounced(q.trim()), 300); return () => clearTimeout(h); }, [q]);
+  const [draft, setDraft] = useState<F>(DEFAULTS);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [showAllCreators, setShowAllCreators] = useState(false);
 
   // ── feed ────────────────────────────────────────────────────────────
-  const [items, setItems] = useState<ExploreItem[]>(initial?.items ?? []);
+  const [items, setItems] = useState<ExploreItem[]>(() => (initial?.items ?? []).map(normalizeItem));
   const [cursor, setCursor] = useState<string | null>(initial?.nextCursor ?? null);
   const [loading, setLoading] = useState(!initial);
   const [failed, setFailed] = useState(false);
   const [done, setDone] = useState(initial ? !initial.nextCursor : false);
   const [facets, setFacets] = useState<Facets | null>(initialFacets);
-  const firstRun = useRef(!!initial);
+  const skipFirst = useRef(!!initial);
   const abortRef = useRef<AbortController | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const queryKey = [qDebounced, category, type, tag, sort, minPrice, maxPrice, currency].join("|");
+  const heroItems = useRef<ExploreItem[]>((initial?.items ?? []).map(normalizeItem));
+  const queryKey = [f.q, f.category, f.type, f.tag, f.sort, f.min, f.max, f.cur].join("|");
 
   const baseQuery = useCallback((): FeedQuery => ({
-    q: qDebounced, category, type, tag, sort, minPrice, maxPrice, currency,
-  }), [qDebounced, category, type, tag, sort, minPrice, maxPrice, currency]);
+    q: f.q, category: f.category, type: f.type, tag: f.tag, sort: f.sort, minPrice: f.min, maxPrice: f.max, currency: f.cur,
+  }), [f.q, f.category, f.type, f.tag, f.sort, f.min, f.max, f.cur]);
 
   const load = useCallback(async (reset: boolean, from: string | null) => {
     abortRef.current?.abort();
@@ -134,16 +175,57 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
     }
   }, [baseQuery]);
 
+  // The search box is debounced into the filters; everything else applies at once.
+  useEffect(() => { const h = setTimeout(() => { if (qLive.trim() !== fRef.current.q) patch({ q: qLive.trim() }); }, 300); return () => clearTimeout(h); }, [qLive, patch]);
+
   useEffect(() => {
-    if (firstRun.current) { firstRun.current = false; return; } // the server already sent this first page
+    if (!urlReady) return;
+    if (skipFirst.current) { skipFirst.current = false; return; } // the server already sent this first page
     setItems([]); setCursor(null); setDone(false); void load(true, null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey]);
+  }, [queryKey, urlReady]);
   const facetsRun = useRef(!!initialFacets);
   useEffect(() => {
     if (facetsRun.current) { facetsRun.current = false; return; }
-    fetchFacets(currency).then(setFacets).catch(() => setFacets(null));
-  }, [currency]);
+    fetchFacets(f.cur).then(setFacets).catch(() => setFacets(null));
+  }, [f.cur]);
+
+  // ── URL <-> state ───────────────────────────────────────────────────
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [extras, setExtras] = useState<ExploreItem[]>([]);
+  const pushedViewer = useRef(false);
+  useEffect(() => {
+    const m = /^(.*\/explore)(?:\/([^/]+))?\/?$/.exec(window.location.pathname);
+    basePath.current = m ? m[1] : "/explore";
+    const parsed = parseQuery(window.location.search);
+    // `?item=` is the older share link; it opens the same viewer.
+    const shared = initialItemId || new URLSearchParams(window.location.search).get("item");
+    if (parsed.q) setQLive(parsed.q);
+    const dflt = toQuery(parsed) === "";
+    if (!dflt) { skipFirst.current = false; setF(parsed); }
+    if (shared) fetchItem(shared, parsed.cur).then(it => { setExtras(prev => [...prev, it]); setOpenId(it.id); }).catch(() => { /* gone: show the feed */ });
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("recover") === "1") setOwnOpen(true);
+    setUrlReady(true);
+    const onPop = () => {
+      setF(parseQuery(window.location.search));
+      const mm = /^.*\/explore\/([^/]+)\/?$/.exec(window.location.pathname);
+      setOpenId(mm && mm[1] !== "license" ? mm[1] : null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const prevQuery = useRef("");
+  useEffect(() => {
+    if (!urlReady) return;
+    const next = toQuery(f);
+    if (next === window.location.search || next === prevQuery.current) { prevQuery.current = next; return; }
+    const onlyQ = toQuery({ ...f, q: "" }) === toQuery({ ...parseQuery(prevQuery.current), q: "" });
+    prevQuery.current = next;
+    const path = window.location.pathname;
+    (onlyQ ? window.history.replaceState : window.history.pushState).call(window.history, { xp: 1 }, "", `${path}${next}`);
+  }, [f, urlReady]);
 
   // ── cart + saves (kept in this browser) ─────────────────────────────
   const [cart, setCart] = useState<CartSnap[]>([]);
@@ -163,62 +245,83 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
   };
 
   // ── saved view ──────────────────────────────────────────────────────
-  const [savedOnly, setSavedOnly] = useState(false);
   const [savedItems, setSavedItems] = useState<ExploreItem[]>([]);
   const [savedBusy, setSavedBusy] = useState(false);
   useEffect(() => {
-    if (!savedOnly) return;
+    if (!f.saved) return;
     let live = true;
     setSavedBusy(true);
-    Promise.all(saves.slice(0, 60).map(id => fetchItem(id, currency).catch(() => null)))
+    Promise.all(saves.slice(0, 60).map(id => fetchItem(id, f.cur).catch(() => null)))
       .then(rows => { if (live) setSavedItems(rows.filter((r): r is ExploreItem => !!r)); })
       .finally(() => { if (live) setSavedBusy(false); });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedOnly, currency, saves.length]);
+  }, [f.saved, f.cur, saves.length]);
 
-  const list = savedOnly ? savedItems : items;
-  const listLoading = savedOnly ? savedBusy : loading;
+  // The part of the filters the feed API does not do is applied here, to what is loaded.
+  const base = f.saved ? savedItems : items;
+  const list = useMemo(() => base.filter(it => (!f.orient || orientOf(it) === f.orient) && (!f.creator || it.creator.id === f.creator) && (!f.album || it.album?.id === f.album || it.albumId === f.album)), [base, f.orient, f.creator, f.album]);
+  const listLoading = f.saved ? savedBusy : loading;
+  const localFilters = !!(f.orient || f.creator || f.album);
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || savedOnly) return;
+    if (!el || f.saved) return;
     const io = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && !loading && !done && !failed && cursor) void load(false, cursor);
     }, { rootMargin: "700px" });
     io.observe(el);
     return () => io.disconnect();
-  }, [cursor, loading, done, failed, load, savedOnly]);
+  }, [cursor, loading, done, failed, load, f.saved, list.length]);
 
   // ── viewer ──────────────────────────────────────────────────────────
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [extras, setExtras] = useState<ExploreItem[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opener = useRef<HTMLElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
   const openIndex = openId ? list.findIndex(i => i.id === openId) : -1;
   const openItem = openId ? (list.find(i => i.id === openId) || extras.find(i => i.id === openId) || null) : null;
-  const step = useCallback((d: number) => { const n = list[openIndex + d]; if (n) setOpenId(n.id); }, [list, openIndex]);
-  const openAny = (it: ExploreItem) => { setExtras(prev => (prev.some(p => p.id === it.id) ? prev : [...prev, it])); setOpenId(it.id); };
-  const closeViewer = () => { setOpenId(null); opener.current?.focus(); };
+  const showItem = useCallback((id: string, replace: boolean) => {
+    setOpenId(id);
+    const url = `${basePath.current}/${id}${window.location.search}`;
+    if (replace || !pushedViewer.current && window.location.pathname.replace(/\/$/, "") !== basePath.current) window.history.replaceState({ xp: 1 }, "", url);
+    else window.history.pushState({ xp: 1 }, "", url);
+    pushedViewer.current = true;
+  }, []);
+  const step = useCallback((d: number) => { const n = list[openIndex + d]; if (n) showItem(n.id, true); }, [list, openIndex, showItem]);
+  const openAny = (it: ExploreItem) => { setExtras(prev => (prev.some(p => p.id === it.id) ? prev : [...prev, it])); showItem(it.id, true); };
+  const closeViewer = useCallback(() => {
+    setOpenId(null);
+    if (window.history.state?.xp && pushedViewer.current && window.location.pathname.replace(/\/$/, "") !== basePath.current) window.history.back();
+    else window.history.replaceState({ xp: 1 }, "", `${basePath.current}${window.location.search}`);
+    pushedViewer.current = false;
+    opener.current?.focus();
+  }, []);
   useEffect(() => {
     if (!openItem) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeViewer();
       else if (e.key === "ArrowRight") step(1);
       else if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === "Tab" && sheetRef.current) {
+        // keep Tab inside the viewer
+        const nodes = Array.from(sheetRef.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), iframe, input, [tabindex]:not([tabindex='-1'])")).filter(n => n.offsetParent !== null);
+        if (!nodes.length) return;
+        const first = nodes[0]; const last = nodes[nodes.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openItem, step]);
+  }, [openItem, step, closeViewer]);
+  const locked = !!openItem || filtersOpen;
   useEffect(() => {
-    const lock = !!openItem || filtersOpen;
-    if (!lock) return;
+    if (!locked) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [openItem, filtersOpen]);
+  }, [locked]);
 
   // ── cart drawer, checkout ───────────────────────────────────────────
   const [drawer, setDrawer] = useState(false);
@@ -238,7 +341,7 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
     if (!drawer || cart.length === 0) { setQuote(null); return; }
     let live = true;
     setQuoteBusy(true);
-    fetchQuote(cart.map(c => c.id), currency).then(qt => {
+    fetchQuote(cart.map(c => c.id), f.cur).then(qt => {
       if (!live) return;
       setQuote(qt);
       if (qt.unavailable.length) {
@@ -247,7 +350,7 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
       }
     }).catch(() => { if (live) setQuote(null); }).finally(() => { if (live) setQuoteBusy(false); });
     return () => { live = false; };
-  }, [drawer, cart.length, currency]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [drawer, cart.length, f.cur]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startCheckout = async () => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setEmailError(true); return; }
@@ -289,16 +392,6 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
   const [unlocked, setUnlocked] = useState<Unlocked | null>(null);
   const [recoverEmail, setRecoverEmail] = useState("");
   const [recoverSent, setRecoverSent] = useState(false);
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("recover") === "1") setOwnOpen(true);
-    const shared = params.get("item");
-    if (shared) {
-      // A shared link opens that item even when it is not on the first page of the feed.
-      fetchItem(shared, "USD").then(it => { openAny(it); }).catch(() => { /* gone: show the feed */ });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const submitCode = async () => {
     setOwnBusy(true); setOwnError("");
     try { setUnlocked(await unlockByCode(code)); }
@@ -320,52 +413,95 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
   };
   const onLeave = () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); setHoverId(null); };
 
-  const activeCount = (category ? 1 : 0) + (type ? 1 : 0) + (tag ? 1 : 0) + (minPrice || maxPrice ? 1 : 0) + (sort !== "newest" ? 1 : 0) + (currency !== "USD" ? 1 : 0);
-  const filtersActive = !!(qDebounced || activeCount);
-  const resetFilters = () => { setCategory(""); setType(""); setTag(""); setMinPrice(""); setMaxPrice(""); setSort("newest"); setCurrency("USD"); };
-  const clearFilters = () => { setQ(""); resetFilters(); };
+  // ── what is shown ───────────────────────────────────────────────────
+  const activeCount = (f.category ? 1 : 0) + (f.type ? 1 : 0) + (f.tag ? 1 : 0) + (f.min || f.max ? 1 : 0) + (f.cur !== "USD" ? 1 : 0) + (f.orient ? 1 : 0) + (f.creator ? 1 : 0) + (f.sort !== "newest" ? 1 : 0);
+  const filtersActive = !!(f.q || activeCount || f.album);
+  const clearFilters = () => { setQLive(""); setF(DEFAULTS); };
   const cartCount = cart.length;
-  const openFilters = () => setFiltersOpen(true);
+  const openFilters = () => { setDraft(f); setFiltersOpen(true); };
+  const labelFor = useCallback((it: ExploreItem) => (it.mediaType === "VIDEO" ? t("clip") : t("photo")), [t]);
+  const titles = useMemo(() => cardTitles(list, labelFor), [list, labelFor]);
+  const titleOf = (it: ExploreItem) => titles.get(it.id) || it.title || labelFor(it);
 
   useEffect(() => {
-    if (!filtersOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFiltersOpen(false); };
+    if (!filtersOpen && !sortOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setFiltersOpen(false); setSortOpen(false); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filtersOpen]);
+  }, [filtersOpen, sortOpen]);
+
+  // Featured creators and collections come from what is loaded.
+  const creators = useMemo(() => {
+    const by = new Map<string, ExploreItem[]>();
+    for (const it of items) by.set(it.creator.id, [...(by.get(it.creator.id) ?? []), it]);
+    return [...by.entries()].map(([id, rows]) => ({ id, name: rows[0].creator.name, logo: rows[0].creator.logo, rows })).sort((a, b) => b.rows.length - a.rows.length);
+  }, [items]);
+  const albums = useMemo(() => {
+    const by = new Map<string, ExploreItem[]>();
+    for (const it of items) { const k = it.album?.id || it.albumId; by.set(k, [...(by.get(k) ?? []), it]); }
+    return [...by.entries()].map(([id, rows]) => {
+      const prices = rows.map(r => r.price.amount).filter((x): x is number => x != null);
+      return { id, title: shortAlbum(rows[0].album?.title || rows[0].title), rows, count: rows[0].album?.count ?? rows.length, creator: rows[0].creator.name, ccy: rows[0].price.currency, lo: prices.length ? Math.min(...prices) : null, hi: prices.length ? Math.max(...prices) : null };
+    });
+  }, [items]);
+  const albumName = f.album ? (albums.find(a => a.id === f.album)?.title || "") : "";
 
   // ── masonry ─────────────────────────────────────────────────────────
   const gap = phone ? GAP_PHONE : GAP_DESKTOP;
-  const showSkeleton = listLoading && !failed;
+  const showSkeleton = listLoading && !failed && f.view === "";
   const skeletonCount = list.length === 0 ? cols * 3 : cols;
   const skeletonHeights = useMemo(() => Array.from({ length: skeletonCount }, (_, i) => Math.round(colW * (0.7 + ((i * 37) % 80) / 100))), [skeletonCount, colW]);
   const entries = useMemo(() => {
-    const real = list.map(it => colW / ratioOf(it) + (phone ? CAPTION_PHONE : CAPTION_DESK) + 2);
+    const real = list.map(it => colW / ratioOf(it) + (phone ? CAPTION_PHONE : 0));
     return showSkeleton ? [...real, ...skeletonHeights] : real;
   }, [list, colW, phone, showSkeleton, skeletonHeights]);
   const columns = useMemo(() => layoutColumns(entries, cols, gap), [entries, cols, gap]);
-  const sizes = `${Math.round(100 / cols)}vw`;
 
-  const resultsLabel = `${list.length}${!savedOnly && !done ? "+" : ""}`;
-  const emptyShown = !failed && !listLoading && list.length === 0;
+  const found = (() => {
+    if (f.saved) return list.length;
+    const plain = !f.q && !f.tag && !f.min && !f.max && !localFilters;
+    if (plain && facets) {
+      const cat = f.category ? facets.categories.find(c => c.name === f.category) : null;
+      if (!f.category) return f.type === "VIDEO" ? facets.clips : f.type === "PHOTO" ? facets.total - facets.clips : facets.total;
+      if (cat) return f.type === "VIDEO" ? cat.clips : f.type === "PHOTO" ? cat.count - cat.clips : cat.count;
+    }
+    return done ? list.length : null;
+  })();
+  const emptyShown = !failed && !listLoading && list.length === 0 && f.view === "";
+
+  // the hero picture: the first landscape item of the first page, else the first item
+  const hero = useMemo(() => heroItems.current.find(i => i.previewUrl && (i.aspectRatio || 1) >= 1.2 && i.mediaType === "PHOTO") || heroItems.current.find(i => i.previewUrl) || null, []);
+  const trending = (facets?.tags.slice(0, 4).map(g => ({ key: g.name, label: g.name, tag: g.name })) ?? []);
+  const trendingShown = trending.length ? trending : (facets?.categories.slice(0, 4).map(c => ({ key: c.name, label: c.label, tag: "", category: c.name })) ?? []);
+
+  const sorts: [Sort, string][] = [["newest", t("sortNewest")], ["popular", t("sortPopular")], ["price_asc", t("sortPriceAsc")], ["price_desc", t("sortPriceDesc")]];
+  const sortLabel = sorts.find(s => s[0] === f.sort)?.[1] || t("sortNewest");
+  const goGallery = () => feedRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const openTile = (e: { currentTarget: HTMLElement }, it: ExploreItem) => { opener.current = e.currentTarget; showItem(it.id, false); };
 
   const renderTile = (it: ExploreItem, order: number) => {
     const video = it.mediaType === "VIDEO";
     const isSaved = saves.includes(it.id);
+    const title = titleOf(it);
     return (
       <article key={it.id} className="xp-card" onMouseEnter={() => onEnter(it)} onMouseLeave={onLeave}>
-        <div className="xp-media" style={{ aspectRatio: String(ratioOf(it)) }}
-          role="button" tabIndex={0} aria-label={`${t("openItem")}: ${it.title || it.creator.name}`}
-          onClick={e => { opener.current = e.currentTarget; setOpenId(it.id); }}
-          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); opener.current = e.currentTarget as HTMLElement; setOpenId(it.id); } }}>
+        <div className="xp-media xp-wm" style={{ aspectRatio: String(ratioOf(it)) }}
+          role="button" tabIndex={0} aria-label={`${t("openItem")}: ${title}, ${it.creator.name}`}
+          onClick={e => openTile(e, it)}
+          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTile(e, it); } }}>
           {it.thumbnailUrl && (
-            <img src={it.thumbnailUrl} alt={it.title || ""} loading={order < 6 ? "eager" : "lazy"} fetchPriority={order < 2 ? "high" : undefined} decoding="async"
-              srcSet={it.srcset?.["640"] && it.srcset?.["1600"] ? `${it.srcset["640"]} 640w, ${it.srcset["1600"]} 1600w` : undefined} sizes="(min-width: 1440px) 17vw, (min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" />
+            <img src={it.thumbnailUrl} alt="" width={640} height={Math.round(640 / ratioOf(it))} loading={order < 6 ? "eager" : "lazy"} fetchPriority={order < 2 ? "high" : undefined} decoding="async"
+              srcSet={srcsetOf(it)} sizes={SIZES} />
           )}
           {video && hoverId === it.id && it.previewIframeUrl && (
-            <iframe title={it.title || t("clip")} src={`${it.previewIframeUrl}?autoplay=true&muted=true&loop=true&controls=false`} allow="autoplay" tabIndex={-1} />
+            <iframe title={title} src={`${it.previewIframeUrl}?autoplay=true&muted=true&loop=true&controls=false`} allow="autoplay" tabIndex={-1} />
           )}
           {video && <span className="xp-badge"><i className="bi bi-play-fill" aria-hidden /> {clock(it.durationSeconds) || t("clip")}</span>}
+          <div className="xp-ov" aria-hidden>
+            <b>{title}</b>
+            <span><span className="xp-ovn">{it.creator.name}</span><span className="xp-ovp">{money(it.price.amount, it.price.currency)}</span></span>
+          </div>
         </div>
         <div className="xp-tileacts">
           <button className="xp-round on-media cartbtn" aria-pressed={inCart(it.id)} aria-label={inCart(it.id) ? t("removeFromCart") : t("addToCart")} onClick={() => toggleCart(it)}>
@@ -376,210 +512,270 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
           </button>
         </div>
         <div className="xp-cap">
-          <b className="xp-title">{it.title || (video ? t("clip") : t("photo"))}</b>
-          <div className="xp-caprow">
-            <span><span className="xp-av" aria-hidden>{initialOf(it.creator.name)}</span><span className="xp-cname">{it.creator.name}</span></span>
-            <b className="xp-cprice">{money(it.price.amount, it.price.currency)}</b>
-          </div>
+          <b className="xp-title">{title}</b>
+          <div className="xp-caprow"><span className="xp-cname">{it.creator.name}</span><b className="xp-cprice">{money(it.price.amount, it.price.currency)}</b></div>
         </div>
       </article>
     );
   };
 
-  const actions = (
-    <>
-      <button className="xp-pill" aria-pressed={savedOnly} onClick={() => setSavedOnly(v => !v)}><i className="bi bi-bookmark" aria-hidden /> {t("saved")}{saves.length > 0 ? ` · ${saves.length}` : ""}</button>
-      <button className="xp-pill" onClick={() => setOwnOpen(true)}><i className="bi bi-key" aria-hidden /> {phone ? t("boughtShort") : t("alreadyBought")}</button>
-      <button className="xp-pill primary" onClick={() => setDrawer(true)} aria-label={cartCount > 0 ? t("cartCount", { n: cartCount }) : t("cart")}>
-        <i className="bi bi-bag" aria-hidden /> {cartCount > 0 ? t("cartCount", { n: cartCount }) : t("cart")}
-      </button>
-    </>
-  );
-
-  // The count in "N items found": exact when the facets know it, a running "N+" while the feed is still loading.
-  const found = (() => {
-    if (savedOnly) return list.length;
-    const plain = !qDebounced && !tag && !minPrice && !maxPrice;
-    if (plain && facets) {
-      const cat = category ? facets.categories.find(c => c.name === category) : null;
-      if (!category) return type === "VIDEO" ? facets.clips : type === "PHOTO" ? facets.total - facets.clips : facets.total;
-      if (cat) return type === "VIDEO" ? cat.clips : type === "PHOTO" ? cat.count - cat.clips : cat.count;
-    }
-    return done ? list.length : null;
-  })();
-  const foundLabel = found !== null ? t("itemsFound", { n: found }) : t("itemsFoundMore", { n: list.length });
-
   const chips = (
     <div className="xp-chips" role="group" aria-label={t("filters")}>
-      <button className="xp-chip" aria-pressed={!category && !tag && (phone ? type === "" : true)} onClick={() => { setCategory(""); setTag(""); if (phone) setType(""); setSavedOnly(false); }}>{t("all")}</button>
-      {phone && <button className="xp-chip" aria-pressed={type === "PHOTO"} onClick={() => { setSavedOnly(false); setType(type === "PHOTO" ? "" : "PHOTO"); }}>{t("photos")}</button>}
-      {phone && <button className="xp-chip" aria-pressed={type === "VIDEO"} onClick={() => { setSavedOnly(false); setType(type === "VIDEO" ? "" : "VIDEO"); }}>{t("clips")}</button>}
+      <button className="xp-chip" aria-pressed={!f.type && !f.category && !f.tag && !f.saved && f.view === ""} onClick={() => patch({ type: "", category: "", tag: "", saved: false, view: "", album: "" })}>{t("all")}</button>
+      <button className="xp-chip" aria-pressed={f.type === "PHOTO" && f.view === ""} onClick={() => patch({ saved: false, view: "", type: f.type === "PHOTO" ? "" : "PHOTO" })}>{t("photos")}</button>
+      <button className="xp-chip" aria-pressed={f.type === "VIDEO" && f.view === ""} onClick={() => patch({ saved: false, view: "", type: f.type === "VIDEO" ? "" : "VIDEO" })}>{t("clips")}</button>
+      <button className="xp-chip" aria-pressed={f.view === "collections"} onClick={() => patch({ saved: false, album: "", view: f.view === "collections" ? "" : "collections" })}>{t("collections")}</button>
       {facets?.categories.map(c => (
-        <button key={c.name} className="xp-chip" aria-pressed={category === c.name} onClick={() => { setSavedOnly(false); setCategory(category === c.name ? "" : c.name); }}>
+        <button key={c.name} className="xp-chip" aria-pressed={f.category === c.name} onClick={() => patch({ saved: false, view: "", category: f.category === c.name ? "" : c.name })}>
           {c.label}<small>{c.count}</small>
         </button>
       ))}
-      {facets?.tags.slice(0, 8).map(g => (
-        <button key={g.name} className="xp-chip" aria-pressed={tag === g.name} onClick={() => { setSavedOnly(false); setTag(tag === g.name ? "" : g.name); }}>#{g.name}</button>
-      ))}
     </div>
   );
 
-  const searchRow = (
-    <div className="xp-searchrow">
-      <div className="ph-search">
-        <i className="bi bi-search ph-search-icon" aria-hidden="true" />
-        <input id="xp-q" className="ph-search-input" type="search" value={q} onChange={e => setQ(e.target.value)} aria-label={t("searchPlaceholder")}
-          placeholder={compact ? t("searchShort") : t("searchPlaceholder")} />
-        {q && <button type="button" className="ph-search-clear" aria-label={t("clearFilters")} onClick={() => setQ("")}><i className="bi bi-x-lg" aria-hidden="true" /></button>}
+  const savedBtn = <button className="xp-pill" aria-pressed={f.saved} onClick={() => patch({ saved: !f.saved, view: "" })}><i className="bi bi-bookmark" aria-hidden /> {t("saved")}{saves.length > 0 ? ` · ${saves.length}` : ""}</button>;
+  const cartBtn = (
+    <button className="xp-pill primary" onClick={() => setDrawer(true)} aria-label={cartCount > 0 ? t("cartCount", { n: cartCount }) : t("cart")}>
+      <i className="bi bi-bag" aria-hidden /> {cartCount > 0 ? t("cartCount", { n: cartCount }) : t("cart")}
+    </button>
+  );
+  const filtersBtn = (
+    <button className="xp-pill" onClick={openFilters} aria-haspopup="dialog" aria-label={activeCount ? t("filtersWith", { n: activeCount }) : t("filters")}>
+      <i className="bi bi-sliders" aria-hidden /> {activeCount ? t("filtersWith", { n: activeCount }) : t("filters")}
+    </button>
+  );
+
+  const creatorCard = (c: (typeof creators)[number]) => (
+    <article className="xp-creator" key={c.id}>
+      <button className="xp-mosaic" data-ck-shape="card" onClick={() => { patch({ creator: c.id, view: "", saved: false }); goGallery(); }} aria-label={`${c.name}, ${t("itemsCount", { n: c.rows.length })}`}>
+        <span className="m0">{c.rows[0]?.thumbnailUrl && <img src={c.rows[0].thumbnailUrl} alt="" loading="lazy" width={320} height={240} />}</span>
+        <span className="m1">{c.rows[1]?.thumbnailUrl && <img src={c.rows[1].thumbnailUrl} alt="" loading="lazy" width={160} height={120} />}</span>
+        <span className="m2">{c.rows[2]?.thumbnailUrl && <img src={c.rows[2].thumbnailUrl} alt="" loading="lazy" width={160} height={120} />}</span>
+      </button>
+      <div className="xp-cfoot">
+        <span className="xp-av" aria-hidden>{c.logo ? <img src={c.logo} alt="" /> : initialOf(c.name)}</span>
+        <div><b>{c.name}</b><small>{t("itemsCount", { n: c.rows.length })}</small></div>
+        <button className="xp-btn xp-view" onClick={() => { patch({ creator: c.id, view: "", saved: false }); goGallery(); }}>{t("viewCreator")}</button>
       </div>
-      {phone && (
-        <button className="xp-sqbtn" aria-label={activeCount ? t("filtersWith", { n: activeCount }) : t("filters")} aria-haspopup="dialog" onClick={openFilters}>
-          <i className="bi bi-sliders" aria-hidden />{activeCount > 0 && <span>{activeCount}</span>}
-        </button>
-      )}
-    </div>
+    </article>
+  );
+
+  const searchField = (id: string, withBtn: boolean) => (
+    <form className="xp-hsearch" role="search" onSubmit={e => { e.preventDefault(); patch({ q: qLive.trim() }); goGallery(); }}>
+      <i className="bi bi-search" aria-hidden />
+      <input id={id} type="search" value={qLive} onChange={e => setQLive(e.target.value)} aria-label={t("searchPlaceholder")} placeholder={phone ? t("searchShort") : t("searchPlaceholder")} enterKeyHint="search" />
+      {qLive && <button type="button" className="xp-x" aria-label={t("clearAll")} onClick={() => { setQLive(""); patch({ q: "" }); }}><i className="bi bi-x-lg" aria-hidden /></button>}
+      {withBtn && <button type="submit" className="xp-go">{t("searchBtn")}</button>}
+      {phone && <button type="button" className="xp-fcircle" aria-label={activeCount ? t("filtersWith", { n: activeCount }) : t("filters")} aria-haspopup="dialog" onClick={openFilters}><i className="bi bi-sliders" aria-hidden />{activeCount > 0 && <span>{activeCount}</span>}</button>}
+    </form>
+  );
+
+  const creatorsBlock = !f.saved && !f.q && f.view === "" && creators.length > 0 && (
+    <section className="xp-sec xp-creators" aria-labelledby="xp-ct">
+      <div className="xp-sechead"><h2 id="xp-ct">{t("featured")}</h2><button className="xp-linkbtn" aria-expanded={showAllCreators} onClick={() => setShowAllCreators(v => !v)}>{phone ? t("seeAll") : `${t("seeAllCreators")} →`}</button></div>
+      <div className={`xp-crow${showAllCreators ? " all" : ""}`}>{(showAllCreators ? creators : creators.slice(0, phone ? 8 : 4)).map(creatorCard)}</div>
+    </section>
   );
 
   return (
     <>
       <Navbar />
       <main className="xp" ref={rootRef}>
-        <section className="ph-hero xp-hero" aria-labelledby="xp-title">
-          <span className="ph-hero-eyebrow"><i className="bi bi-stars" aria-hidden="true" /> {t("heroEyebrow")}</span>
-          <h1 id="xp-title" className="ph-hero-title">{phone ? t("heroTitleShort") : t("heroTitle")}</h1>
-          <p className="ph-hero-sub">{phone ? t("heroSubShort") : t("heroSub")}</p>
+        <section className="xp-hero" ref={heroRef} aria-labelledby="xp-title">
+          {hero?.previewUrl && (
+            <img className="xp-heroimg" src={hero.previewUrl} alt="" width={hero.width || 1600} height={hero.height || 1067} fetchPriority="high" decoding="async"
+              srcSet={srcsetOf(hero)} sizes="100vw" />
+          )}
+          <div className="xp-herofade" aria-hidden />
+          <div className="xp-herobody">
+            <h1 id="xp-title">{phone ? t("heroTitleShort") : t("heroTitle")}</h1>
+            <p>{phone ? t("heroSubShort") : t("heroSub")}</p>
+            {searchField("xp-q", !phone)}
+            {!phone && trendingShown.length > 0 && (
+              <div className="xp-trend"><span>{t("trending")}:</span>
+                {trendingShown.map(g => <button key={g.key} onClick={() => { patch({ tag: g.tag, category: "category" in g ? (g.category as string) : "", saved: false, view: "" }); goGallery(); }}>{g.label}</button>)}
+              </div>
+            )}
+          </div>
           {!phone && (
             <div className="xp-heroacts">
               <button className="xp-hbtn white" onClick={() => setOwnOpen(true)}><i className="bi bi-key" aria-hidden /> {t("alreadyBought")}</button>
               <Link className="xp-hbtn pink" href="/user/auth/signup?userType=Photographer"><i className="bi bi-camera" aria-hidden /> {t("sellCta")}</Link>
             </div>
           )}
+          {hero && <span className="xp-credit">{t("photoBy", { name: hero.creator.name })}{hero.categoryLabel ? ` · ${hero.categoryLabel}` : ""}</span>}
         </section>
 
-        <div className="ph-control xp-control">
-          <div className="ph-control-card xp-ccard">
-            {searchRow}
-            {!phone && (
-              <div className="ph-filters xp-filtersrow">
-                <FilterSelect icon="bi-grid" ariaLabel={t("typeLabel")} value={type} onChange={v => { setSavedOnly(false); setType(v as "" | "PHOTO" | "VIDEO"); }}
-                  options={[{ value: "", label: t("allTypes") }, { value: "PHOTO", label: t("photos") }, { value: "VIDEO", label: t("clips") }]} />
-                <FilterSelect icon="bi-tag" ariaLabel={t("allCategories")} value={category} onChange={v => { setSavedOnly(false); setCategory(v); }}
-                  options={[{ value: "", label: t("allCategories") }, ...(facets?.categories.map(c => ({ value: c.name, label: c.label })) ?? [])]} />
-                <PriceSelect currency={currency} min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} t={t} maxHint={facets?.maxPrice ? String(Math.round(facets.maxPrice)) : "50"} />
-                <FilterSelect icon="bi-globe2" ariaLabel={t("currency")} value={currency} onChange={setCurrency} options={CURRENCIES.map(c => ({ value: c, label: c }))} />
-                <FilterSelect icon="bi-sort-down" ariaLabel={t("sortLabel")} value={sort} onChange={v => setSort(v as NonNullable<FeedQuery["sort"]>)}
-                  options={[{ value: "newest", label: t("sortNewest") }, { value: "popular", label: t("sortPopular") }, { value: "price_asc", label: t("priceUpShort") }, { value: "price_desc", label: t("priceDownShort") }]} />
-              </div>
-            )}
-            {phone && chips}
-          </div>
-        </div>
+        {phone && <div className="xp-chiprow">{chips}</div>}
+
+        {phone && stuck && (
+          <div className="xp-slim" role="search">{searchField("xp-q2", false)}</div>
+        )}
 
         {!phone && (
           <div className="xp-resbar">
             <div className="xp-wrap xp-resin">
-              <span className="xp-count" role="status">{foundLabel}</span>
               {chips}
               <div className="xp-resacts">
-                <div className="xp-seg" role="group" aria-label={t("typeLabel")}>
-                  <button aria-pressed={type === ""} onClick={() => { setSavedOnly(false); setType(""); }}>{t("all")}</button>
-                  <button aria-pressed={type === "PHOTO"} onClick={() => { setSavedOnly(false); setType("PHOTO"); }}>{t("photos")}</button>
-                  <button aria-pressed={type === "VIDEO"} onClick={() => { setSavedOnly(false); setType("VIDEO"); }}>{t("clips")}</button>
+                <div className="xp-sortwrap">
+                  <button className="xp-pill" aria-haspopup="listbox" aria-expanded={sortOpen} aria-label={`${t("sortMenu")}: ${sortLabel}`} onClick={() => setSortOpen(v => !v)}>
+                    {sortLabel} <i className={`bi ${sortOpen ? "bi-chevron-up" : "bi-chevron-down"}`} aria-hidden />
+                  </button>
+                  {sortOpen && (
+                    <ul className="xp-sortlist" role="listbox" aria-label={t("sortMenu")}>
+                      {sorts.map(([v, l]) => (
+                        <li key={v} role="option" aria-selected={f.sort === v}><button onClick={() => { patch({ sort: v }); setSortOpen(false); }}>{l}{f.sort === v && <i className="bi bi-check-lg" aria-hidden />}</button></li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                <button className="xp-pill" aria-pressed={savedOnly} onClick={() => setSavedOnly(v => !v)}><i className="bi bi-bookmark" aria-hidden /> {t("saved")}{saves.length > 0 ? ` · ${saves.length}` : ""}</button>
-                <button className="xp-pill primary" onClick={() => setDrawer(true)} aria-label={cartCount > 0 ? t("cartCount", { n: cartCount }) : t("cart")}>
-                  <i className="bi bi-bag" aria-hidden /> {cartCount > 0 ? t("cartCount", { n: cartCount }) : t("cart")}
-                </button>
+                {filtersBtn}
+                {savedBtn}
+                {cartBtn}
               </div>
             </div>
           </div>
         )}
 
-        <div className={`xp-wrap xp-feed${ready ? "" : " xp-prep"}`} aria-live="polite">
-          {failed && (
-            <div className="xp-state" role="alert">
-              <h2>{t("errorTitle")}</h2>
-              <p>{t("errorBody")}</p>
-              <button className="xp-btn xp-primary" onClick={() => void load(items.length === 0, cursor)}>{t("retry")}</button>
+        <div className="xp-wrap">
+          {creatorsBlock}
+
+          <div className="xp-sechead xp-latest">
+            <h2>{f.view === "collections" ? t("collections") : f.saved ? t("saved") : t("latest")}
+              <small role="status">{f.view === "collections" ? t("itemsCount", { n: albums.length }) : found !== null ? t("itemsFound", { n: found }) : t("itemsFoundMore", { n: list.length })}</small>
+            </h2>
+            <div className="xp-active">
+              {f.album && <button className="xp-chip" onClick={() => patch({ album: "" })}>{t("collectionFilter", { name: albumName })} <i className="bi bi-x-lg" aria-hidden /></button>}
+              {f.creator && <button className="xp-chip" onClick={() => patch({ creator: "" })}>{creators.find(c => c.id === f.creator)?.name || t("creatorLabel")} <i className="bi bi-x-lg" aria-hidden /></button>}
+              {filtersActive && <button className="xp-linkbtn" onClick={clearFilters}>{t("clearFilters")}</button>}
             </div>
-          )}
-          {emptyShown && (
-            <div className="xp-state">
-              <h2>{savedOnly ? t("saved") : t("emptyTitle")}</h2>
-              <p>{savedOnly ? t("savedEmpty") : t("emptyBody")}</p>
-              {savedOnly && <button className="xp-btn" onClick={() => setSavedOnly(false)}>{t("seeAll")}</button>}
-              {!savedOnly && filtersActive && <button className="xp-btn" onClick={clearFilters}>{t("clearFilters")}</button>}
-            </div>
-          )}
-          <div className="xp-masonry" ref={feedRef} style={{ gap }}>
-            {columns.map((idxs, c) => (
-              <div className="xp-col" key={c} style={{ gap }}>
-                {idxs.map(i => (i < list.length
-                  ? renderTile(list[i], i)
-                  : <div key={`s${i}`} className="xp-skel" style={{ height: entries[i] }} aria-hidden />))}
-              </div>
-            ))}
           </div>
-          <div ref={sentinelRef} style={{ height: 1 }} />
-          {!listLoading && !failed && (savedOnly || done) && list.length > 0 && <p className="xp-end">{t("endOfList")}</p>}
+
+          {f.view === "collections" ? (
+            <div className="xp-albums">
+              {albums.map(a => (
+                <article className="xp-album" key={a.id}>
+                  <button className="xp-mosaic" data-ck-shape="card" onClick={() => patch({ album: a.id, view: "" })} aria-label={`${a.title}, ${t("itemsCount", { n: a.count })}`}>
+                    <span className="m0">{a.rows[0]?.thumbnailUrl && <img src={a.rows[0].thumbnailUrl} alt="" loading="lazy" width={320} height={240} />}</span>
+                    <span className="m1">{a.rows[1]?.thumbnailUrl && <img src={a.rows[1].thumbnailUrl} alt="" loading="lazy" width={160} height={120} />}</span>
+                    <span className="m2">{a.rows[2]?.thumbnailUrl && <img src={a.rows[2].thumbnailUrl} alt="" loading="lazy" width={160} height={120} />}</span>
+                  </button>
+                  <div className="xp-afoot"><b>{a.title}</b><small>{a.creator} · {t("itemsCount", { n: a.count })}{a.lo != null && a.hi != null ? ` · ${a.lo === a.hi ? money(a.lo, a.ccy) : t("priceRangeOf", { min: money(a.lo, a.ccy), max: money(a.hi, a.ccy) })}` : ""}</small></div>
+                </article>
+              ))}
+              {albums.length === 0 && !loading && <div className="xp-state"><h2>{t("emptyTitle")}</h2><p>{t("emptyBody")}</p></div>}
+            </div>
+          ) : (
+            <div className={`xp-feed${ready ? "" : " xp-prep"}`} aria-live="polite">
+              {failed && (
+                <div className="xp-state" role="alert">
+                  <h2>{t("errorTitle")}</h2>
+                  <p>{t("errorBody")}</p>
+                  <button className="xp-btn xp-primary" onClick={() => void load(items.length === 0, cursor)}>{t("retry")}</button>
+                </div>
+              )}
+              {emptyShown && (
+                <div className="xp-state">
+                  <h2>{f.saved ? t("saved") : t("emptyTitle")}</h2>
+                  <p>{f.saved ? t("savedEmpty") : t("emptyBody")}</p>
+                  {f.saved && <button className="xp-btn" onClick={() => patch({ saved: false })}>{t("seeAll")}</button>}
+                  {!f.saved && filtersActive && <button className="xp-btn" onClick={clearFilters}>{t("clearFilters")}</button>}
+                </div>
+              )}
+              <div className="xp-masonry" ref={feedRef} style={{ gap }}>
+                {columns.map((idxs, c) => (
+                  <div className="xp-col" key={c} style={{ gap }}>
+                    {idxs.map(i => (i < list.length
+                      ? renderTile(list[i], i)
+                      : <div key={`s${i}`} className="xp-skel" style={{ height: entries[i] }} aria-hidden />))}
+                  </div>
+                ))}
+              </div>
+              <div ref={sentinelRef} style={{ height: 1 }} />
+              {!listLoading && !failed && (f.saved || done) && list.length > 0 && <p className="xp-end">{t("endOfList")}</p>}
+            </div>
+          )}
         </div>
 
-        {phone && <div className="xp-dock" role="group" aria-label={t("cart")}>{actions}</div>}
+        {phone && (
+          <div className="xp-dock" role="group" aria-label={t("cart")}>
+            {savedBtn}
+            <button className="xp-pill" onClick={() => setOwnOpen(true)}><i className="bi bi-key" aria-hidden /> {t("boughtShort")}</button>
+            {cartBtn}
+          </div>
+        )}
 
-        {filtersOpen && phone && (
+        {filtersOpen && (
           <>
             <div className="xp-fscrim" onClick={() => setFiltersOpen(false)} aria-hidden />
-            <div className="xp-filters" role="dialog" aria-label={t("filters")}>
+            <aside className="xp-filters" role="dialog" aria-modal="true" aria-label={t("filtersTitle")}>
               <div className="xp-fhead">
-                <h2>{t("filters")}</h2>
-                <button className="xp-linkbtn" onClick={resetFilters}>{t("reset")}</button>
+                <h2>{t("filtersTitle")}</h2>
+                <button className="xp-round" onClick={() => setFiltersOpen(false)} aria-label={t("close")}><i className="bi bi-x-lg" aria-hidden /></button>
               </div>
-              <div className="xp-fgroup">
-                <div className="xp-flabel">{t("sortLabel")}</div>
-                <div className="xp-fchips">
-                  {([["newest", t("sortNewest")], ["popular", t("sortPopular")], ["price_asc", t("priceUpShort")], ["price_desc", t("priceDownShort")]] as const).map(([v, l]) => (
-                    <button key={v} className="xp-chip" aria-pressed={sort === v} onClick={() => setSort(v)}>{l}</button>
-                  ))}
+              <div className="xp-fbody">
+                <div className="xp-fgroup">
+                  <div className="xp-flabel">{t("type")}</div>
+                  <div className="xp-fchips">
+                    {([["", t("all")], ["PHOTO", t("photos")], ["VIDEO", t("clips")]] as const).map(([v, l]) => (
+                      <button key={v} className="xp-chip" aria-pressed={draft.type === v} onClick={() => setDraft({ ...draft, type: v })}>{l}</button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="xp-fgroup xp-ftype">
-                <div className="xp-flabel">{t("type")}</div>
-                <div className="xp-fchips">
-                  <button className="xp-chip" aria-pressed={type === ""} onClick={() => setType("")}>{t("all")}</button>
-                  <button className="xp-chip" aria-pressed={type === "PHOTO"} onClick={() => setType("PHOTO")}>{t("photos")}</button>
-                  <button className="xp-chip" aria-pressed={type === "VIDEO"} onClick={() => setType("VIDEO")}>{t("clips")}</button>
+                <label className="xp-fgroup"><span className="xp-flabel">{t("allCategories")}</span>
+                  <select className="xp-select" value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })}>
+                    <option value="">{t("allCategories")}</option>
+                    {facets?.categories.map(c => <option key={c.name} value={c.name}>{c.label} ({c.count})</option>)}
+                  </select>
+                </label>
+                <div className="xp-fgroup">
+                  <div className="xp-flabel">{t("priceLabel")}</div>
+                  <div className="xp-prices">
+                    <label className="xp-pin"><span>{draft.cur}</span><input inputMode="decimal" aria-label={t("minPrice")} placeholder="0" value={draft.min} onChange={e => setDraft({ ...draft, min: e.target.value.replace(/[^\d.]/g, "") })} /></label>
+                    <label className="xp-pin"><span>{draft.cur}</span><input inputMode="decimal" aria-label={t("maxPrice")} placeholder={facets?.maxPrice ? String(Math.round(facets.maxPrice)) : "50"} value={draft.max} onChange={e => setDraft({ ...draft, max: e.target.value.replace(/[^\d.]/g, "") })} /></label>
+                  </div>
                 </div>
-              </div>
-              <div className="xp-fgroup">
-                <div className="xp-flabel">{t("priceLabel")}</div>
-                <div className="xp-prices">
-                  <label className="xp-pin"><span>{currency}</span><input inputMode="decimal" aria-label={t("minPrice")} placeholder="0" value={minPrice} onChange={e => setMinPrice(e.target.value.replace(/[^\d.]/g, ""))} /></label>
-                  <label className="xp-pin"><span>{currency}</span><input inputMode="decimal" aria-label={t("maxPrice")} placeholder={facets?.maxPrice ? String(Math.round(facets.maxPrice)) : "50"} value={maxPrice} onChange={e => setMaxPrice(e.target.value.replace(/[^\d.]/g, ""))} /></label>
+                <label className="xp-fgroup"><span className="xp-flabel">{t("currency")}</span>
+                  <select className="xp-select" value={draft.cur} onChange={e => setDraft({ ...draft, cur: e.target.value })}>{CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                </label>
+                <div className="xp-fgroup">
+                  <div className="xp-flabel">{t("orientation")}</div>
+                  <div className="xp-fchips">
+                    {([["", t("any")], ["landscape", t("landscape")], ["portrait", t("portrait")], ["square", t("square")]] as const).map(([v, l]) => (
+                      <button key={v} className="xp-chip" aria-pressed={draft.orient === v} onClick={() => setDraft({ ...draft, orient: v })}>{l}</button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="xp-fgroup">
-                <div className="xp-flabel">{t("currency")}</div>
-                <div className="xp-fchips">
-                  {CURRENCIES.map(c => <button key={c} className="xp-chip" aria-pressed={currency === c} onClick={() => setCurrency(c)}>{c}</button>)}
+                {creators.length > 0 && (
+                  <label className="xp-fgroup"><span className="xp-flabel">{t("creatorLabel")}</span>
+                    <select className="xp-select" value={draft.creator} onChange={e => setDraft({ ...draft, creator: e.target.value })}>
+                      <option value="">{t("allCreators")}</option>
+                      {creators.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </label>
+                )}
+                <div className="xp-fgroup xp-fsort">
+                  <div className="xp-flabel">{t("sortLabel")}</div>
+                  <div className="xp-fchips">
+                    {sorts.map(([v, l]) => <button key={v} className="xp-chip" aria-pressed={draft.sort === v} onClick={() => setDraft({ ...draft, sort: v })}>{l}</button>)}
+                  </div>
                 </div>
               </div>
               <div className="xp-ffoot">
-                <button className="xp-btn" onClick={resetFilters}>{t("reset")}</button>
-                <button className="xp-btn xp-primary" onClick={() => setFiltersOpen(false)}>{t("showResults", { n: found !== null ? String(found) : resultsLabel })}</button>
+                <button className="xp-btn" onClick={() => setDraft({ ...DEFAULTS, q: draft.q, saved: draft.saved, view: draft.view, album: draft.album, tag: draft.tag })}>{t("clearAll")}</button>
+                <button className="xp-btn xp-primary" onClick={() => { setF({ ...draft }); setFiltersOpen(false); }}>{t("apply")}</button>
               </div>
-            </div>
+            </aside>
           </>
         )}
 
         {openItem && (
-          <div className="xp-modal" role="dialog" aria-modal="true" aria-label={openItem.title || t("preview")} onClick={closeViewer}>
-            <div className="xp-sheet viewer" onClick={e => e.stopPropagation()}>
-              <Viewer item={openItem} t={t} currency={currency} onClose={closeViewer}
+          <div className="xp-modal" role="dialog" aria-modal="true" aria-label={titleOf(openItem)} onClick={closeViewer}>
+            <div className="xp-sheet viewer" ref={sheetRef} onClick={e => e.stopPropagation()}>
+              <ExploreViewer item={openItem} title={titleOf(openItem)} t={t} currency={f.cur} onClose={closeViewer} index={openIndex} total={list.length}
                 onPrev={openIndex > 0 ? () => step(-1) : undefined} onNext={openIndex >= 0 && openIndex < list.length - 1 ? () => step(1) : undefined}
-                inCart={inCart(openItem.id)} onCart={() => toggleCart(openItem)} onBuy={() => { if (!inCart(openItem.id)) toggleCart(openItem); setOpenId(null); setDrawer(true); }}
-                saved={saves.includes(openItem.id)} onSave={() => toggleSave(openItem.id)}
-                onOpen={openAny} onMore={cat => { setSavedOnly(false); setCategory(cat); closeViewer(); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+                inCart={inCart(openItem.id)} onCart={() => toggleCart(openItem)} onBuy={() => { if (!inCart(openItem.id)) toggleCart(openItem); closeViewer(); setDrawer(true); }}
+                saved={saves.includes(openItem.id)} onSave={() => toggleSave(openItem.id)} onOpen={openAny} />
             </div>
           </div>
         )}
@@ -598,10 +794,10 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
                 const line = quote?.lines.find(l => l.id === c.id);
                 return (
                   <div className="xp-line" key={c.id}>
-                    {c.thumbnailUrl && <img src={c.thumbnailUrl} alt="" />}
+                    {c.thumbnailUrl && <img src={c.thumbnailUrl} alt="" width={56} height={56} />}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || t("clip")}</div>
-                      <div className="xp-meta">{c.mediaType === "VIDEO" ? t("clip") : t("photo")}{line ? ` · ${money(line.price, quote!.currency || currency)}` : ""}</div>
+                      <div className="xp-meta">{c.mediaType === "VIDEO" ? t("clip") : t("photo")}{line ? ` · ${money(line.price, quote!.currency || f.cur)}` : ""}</div>
                     </div>
                     <button className="xp-round" aria-label={t("removeFromCart")}
                       onClick={() => setCart(prev => { const next = prev.filter(x => x.id !== c.id); writeJson(CART_KEY, next); return next; })}>
@@ -612,7 +808,7 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
               })}
               {cart.length > 0 && (
                 <>
-                  <div className="xp-total"><span>{t("total")}</span><span>{quoteBusy || !quote ? "…" : money(quote.total, quote.currency || currency)}</span></div>
+                  <div className="xp-total"><span>{t("total")}</span><span>{quoteBusy || !quote ? "…" : money(quote.total, quote.currency || f.cur)}</span></div>
                   <label className="xp-meta" htmlFor="xp-email">{t("emailHint")}</label>
                   <input id="xp-email" className="xp-input" type="email" inputMode="email" autoComplete="email" value={email}
                     aria-invalid={emailError} onChange={e => { setEmail(e.target.value); setEmailError(false); }} placeholder="you@example.com" />
@@ -666,7 +862,7 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
                   <div className="xp-grid2">
                     {unlocked.items.map(u => (
                       <div key={u.id} className="xp-line" style={{ flexDirection: "column", alignItems: "stretch" }}>
-                        {u.thumbnailUrl && <img src={u.thumbnailUrl} alt="" style={{ width: "100%", height: 110 }} />}
+                        {u.thumbnailUrl && <img src={u.thumbnailUrl} alt="" width={150} height={110} style={{ width: "100%", height: 110 }} />}
                         <span className="xp-meta">{u.title || (u.mediaType === "VIDEO" ? t("clip") : t("photo"))}</span>
                         <a className="xp-btn" href={u.viewUrl || u.downloadUrl} download>{t("download")}</a>
                       </div>
@@ -678,143 +874,6 @@ export default function ExploreClient({ initial = null, initialFacets = null }: 
           </div>
         )}
       </main>
-    </>
-  );
-}
-
-/** "Any price" dropdown: the same trigger and popover classes as the other search-card dropdowns, with a min and max field inside. */
-function PriceSelect({ currency, min, max, setMin, setMax, t, maxHint }: {
-  currency: string; min: string; max: string; setMin: (v: string) => void; setMax: (v: string) => void; t: T; maxHint: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => { if (!wrapRef.current?.contains(e.target as Node)) setOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
-  }, [open]);
-  const label = min || max ? `${currency} ${min || "0"}${max ? ` - ${max}` : "+"}` : t("anyPrice");
-  return (
-    <div className="ph-select-wrap" ref={wrapRef}>
-      <button type="button" className="ph-select-trigger" aria-haspopup="dialog" aria-expanded={open} aria-label={t("priceLabel")} onClick={() => setOpen(o => !o)}>
-        <i className="bi bi-cash-coin ph-select-icon" aria-hidden="true" />
-        <span className="ph-select-value">{label}</span>
-        <i className={`bi bi-chevron-up ph-select-caret ${open ? "is-open" : ""}`} aria-hidden="true" />
-      </button>
-      {open && (
-        <div className="ph-select-list xp-pricepop" role="dialog" aria-label={t("priceLabel")}>
-          <div className="xp-prices">
-            <label className="xp-pin"><span>{currency}</span><input inputMode="decimal" aria-label={t("minPrice")} placeholder="0" value={min} onChange={e => setMin(e.target.value.replace(/[^\d.]/g, ""))} /></label>
-            <label className="xp-pin"><span>{currency}</span><input inputMode="decimal" aria-label={t("maxPrice")} placeholder={maxHint} value={max} onChange={e => setMax(e.target.value.replace(/[^\d.]/g, ""))} /></label>
-          </div>
-          <div className="xp-popfoot">
-            <button className="xp-btn" onClick={() => { setMin(""); setMax(""); }}>{t("clearPrice")}</button>
-            <button className="xp-btn xp-primary" onClick={() => setOpen(false)}>{t("apply")}</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Viewer({ item, t, currency, onClose, onPrev, onNext, inCart, onCart, onBuy, saved, onSave, onOpen, onMore }: {
-  item: ExploreItem; t: T; currency: string; onClose: () => void; onPrev?: () => void; onNext?: () => void;
-  inCart: boolean; onCart: () => void; onBuy: () => void; saved: boolean; onSave: () => void;
-  onOpen: (it: ExploreItem) => void; onMore: (category: string) => void;
-}) {
-  const video = item.mediaType === "VIDEO";
-  const [ended, setEnded] = useState(false);
-  const [local, setLocal] = useState<string>("");
-  const [more, setMore] = useState<ExploreItem[]>([]);
-  const closeRef = useRef<HTMLButtonElement | null>(null);
-  const share = () => {
-    const url = `${window.location.origin}/explore?item=${item.id}`;
-    if (navigator.share) void navigator.share({ title: item.title || "Connekyt", url }).catch(() => { /* cancelled */ });
-    else void navigator.clipboard?.writeText(url).catch(() => { /* blocked */ });
-  };
-  useEffect(() => {
-    setEnded(false);
-    if (!video) return;
-    const h = setTimeout(() => setEnded(true), ((item.previewClipSeconds || 15) + 1) * 1000);
-    return () => clearTimeout(h);
-  }, [item.id, video, item.previewClipSeconds]);
-  useEffect(() => { closeRef.current?.focus(); }, [item.id]);
-  // The same price in a second currency, so "USD 5.00" reads with "≈ RWF 6,500".
-  useEffect(() => {
-    let live = true;
-    const alt = item.price.currency === "RWF" ? "USD" : "RWF";
-    setLocal("");
-    fetchItem(item.id, alt).then(o => { if (live && o.price.amount != null) setLocal(money(o.price.amount, o.price.currency)); }).catch(() => { /* optional line */ });
-    return () => { live = false; };
-  }, [item.id, item.price.currency]);
-  useEffect(() => {
-    let live = true;
-    setMore([]);
-    fetchFeed({ category: item.category || "", currency, size: 12 })
-      .then(p => { if (live) setMore(p.items.filter(i => i.id !== item.id).slice(0, 3)); }).catch(() => { /* optional row */ });
-    return () => { live = false; };
-  }, [item.id, item.category, currency]);
-
-  return (
-    <>
-      <div className="xp-stage">
-        <div className="xp-mtop">
-          <button className="xp-round on-media" onClick={onClose} aria-label={t("close")}><i className="bi bi-chevron-left" aria-hidden /></button>
-          <div>
-            <button className="xp-round on-media" onClick={share} aria-label={t("share")}><i className="bi bi-share" aria-hidden /></button>
-            <button className="xp-round on-media" onClick={onSave} aria-pressed={saved} aria-label={saved ? t("saved") : t("save")}><i className={`bi ${saved ? "bi-heart-fill" : "bi-heart"}`} aria-hidden /></button>
-          </div>
-        </div>
-        {onPrev && <button className="xp-round xp-stagenav prev" onClick={onPrev} aria-label={t("previous")}><i className="bi bi-chevron-left" aria-hidden /></button>}
-        {onNext && <button className="xp-round xp-stagenav next" onClick={onNext} aria-label={t("next")}><i className="bi bi-chevron-right" aria-hidden /></button>}
-        {video && item.previewIframeUrl ? (
-          <iframe key={item.id} title={item.title || t("clip")} src={`${item.previewIframeUrl}?autoplay=true&muted=true&controls=true`} allow="autoplay; fullscreen" />
-        ) : (
-          item.previewUrl && <img src={item.previewUrl} alt={item.title || ""} srcSet={item.srcset?.["640"] && item.srcset?.["1600"] ? `${item.srcset["640"]} 640w, ${item.srcset["1600"]} 1600w` : undefined} sizes="(min-width: 860px) 60vw, 100vw" />
-        )}
-        {video && ended && (
-          <div className="xp-endcard" role="status">
-            <h3>{t("previewEnds")}</h3>
-            <p>{t("buyFullHint", { s: item.durationSeconds ? clock(item.durationSeconds) : "" })}</p>
-            <button className="xp-btn xp-primary" onClick={onBuy}>{t("buyFull")}</button>
-          </div>
-        )}
-      </div>
-      <button ref={closeRef} className="xp-round xp-close" onClick={onClose} aria-label={t("close")}><i className="bi bi-x-lg" aria-hidden /></button>
-      <div className="xp-side">
-        <div className="xp-who">
-          <span className="xp-av" aria-hidden>{item.creator.logo ? <img src={item.creator.logo} alt="" /> : initialOf(item.creator.name)}</span>
-          <div><b>{item.creator.name}</b><small>{item.categoryLabel || (video ? t("clip") : t("photo"))}</small></div>
-          <Link className="xp-btn" style={{ minHeight: 38, borderRadius: 999 }} href={`/user/photographers/view-profile?id=${encodeURIComponent(item.creator.id)}`}>{t("viewProfile")}</Link>
-        </div>
-        <h2>{item.title || (video ? t("clip") : t("photo"))}</h2>
-        <div className="xp-meta">
-          {video && item.durationSeconds ? `${clock(item.durationSeconds)} · ` : ""}
-          {item.width && item.height ? t("dims", { w: item.width, h: item.height }) : (video ? t("clip") : t("photo"))}
-        </div>
-        <div className="xp-price"><b>{money(item.price.amount, item.price.currency)}</b>{local && <span>{t("approx", { amount: local })}</span>}</div>
-        <button className="xp-btn xp-primary xp-buy" onClick={onBuy}>{video ? t("buyFull") : t("buyNow")}</button>
-        <div className="xp-sidebtns">
-          <button className="xp-btn" onClick={onCart}><i className={`bi ${inCart ? "bi-bag-check" : "bi-bag-plus"}`} aria-hidden /> {inCart ? t("removeFromCart") : t("addToCart")}</button>
-          <button className="xp-round desk" onClick={onSave} aria-pressed={saved} aria-label={saved ? t("saved") : t("save")}><i className={`bi ${saved ? "bi-heart-fill" : "bi-heart"}`} aria-hidden /></button>
-          <button className="xp-round desk" aria-label={t("share")} onClick={share}><i className="bi bi-share" aria-hidden /></button>
-        </div>
-        <p className="xp-licence">{t("licenceLine")} <Link href="/explore/license">{t("viewLicence")}</Link></p>
-        {more.length > 0 && (
-          <div className="xp-more">
-            <h3>{t("moreLikeThis")}</h3>
-            <div className="xp-morerow">
-              {more.map(m => (
-                <button key={m.id} onClick={() => onOpen(m)} aria-label={m.title || m.creator.name}>{m.thumbnailUrl && <img src={m.thumbnailUrl} alt="" loading="lazy" />}</button>
-              ))}
-            </div>
-            {item.category && <button className="xp-linkbtn" onClick={() => onMore(item.category as string)}>{t("seeAll")}</button>}
-          </div>
-        )}
-      </div>
     </>
   );
 }

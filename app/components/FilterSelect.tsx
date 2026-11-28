@@ -130,7 +130,7 @@ export default function FilterSelect({
         <i className={`bi ${icon} ph-select-icon`} aria-hidden="true" />
         {prefix && <span className="ph-select-prefix">{prefix}</span>}
         <span className="ph-select-value">{selectedLabel}</span>
-        <i className={`bi bi-chevron-up ph-select-caret ${open ? 'is-open' : ''}`} aria-hidden="true" />
+        <i className={`bi bi-chevron-down ph-select-caret ${open ? 'is-open' : ''}`} aria-hidden="true" />
       </button>
       {open && (
         <ul
