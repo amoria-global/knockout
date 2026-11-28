@@ -1,6 +1,5 @@
-/** 2 columns under 640, then 3, 4, 5 and 6 at 640, 1024, 1280 and 1440. */
+/** 2 columns under 640, then 3, 4 and 5 at 640, 1024 and 1280. */
 export function columnsFor(width: number): number {
-  if (width >= 1440) return 6;
   if (width >= 1280) return 5;
   if (width >= 1024) return 4;
   if (width >= 640) return 3;

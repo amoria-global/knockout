@@ -86,6 +86,8 @@ const AmoriaKNavbar = () => {
   const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
+  // /explore and /explore/<id>, with or without a language prefix; not /explore-events
+  const onExplore = !!pathname && pathname.split('/').includes('explore');
 
   const getLangIdx = (l: string | null | undefined): 0 | 1 | 2 | 3 | null => {
     if (l === 'fr') return 0;
@@ -1468,7 +1470,7 @@ const AmoriaKNavbar = () => {
             <Link href={getLocalePath('/user/about')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">{t('about')}</Link>
             <Link href={getLocalePath('/user/hall-of-fame')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">{tl('Hall of fame')}</Link>
             <Link href={getLocalePath('/user/donations')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">{tl('Donate')}</Link>
-            <Link href={getLocalePath('/explore')} aria-current={pathname && pathname.includes('/explore') ? 'page' : undefined} className={`nav-link-hover ${pathname && pathname.includes('/explore') ? 'text-[#083A85]' : 'text-gray-700'} hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1`}>{tl('Explore')}</Link>
+            <Link href={getLocalePath('/explore')} aria-current={onExplore ? 'page' : undefined} className={`nav-link-hover ${onExplore ? 'nav-link-active text-[#083A85]' : 'text-gray-700'} hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1`}>{tl('Explore')}</Link>
             {/* Find My Photos - dropdown with two paths:
                   • Get Your Photos  → existing face-recognition lookup
                   • Browse Photos   → new stock-style content album browse */}

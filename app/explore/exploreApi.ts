@@ -3,6 +3,8 @@
  * helper checks `action` before it trusts `data`.
  */
 
+import { normalizeItem } from "./exploreTitles";
+
 export const BACKEND_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://backend.connekyt.com").replace(/\/$/, "");
 
 export interface ExploreItem {
@@ -26,6 +28,11 @@ export interface ExploreItem {
   price: { listing: number; listingCurrency: string | null; amount: number | null; currency: string };
   tags: string[];
   licence: string;
+  /** True when the creator gave this item its own title; false means `title` is the album name it falls back to. */
+  titleIsOwn?: boolean;
+  album?: { id: string; title: string | null; count: number; position: number } | null;
+  /** The ORIGINAL file (width and height above are the preview's). Null until the backend has measured it. */
+  original?: { width: number; height: number; megapixels: number; format: string | null; sizeBytes: number | null } | null;
 }
 
 export interface Facets {
@@ -98,10 +105,11 @@ export function feedUrl(q: FeedQuery): string {
 }
 
 export const fetchFeed = (q: FeedQuery, signal?: AbortSignal) =>
-  call<{ items: ExploreItem[]; nextCursor: string | null; viewerCurrency: string }>(feedUrl(q), { signal });
+  call<{ items: ExploreItem[]; nextCursor: string | null; viewerCurrency: string }>(feedUrl(q), { signal })
+    .then(d => ({ ...d, items: d.items.map(normalizeItem) }));
 
 export const fetchItem = (id: string, currency: string) =>
-  call<ExploreItem>(`${BACKEND_BASE}/api/public/explore/items/${encodeURIComponent(id)}?currency=${encodeURIComponent(currency)}`);
+  call<ExploreItem>(`${BACKEND_BASE}/api/public/explore/items/${encodeURIComponent(id)}?currency=${encodeURIComponent(currency)}`).then(normalizeItem);
 
 export const fetchFacets = (currency: string) =>
   call<Facets>(`${BACKEND_BASE}/api/public/explore/facets?currency=${encodeURIComponent(currency)}`);
